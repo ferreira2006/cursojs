@@ -38,7 +38,7 @@
   <button onclick="limpar()">Limpar Tudo</button>
   <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
   <button onclick="gerarPDF()">Exportar PDF</button>
-  <button onclick="modoRevisao()">Modo Revisão</button>
+  <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
 </div>
 <div id="badges-container"></div>
@@ -64,8 +64,70 @@ let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false
 let modoRevisaoAtivo=false;
 
 function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
-
 function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
+
+function atualizarEstatisticas(){
+  let total=0, concluidas=0;
+  Object.keys(plano).forEach((semana, idx)=>{
+    let tarefas = plano[semana];
+    total += tarefas.length;
+    tarefas.forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; });
+  });
+  data.pontos=concluidas;
+}
+
+function atualizarBadges(){
+  const container = document.getElementById('badges-container');
+  container.innerHTML='';
+  if(data.pontos>=10 && !data.badges.includes('10 Tarefas')) data.badges.push('10 Tarefas');
+  if(data.pontos>=20 && !data.badges.includes('20 Tarefas')) data.badges.push('20 Tarefas');
+  data.badges.forEach(b=>{
+    let span = document.createElement('span');
+    span.className='badge';
+    span.textContent=b;
+    container.appendChild(span);
+  });
+}
+
+function atualizarProgresso(){
+  const totalTarefas = Object.keys(data.check).length;
+  const concluidas = Object.values(data.check).filter(v => v).length;
+  const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
+  const bar = document.getElementById('progressBar');
+  bar.style.width = perc + '%';
+  bar.textContent = perc + '%';
+  Object.keys(plano).forEach((semana, idx) => {
+    const tarefas = plano[semana];
+    const conclu = tarefas.filter((t,i) => data.check[`s${idx}d${i}`]).length;
+    const percSemana = tarefas.length ? Math.round((conclu/tarefas.length)*100) : 0;
+    const fill = document.getElementById(`semana-progress-fill-${idx}`);
+    if(fill) fill.style.width = percSemana + '%';
+    const txt = document.getElementById(`semana-progress-${idx}`);
+    if(txt) txt.textContent = percSemana + '% concluído';
+  });
+}
+
+function checarConfete(idx){
+  const semana = plano[Object.keys(plano)[idx]];
+  const concluidas = semana.filter((t,i)=>data.check[`s${idx}d${i}`]).length;
+  if(concluidas === semana.length){
+    const confeteContainer = document.getElementById('confete-container');
+    confeteContainer.innerHTML = '🎉'.repeat(20);
+    setTimeout(()=>{ confeteContainer.innerHTML = ''; },1500);
+  }
+}
+
+function adicionarHistorico(semana, tarefa, status){
+  data.historico.push({semana, tarefa, status, timestamp: new Date().toISOString()});
+  if(data.historico.length>100) data.historico.shift();
+  salvar();
+}
+
+function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
+function exportar(){ const json = JSON.stringify(data, null, 2); const blob = new Blob([json], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'checklist.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+function gerarPDF(){ const conteudo = document.getElementById('conteudo'); html2pdf().from(conteudo).save('checklist.pdf'); }
+function ativarModoRevisao(){ modoRevisaoAtivo = !modoRevisaoAtivo; alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado')); }
+function marcarSemana(idx, marcar){ const semanaTarefas = document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`); semanaTarefas.forEach(chk => { chk.checked = marcar; data.check[chk.id] = marcar; }); salvar(); }
 
 function gerar(){
   const container=document.getElementById('conteudo'); container.innerHTML='';
@@ -82,97 +144,23 @@ function gerar(){
     tarefas.forEach((t,i)=>{
       let chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
       chk.checked=data.check[`s${idx}d${i}`]||false;
-      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked); if(modoRevisaoAtivo) modoRevisao(); };
-      let lbl=document.createElement('label'); lbl.htmlFor=chk.id; lbl.textContent=t;
-      let imp=document.createElement('span'); imp.textContent='!'; imp.className='importante'; imp.onclick=()=>{ data.importante[chk.id]=!data.importante[chk.id]; imp.style.opacity=data.importante[chk.id]?1:0.3; salvar(); };
-      imp.style.opacity=data.importante[chk.id]?1:0.3;
-      let tempo=document.createElement('span'); tempo.className='tempo'; tempo.textContent='30min';
-      tarefasDiv.appendChild(chk); tarefasDiv.appendChild(lbl); tarefasDiv.appendChild(imp); tarefasDiv.appendChild(tempo); tarefasDiv.appendChild(document.createElement('br'));
+      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana, t, chk.checked); };
+      tarefasDiv.appendChild(chk);
+      let label=document.createElement('label'); label.htmlFor=chk.id; label.textContent=t; tarefasDiv.appendChild(label);
+      tarefasDiv.appendChild(document.createElement('br'));
     });
     div.appendChild(tarefasDiv);
-    let nota=document.createElement('textarea'); nota.className='nota'; nota.placeholder='Notas...'; nota.value=data.notes[semana]||'';
-    nota.oninput=()=>{ data.notes[semana]=nota.value; salvar(); adicionarHistorico(semana,'Nota atualizada',true); };
-    div.appendChild(nota);
     container.appendChild(div);
-    Sortable.create(tarefasDiv,{animation:150});
   });
+  atualizarProgresso();
 }
 
-function atualizarProgresso(){
-  let total=document.querySelectorAll("input[type=checkbox]").length;
-  let feitos=document.querySelectorAll("input[type=checkbox]:checked").length;
-  let perc=total?Math.round(feitos/total*100):0;
-  document.getElementById('progressBar').style.width=perc+'%';
-  document.getElementById('progressBar').textContent=perc+'%';
-  Object.values(plano).forEach((t,idx)=>{
-    let checks=t.length; let done=0;
-    for(let i=0;i<checks;i++){ if(document.getElementById(`s${idx}d${i}`)?.checked) done++; }
-    document.getElementById(`semana-progress-${idx}`).textContent=`${done}/${checks} concluídos`;
-    document.getElementById(`semana-progress-fill-${idx}`).style.width=`${checks?Math.round(done/checks*100):0}%`;
-  });
+function filtrar(){
+  let termo=document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; });
 }
 
-function checarConfete(idx){
-  let t=plano[Object.keys(plano)[idx]]; let done=0; for(let i=0;i<t.length;i++){ if(document.getElementById(`s${idx}d${i}`)?.checked) done++; }
-  if(done===t.length){ explodirConfete(); new Notification('Semana concluída! 🎉'); data.pontos+=10; adicionarBadge('Concluiu '+Object.keys(plano)[idx]); salvar(); }
-  let totalFeitos=document.querySelectorAll("input[type=checkbox]:checked").length;
-  let total=document.querySelectorAll("input[type=checkbox]").length;
-  if(totalFeitos===total){ new Notification('Parabéns! Todo o plano concluído! 🎉'); data.pontos+=50; adicionarBadge('Plano completo'); salvar(); }
-}
-
-function explodirConfete(){
-  const container=document.getElementById('confete-container');
-  for(let i=0;i<100;i++){
-    let c=document.createElement('div');
-    c.style.position='absolute'; c.style.width='8px'; c.style.height='8px';
-    c.style.background=`hsl(${Math.random()*360},100%,50%)`;
-    c.style.left=Math.random()*window.innerWidth+'px'; c.style.top='0px'; c.style.opacity=1; c.style.transition='all 2s linear';
-    container.appendChild(c);
-    setTimeout(()=>{ c.style.top=window.innerHeight+'px'; c.style.opacity=0; setTimeout(()=>c.remove(),2000); },10);
-  }
-}
-
-function adicionarHistorico(semana,tarefa,status){ data.historico.push({semana,tarefa,status,timestamp:new Date().toISOString()}); salvar(); }
-
-function adicionarBadge(nome){ if(!data.badges.includes(nome)){ data.badges.push(nome); salvar(); } atualizarBadges(); }
-function atualizarBadges(){ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ let span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); }
-
-function marcarSemana(idx,estado){ Object.keys(plano[Object.keys(plano)[idx]]).forEach(i=>{ document.getElementById(`s${idx}d${i}`).checked=estado; data.check[`s${idx}d${i}`]=estado; adicionarHistorico(Object.keys(plano)[idx],plano[Object.keys(plano)[idx]][i],estado); }); salvar(); atualizarProgresso(); }
-function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
-function toggleCollapse(idx){ document.getElementById(`tarefas-${idx}`).classList.toggle('hidden'); }
-function exportar(){ let blob=new Blob([JSON.stringify(data)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='progresso.json'; a.click(); }
-function importar(){ let input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ let file=e.target.files[0]; let reader=new FileReader(); reader.onload=ev=>{ data=JSON.parse(ev.target.result); gerar(); atualizarProgresso(); salvar(); } ; reader.readAsText(file); }; input.click(); }
-function limpar(){ if(confirm('Limpar todos os dados?')){ localStorage.removeItem('data'); data={check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]}; gerar(); atualizarProgresso(); salvar(); }}
-function filtrar(){ let termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); }
-
-// Atalhos de teclado
-document.addEventListener('keydown', (e) => { if(e.ctrlKey && e.key==='r') modoRevisao(); if(e.ctrlKey && e.key==='t') toggleTheme(); });
-
-function temaDinamico(){ const h=new Date().getHours(); if(h>=6&&h<12) document.body.style.backgroundColor='#FFF9C4'; else if(h>=12&&h<18) document.body.style.backgroundColor='#BBDEFB'; else document.body.style.backgroundColor='#1e1e1e'; }
-temaDinamico();
-
-function exportarAvancado(){ const exportData={ data, estatisticas:{ totalPontos:data.pontos, totalTarefas:Object.keys(data.check).length, tarefasConcluidas:Object.values(data.check).filter(v=>v).length } }; const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='progresso_avancado.json'; a.click(); }
-
-function exportarParaCalendario(){
-  let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ChecklistJS//EN\n';
-  Object.entries(data.importante).forEach(([id,val])=>{ if(val){
-    let [s,d]=id.match(/\d+/g); let tarefa=plano[Object.keys(plano)[s]][d];
-    let date=new Date(); date.setDate(date.getDate()+parseInt(s));
-    ics += `BEGIN:VEVENT\nSUMMARY:${tarefa}\nDTSTART;VALUE=DATE:${date.toISOString().split('T')[0].replace(/-/g,'')}\nEND:VEVENT\n`;
-  }});
-  ics += 'END:VCALENDAR';
-  let blob=new Blob([ics],{type:'text/calendar'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tarefas_importantes.ics'; a.click();
-}
-
-function modoRevisao(){
-  modoRevisaoAtivo=!modoRevisaoAtivo;
-  document.querySelectorAll('.semana').forEach(s=>{
-    s.style.opacity=modoRevisaoAtivo?0.5:1;
-  });
-  document.querySelectorAll('input[type=checkbox]').forEach(chk=>{
-    if(modoRevisaoAtivo){
-      chk.parentElement.style.opacity=chk.checked?0.3:1;
-    }else{
-      chk.parentElement.style.opacity=1;
-    }
- 
+window.onload=carregar;
+</script>
+</body>
+</html>
