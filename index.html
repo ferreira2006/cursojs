@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Checklist de Estudo - JavaScript Avançado</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:10px; transition: background 0.3s, color 0.3s; }
+  .dark-mode { background:#1e1e1e; color:#f4f4f9; }
+  h2 { margin-top:0; cursor:pointer; }
+  .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s; }
+  .nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
+  .top-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
+  .progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:white; line-height:20px; transition: width 0.3s; }
+  .semana-header { display:flex; justify-content:space-between; align-items:center; }
+  .semana-progress { font-size:0.9em; margin-top:5px; color:#666; }
+  .dark-mode .semana-progress { color:#ccc; }
+  .semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; }
+  .semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
+  .hidden { display:none; }
+  button { cursor:pointer; border:none; border-radius:5px; padding:5px 10px; background-color:#4caf50; color:white; transition: background 0.2s; }
+  button:hover { background-color:#45a049; }
+  input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
+  .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
+  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+  .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
+  .tempo { font-size:0.8em; color:#555; margin-left:5px; }
+  #badges-container { margin-bottom:10px; }
+  @media (max-width:600px){ .top-bar{flex-direction:column;} }
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+  <button onclick="exportar()">Exportar JSON</button>
+  <button onclick="exportarAvancado()">Exportar Avançado</button>
+  <button onclick="importar()">Importar JSON</button>
+  <button onclick="limpar()">Limpar Tudo</button>
+  <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+  <button onclick="gerarPDF()">Exportar PDF</button>
+  <button onclick="modoRevisao()">Modo Revisão</button>
+  <button onclick="exportarParaCalendario()">Exportar Calendário</button>
+</div>
+<div id="badges-container"></div>
+<div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
+<div id="conteudo"></div>
+<div id="confete-container" class="confete"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const plano={
+  "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis (let, const, var) e tipos de dados.","Operadores matemáticos e de comparação.","Operadores lógicos (&&, ||, !).","Exercícios práticos (mini-calculadora, olá usuário)."],
+  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for.","Estruturas de repetição: while e do...while.","Exercícios práticos (tabuada, par/ímpar)."],
+  "Semana 3 – Funções e Escopo":["Declaração de funções e parâmetros.","Retorno de funções.","Arrow functions.","Escopo (global, local, bloco).","Funções anônimas, setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().", ".map(), .filter(), .reduce().", "Objetos: propriedades e acesso (. e []).", "Iteração em objetos (for...in, Object.keys).", "Exercícios (lista de compras, objeto carro)."],
+  "Semana 5 – DOM":["Selecionar elementos (getElementById, querySelector).", "Alterar conteúdo (innerText, innerHTML).", "Alterar estilos (.style).", "Criar e remover elementos (createElement, appendChild).", "Eventos (onclick, addEventListener)."],
+  "Semana 6 – Projeto To-Do List":["Estrutura HTML básica e input para tarefas.","Adicionar itens à lista com JS.","Marcar tarefas como concluídas.","Excluir tarefas.","Melhorias: salvar no localStorage."],
+  "Semana 7 – JavaScript Moderno":["Template literals e desestruturação.","Spread/rest.","Módulos (import e export).", "fetch e Promises.", "async/await."],
+  "Semana 8 – Projeto Final":["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
+};
+
+let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
+let modoRevisaoAtivo=false;
+
+function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
+
+function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
+
+function gerar(){
+  const container=document.getElementById('conteudo'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
+    let div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+    let header=document.createElement('div'); header.className='semana-header';
+    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2><div><button onclick='marcarSemana(${idx},true)'>Marcar todos</button><button onclick='marcarSemana(${idx},false)'>Resetar semana</button></div>`;
+    div.appendChild(header);
+
+    let progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+    let progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+
+    let tarefasDiv=document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.className='tarefas-div';
+    tarefas.forEach((t,i)=>{
+      let chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
+      chk.checked=data.check[`s${idx}d${i}`]||false;
+      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked); if(modoRevisaoAtivo) modoRevisao(); };
+      let lbl=document.createElement('label'); lbl.htmlFor=chk.id; lbl.textContent=t;
+      let imp=document.createElement('span'); imp.textContent='!'; imp.className='importante'; imp.onclick=()=>{ data.importante[chk.id]=!data.importante[chk.id]; imp.style.opacity=data.importante[chk.id]?1:0.3; salvar(); };
+      imp.style.opacity=data.importante[chk.id]?1:0.3;
+      let tempo=document.createElement('span'); tempo.className='tempo'; tempo.textContent='30min';
+      tarefasDiv.appendChild(chk); tarefasDiv.appendChild(lbl); tarefasDiv.appendChild(imp); tarefasDiv.appendChild(tempo); tarefasDiv.appendChild(document.createElement('br'));
+    });
+    div.appendChild(tarefasDiv);
+    let nota=document.createElement('textarea'); nota.className='nota'; nota.placeholder='Notas...'; nota.value=data.notes[semana]||'';
+    nota.oninput=()=>{ data.notes[semana]=nota.value; salvar(); adicionarHistorico(semana,'Nota atualizada',true); };
+    div.appendChild(nota);
+    container.appendChild(div);
+    Sortable.create(tarefasDiv,{animation:150});
+  });
+}
+
+function atualizarProgresso(){
+  let total=document.querySelectorAll("input[type=checkbox]").length;
+  let feitos=document.querySelectorAll("input[type=checkbox]:checked").length;
+  let perc=total?Math.round(feitos/total*100):0;
+  document.getElementById('progressBar').style.width=perc+'%';
+  document.getElementById('progressBar').textContent=perc+'%';
+  Object.values(plano).forEach((t,idx)=>{
+    let checks=t.length; let done=0;
+    for(let i=0;i<checks;i++){ if(document.getElementById(`s${idx}d${i}`)?.checked) done++; }
+    document.getElementById(`semana-progress-${idx}`).textContent=`${done}/${checks} concluídos`;
+    document.getElementById(`semana-progress-fill-${idx}`).style.width=`${checks?Math.round(done/checks*100):0}%`;
+  });
+}
+
+function checarConfete(idx){
+  let t=plano[Object.keys(plano)[idx]]; let done=0; for(let i=0;i<t.length;i++){ if(document.getElementById(`s${idx}d${i}`)?.checked) done++; }
+  if(done===t.length){ explodirConfete(); new Notification('Semana concluída! 🎉'); data.pontos+=10; adicionarBadge('Concluiu '+Object.keys(plano)[idx]); salvar(); }
+  let totalFeitos=document.querySelectorAll("input[type=checkbox]:checked").length;
+  let total=document.querySelectorAll("input[type=checkbox]").length;
+  if(totalFeitos===total){ new Notification('Parabéns! Todo o plano concluído! 🎉'); data.pontos+=50; adicionarBadge('Plano completo'); salvar(); }
+}
+
+function explodirConfete(){
+  const container=document.getElementById('confete-container');
+  for(let i=0;i<100;i++){
+    let c=document.createElement('div');
+    c.style.position='absolute'; c.style.width='8px'; c.style.height='8px';
+    c.style.background=`hsl(${Math.random()*360},100%,50%)`;
+    c.style.left=Math.random()*window.innerWidth+'px'; c.style.top='0px'; c.style.opacity=1; c.style.transition='all 2s linear';
+    container.appendChild(c);
+    setTimeout(()=>{ c.style.top=window.innerHeight+'px'; c.style.opacity=0; setTimeout(()=>c.remove(),2000); },10);
+  }
+}
+
+function adicionarHistorico(semana,tarefa,status){ data.historico.push({semana,tarefa,status,timestamp:new Date().toISOString()}); salvar(); }
+
+function adicionarBadge(nome){ if(!data.badges.includes(nome)){ data.badges.push(nome); salvar(); } atualizarBadges(); }
+function atualizarBadges(){ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ let span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); }
+
+function marcarSemana(idx,estado){ Object.keys(plano[Object.keys(plano)[idx]]).forEach(i=>{ document.getElementById(`s${idx}d${i}`).checked=estado; data.check[`s${idx}d${i}`]=estado; adicionarHistorico(Object.keys(plano)[idx],plano[Object.keys(plano)[idx]][i],estado); }); salvar(); atualizarProgresso(); }
+function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
+function toggleCollapse(idx){ document.getElementById(`tarefas-${idx}`).classList.toggle('hidden'); }
+function exportar(){ let blob=new Blob([JSON.stringify(data)],{type:'application/json'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='progresso.json'; a.click(); }
+function importar(){ let input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ let file=e.target.files[0]; let reader=new FileReader(); reader.onload=ev=>{ data=JSON.parse(ev.target.result); gerar(); atualizarProgresso(); salvar(); } ; reader.readAsText(file); }; input.click(); }
+function limpar(){ if(confirm('Limpar todos os dados?')){ localStorage.removeItem('data'); data={check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]}; gerar(); atualizarProgresso(); salvar(); }}
+function filtrar(){ let termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); }
+
+// Atalhos de teclado
+document.addEventListener('keydown', (e) => { if(e.ctrlKey && e.key==='r') modoRevisao(); if(e.ctrlKey && e.key==='t') toggleTheme(); });
+
+function temaDinamico(){ const h=new Date().getHours(); if(h>=6&&h<12) document.body.style.backgroundColor='#FFF9C4'; else if(h>=12&&h<18) document.body.style.backgroundColor='#BBDEFB'; else document.body.style.backgroundColor='#1e1e1e'; }
+temaDinamico();
+
+function exportarAvancado(){ const exportData={ data, estatisticas:{ totalPontos:data.pontos, totalTarefas:Object.keys(data.check).length, tarefasConcluidas:Object.values(data.check).filter(v=>v).length } }; const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='progresso_avancado.json'; a.click(); }
+
+function exportarParaCalendario(){
+  let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//ChecklistJS//EN\n';
+  Object.entries(data.importante).forEach(([id,val])=>{ if(val){
+    let [s,d]=id.match(/\d+/g); let tarefa=plano[Object.keys(plano)[s]][d];
+    let date=new Date(); date.setDate(date.getDate()+parseInt(s));
+    ics += `BEGIN:VEVENT\nSUMMARY:${tarefa}\nDTSTART;VALUE=DATE:${date.toISOString().split('T')[0].replace(/-/g,'')}\nEND:VEVENT\n`;
+  }});
+  ics += 'END:VCALENDAR';
+  let blob=new Blob([ics],{type:'text/calendar'}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tarefas_importantes.ics'; a.click();
+}
+
+function modoRevisao(){
+  modoRevisaoAtivo=!modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(s=>{
+    s.style.opacity=modoRevisaoAtivo?0.5:1;
+  });
+  document.querySelectorAll('input[type=checkbox]').forEach(chk=>{
+    if(modoRevisaoAtivo){
+      chk.parentElement.style.opacity=chk.checked?0.3:1;
+    }else{
+      chk.parentElement.style.opacity=1;
+    }
+ 
