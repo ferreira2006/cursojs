@@ -22,7 +22,7 @@
   button:hover { background-color:#45a049; }
   input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
-  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; font-size:2em; text-align:center; }
   .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
   .tempo { font-size:0.8em; color:#555; margin-left:5px; }
   #badges-container { margin-bottom:10px; }
@@ -45,8 +45,9 @@
 <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
 <div id="conteudo"></div>
 <div id="confete-container" class="confete"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
 <script>
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
@@ -63,8 +64,19 @@ const plano={
 let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
 let modoRevisaoAtivo=false;
 
-function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
-function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
+// ----------------- Funções básicas -----------------
+function salvar(){ 
+  localStorage.setItem('data',JSON.stringify(data)); 
+  atualizarEstatisticas(); 
+  atualizarBadges(); 
+  atualizarProgresso(); 
+}
+function carregar(){ 
+  gerar(); 
+  if(data.dark) document.body.classList.add('dark-mode'); 
+  atualizarProgresso(); 
+  atualizarBadges(); 
+}
 
 function atualizarEstatisticas(){
   let total=0, concluidas=0;
@@ -123,41 +135,169 @@ function adicionarHistorico(semana, tarefa, status){
   salvar();
 }
 
-function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
-function exportar(){ const json = JSON.stringify(data, null, 2); const blob = new Blob([json], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'checklist.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-function gerarPDF(){ const conteudo = document.getElementById('conteudo'); html2pdf().from(conteudo).save('checklist.pdf'); }
-function ativarModoRevisao(){ modoRevisaoAtivo = !modoRevisaoAtivo; alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado')); }
-function marcarSemana(idx, marcar){ const semanaTarefas = document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`); semanaTarefas.forEach(chk => { chk.checked = marcar; data.check[chk.id] = marcar; }); salvar(); }
+// ----------------- Funções UI -----------------
+function toggleTheme(){ 
+  document.body.classList.toggle('dark-mode'); 
+  data.dark=document.body.classList.contains('dark-mode'); 
+  salvar(); 
+}
 
-function gerar(){
-  const container=document.getElementById('conteudo'); container.innerHTML='';
-  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
-    let div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
-    let header=document.createElement('div'); header.className='semana-header';
-    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2><div><button onclick='marcarSemana(${idx},true)'>Marcar todos</button><button onclick='marcarSemana(${idx},false)'>Resetar semana</button></div>`;
-    div.appendChild(header);
+function exportar(){ 
+  const json = JSON.stringify(data, null, 2); 
+  const blob = new Blob([json], {type: 'application/json'}); 
+  const url = URL.createObjectURL(blob); 
+  const a = document.createElement('a'); 
+  a.href = url; a.download = 'checklist.json'; 
+  document.body.appendChild(a); 
+  a.click(); 
+  document.body.removeChild(a); 
+  URL.revokeObjectURL(url); 
+}
 
-    let progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-    let progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
-
-    let tarefasDiv=document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.className='tarefas-div';
-    tarefas.forEach((t,i)=>{
-      let chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
-      chk.checked=data.check[`s${idx}d${i}`]||false;
-      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana, t, chk.checked); };
-      tarefasDiv.appendChild(chk);
-      let label=document.createElement('label'); label.htmlFor=chk.id; label.textContent=t; tarefasDiv.appendChild(label);
-      tarefasDiv.appendChild(document.createElement('br'));
+function exportarAvancado(){
+  const avancado = {concluidas:[], pendentes:[]};
+  Object.keys(plano).forEach((semana, idx)=>{
+    plano[semana].forEach((t,i)=>{
+      const key = `s${idx}d${i}`;
+      if(data.check[key]) avancado.concluidas.push({semana,tarefa:t});
+      else avancado.pendentes.push({semana,tarefa:t});
     });
-    div.appendChild(tarefasDiv);
-    container.appendChild(div);
   });
-  atualizarProgresso();
+  const blob = new Blob([JSON.stringify(avancado,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='checklist_avancado.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importar(){
+  const input = document.createElement('input');
+  input.type='file'; input.accept='application/json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        data = imported;
+        salvar();
+        carregar();
+      } catch(err){ alert('Arquivo inválido'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function limpar(){
+  if(confirm('Deseja realmente limpar todos os dados?')){
+    localStorage.clear();
+    data={check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
+    carregar();
+  }
+}
+
+function gerarPDF(){ 
+  const conteudo = document.getElementById('conteudo'); 
+  html2pdf().from(conteudo).save('checklist.pdf'); 
+}
+
+function ativarModoRevisao(){
+  modoRevisaoAtivo = !modoRevisaoAtivo; 
+  alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado'));
+  carregar();
+}
+
+function exportarParaCalendario(){
+  let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
+  let today = new Date();
+  Object.keys(plano).forEach((semana, idx)=>{
+    plano[semana].forEach((t,i)=>{
+      const key = `s${idx}d${i}`;
+      const status = data.check[key] ? 'Concluída' : 'Pendente';
+      let dt = today.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+      ics += `BEGIN:VEVENT\nSUMMARY:${t} [${semana}]\nDESCRIPTION:${status}\nDTSTART:${dt}\nDTEND:${dt}\nEND:VEVENT\n`;
+    });
+  });
+  ics += 'END:VCALENDAR';
+  const blob = new Blob([ics], {type:'text/calendar'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='checklist.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ----------------- Interações -----------------
+function toggleCollapse(idx){
+  const div = document.getElementById(`tarefas-${idx}`);
+  div.classList.toggle('hidden');
+}
+
+function marcarSemana(idx, marcar){
+  const semanaTarefas = document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`);
+  semanaTarefas.forEach(chk => { 
+    chk.checked = marcar; 
+    data.check[chk.id] = marcar; 
+    adicionarHistorico(Object.keys(plano)[idx], chk.nextSibling.textContent, marcar);
+  });
+  salvar();
 }
 
 function filtrar(){
   let termo=document.getElementById('busca').value.toLowerCase();
   document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; });
+}
+
+function gerar(){
+  const container=document.getElementById('conteudo'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
+    let div=document.createElement('div'); 
+    div.className='semana'; 
+    div.style.background=coresSemana[idx%coresSemana.length];
+    
+    let header=document.createElement('div'); 
+    header.className='semana-header';
+    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
+      <div>
+        <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
+        <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
+      </div>`;
+    div.appendChild(header);
+
+    let progresso=document.createElement('div'); 
+    progresso.className='semana-progress'; 
+    progresso.id=`semana-progress-${idx}`; 
+    div.appendChild(progresso);
+
+    let progressBar=document.createElement('div'); 
+    progressBar.className='semana-progress-bar'; 
+    progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; 
+    div.appendChild(progressBar);
+
+    let tarefasDiv=document.createElement('div'); 
+    tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.className='tarefas-div';
+    tarefas.forEach((t,i)=>{
+      let chk=document.createElement('input'); 
+      chk.type='checkbox'; chk.id=`s${idx}d${i}`;
+      chk.checked=data.check[chk.id]||false;
+      if(modoRevisaoAtivo) chk.disabled = true;
+      chk.onchange=()=>{ 
+        data.check[chk.id]=chk.checked; 
+        salvar(); 
+        atualizarProgresso(); 
+        checarConfete(idx); 
+        adicionarHistorico(semana, t, chk.checked); 
+      };
+      let label=document.createElement('label'); 
+      label.htmlFor=chk.id; 
+      label.textContent=t;
+      tarefasDiv.appendChild(chk); tarefasDiv.appendChild(label); tarefasDiv.appendChild(document.createElement('br'));
+    });
+    div.appendChild(tarefasDiv);
+    container.appendChild(div);
+  });
+  atualizarProgresso();
 }
 
 window.onload=carregar;
