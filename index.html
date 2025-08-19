@@ -22,7 +22,7 @@
   button:hover { background-color:#45a049; }
   input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
-  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; font-size:2em; text-align:center; }
+  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
   .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
   .tempo { font-size:0.8em; color:#555; margin-left:5px; }
   #badges-container { margin-bottom:10px; }
@@ -41,14 +41,16 @@
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
 </div>
+
 <div id="badges-container"></div>
 <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
 <div id="conteudo"></div>
 <div id="confete-container" class="confete"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
+// cores e plano
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
   "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis (let, const, var) e tipos de dados.","Operadores matemáticos e de comparação.","Operadores lógicos (&&, ||, !).","Exercícios práticos (mini-calculadora, olá usuário)."],
@@ -61,23 +63,15 @@ const plano={
   "Semana 8 – Projeto Final":["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
+// dados e estado
 let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
 let modoRevisaoAtivo=false;
 
-// ----------------- Funções básicas -----------------
-function salvar(){ 
-  localStorage.setItem('data',JSON.stringify(data)); 
-  atualizarEstatisticas(); 
-  atualizarBadges(); 
-  atualizarProgresso(); 
-}
-function carregar(){ 
-  gerar(); 
-  if(data.dark) document.body.classList.add('dark-mode'); 
-  atualizarProgresso(); 
-  atualizarBadges(); 
-}
+// salvamento e carregamento
+function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
+function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
 
+// estatísticas
 function atualizarEstatisticas(){
   let total=0, concluidas=0;
   Object.keys(plano).forEach((semana, idx)=>{
@@ -119,6 +113,7 @@ function atualizarProgresso(){
   });
 }
 
+// confete e histórico
 function checarConfete(idx){
   const semana = plano[Object.keys(plano)[idx]];
   const concluidas = semana.filter((t,i)=>data.check[`s${idx}d${i}`]).length;
@@ -135,171 +130,128 @@ function adicionarHistorico(semana, tarefa, status){
   salvar();
 }
 
-// ----------------- Funções UI -----------------
-function toggleTheme(){ 
-  document.body.classList.toggle('dark-mode'); 
-  data.dark=document.body.classList.contains('dark-mode'); 
-  salvar(); 
-}
+// funcionalidades principais
+function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
+function exportar(){ const json = JSON.stringify(data,null,2); const blob = new Blob([json],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='checklist.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+function exportarAvancado(){ const jsonAvancado={check:data.check,notes:data.notes,historico:data.historico,pontos:data.pontos,badges:data.badges}; const blob=new Blob([JSON.stringify(jsonAvancado,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='checklist_avancado.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+function gerarPDF(){ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); }
+function ativarModoRevisao(){ modoRevisaoAtivo = !modoRevisaoAtivo; alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado')); }
+function marcarSemana(idx, marcar){ document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvar(); }
+function filtrar(){ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); }
 
-function exportar(){ 
-  const json = JSON.stringify(data, null, 2); 
-  const blob = new Blob([json], {type: 'application/json'}); 
-  const url = URL.createObjectURL(blob); 
-  const a = document.createElement('a'); 
-  a.href = url; a.download = 'checklist.json'; 
-  document.body.appendChild(a); 
-  a.click(); 
-  document.body.removeChild(a); 
-  URL.revokeObjectURL(url); 
-}
+// gerar checklist
+function gerar(){
+  const container=document.getElementById('conteudo');
+  container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
+    const div=document.createElement('div');
+    div.className='semana';
+    div.style.background=coresSemana[idx%coresSemana.length];
 
-function exportarAvancado(){
-  const avancado = {concluidas:[], pendentes:[]};
-  Object.keys(plano).forEach((semana, idx)=>{
-    plano[semana].forEach((t,i)=>{
-      const key = `s${idx}d${i}`;
-      if(data.check[key]) avancado.concluidas.push({semana,tarefa:t});
-      else avancado.pendentes.push({semana,tarefa:t});
+    const header=document.createElement('div');
+    header.className='semana-header';
+    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
+                      <div>
+                        <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
+                        <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
+                      </div>`;
+    div.appendChild(header);
+
+    const progresso=document.createElement('div');
+    progresso.className='semana-progress';
+    progresso.id=`semana-progress-${idx}`;
+    div.appendChild(progresso);
+
+    const progressBar=document.createElement('div');
+    progressBar.className='semana-progress-bar';
+    progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
+    div.appendChild(progressBar);
+
+    const tarefasDiv=document.createElement('div');
+    tarefasDiv.id=`tarefas-${idx}`;
+    tarefas.forEach((t,i)=>{
+      const chk=document.createElement('input');
+      chk.type='checkbox';
+      chk.id=`s${idx}d${i}`;
+      chk.checked=data.check[chk.id]||false;
+      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked); };
+      tarefasDiv.appendChild(chk);
+
+      const label=document.createElement('label');
+     
+      label.htmlFor = chk.id;
+      label.textContent = t;
+      tarefasDiv.appendChild(label);
+      tarefasDiv.appendChild(document.createElement('br'));
     });
+
+    div.appendChild(tarefasDiv);
+    container.appendChild(div);
   });
-  const blob = new Blob([JSON.stringify(avancado,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='checklist_avancado.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+  atualizarProgresso();
 }
 
-function importar(){
-  const input = document.createElement('input');
-  input.type='file'; input.accept='application/json';
-  input.onchange = e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        const imported = JSON.parse(ev.target.result);
-        data = imported;
-        salvar();
-        carregar();
-      } catch(err){ alert('Arquivo inválido'); }
-    };
-    reader.readAsText(file);
-  };
-  input.click();
+// colapsar/expandir
+function toggleCollapse(idx){
+  const tarefasDiv = document.getElementById(`tarefas-${idx}`);
+  tarefasDiv.style.display = tarefasDiv.style.display === 'none' ? 'block' : 'none';
 }
 
+// limpar todos dados
 function limpar(){
-  if(confirm('Deseja realmente limpar todos os dados?')){
-    localStorage.clear();
+  if(confirm("Deseja realmente limpar todos os dados?")){
     data={check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
+    localStorage.removeItem('data');
     carregar();
   }
 }
 
-function gerarPDF(){ 
-  const conteudo = document.getElementById('conteudo'); 
-  html2pdf().from(conteudo).save('checklist.pdf'); 
+// importar JSON
+function importar(){
+  const input = document.createElement('input');
+  input.type='file';
+  input.accept='application/json';
+  input.onchange=e=>{
+    const file = e.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = evt => {
+        try{
+          data = JSON.parse(evt.target.result);
+          salvar();
+          carregar();
+        }catch(err){ alert("Arquivo inválido!"); }
+      };
+      reader.readAsText(file);
+    }
+  };
+  input.click();
 }
 
-function ativarModoRevisao(){
-  modoRevisaoAtivo = !modoRevisaoAtivo; 
-  alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado'));
-  carregar();
-}
-
+// exportar calendário (simples exemplo)
 function exportarParaCalendario(){
-  let ics = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
-  let today = new Date();
-  Object.keys(plano).forEach((semana, idx)=>{
+  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\n";
+  Object.keys(plano).forEach((semana,idx)=>{
     plano[semana].forEach((t,i)=>{
-      const key = `s${idx}d${i}`;
-      const status = data.check[key] ? 'Concluída' : 'Pendente';
-      let dt = today.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
-      ics += `BEGIN:VEVENT\nSUMMARY:${t} [${semana}]\nDESCRIPTION:${status}\nDTSTART:${dt}\nDTEND:${dt}\nEND:VEVENT\n`;
+      if(data.check[`s${idx}d${i}`]){
+        ics += `BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nEND:VEVENT\n`;
+      }
     });
   });
-  ics += 'END:VCALENDAR';
-  const blob = new Blob([ics], {type:'text/calendar'});
+  ics += "END:VCALENDAR";
+  const blob = new Blob([ics],{type:'text/calendar'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='checklist.ics';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'checklist.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-// ----------------- Interações -----------------
-function toggleCollapse(idx){
-  const div = document.getElementById(`tarefas-${idx}`);
-  div.classList.toggle('hidden');
-}
-
-function marcarSemana(idx, marcar){
-  const semanaTarefas = document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`);
-  semanaTarefas.forEach(chk => { 
-    chk.checked = marcar; 
-    data.check[chk.id] = marcar; 
-    adicionarHistorico(Object.keys(plano)[idx], chk.nextSibling.textContent, marcar);
-  });
-  salvar();
-}
-
-function filtrar(){
-  let termo=document.getElementById('busca').value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; });
-}
-
-function gerar(){
-  const container=document.getElementById('conteudo'); container.innerHTML='';
-  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
-    let div=document.createElement('div'); 
-    div.className='semana'; 
-    div.style.background=coresSemana[idx%coresSemana.length];
-    
-    let header=document.createElement('div'); 
-    header.className='semana-header';
-    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
-      <div>
-        <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
-        <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
-      </div>`;
-    div.appendChild(header);
-
-    let progresso=document.createElement('div'); 
-    progresso.className='semana-progress'; 
-    progresso.id=`semana-progress-${idx}`; 
-    div.appendChild(progresso);
-
-    let progressBar=document.createElement('div'); 
-    progressBar.className='semana-progress-bar'; 
-    progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; 
-    div.appendChild(progressBar);
-
-    let tarefasDiv=document.createElement('div'); 
-    tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.className='tarefas-div';
-    tarefas.forEach((t,i)=>{
-      let chk=document.createElement('input'); 
-      chk.type='checkbox'; chk.id=`s${idx}d${i}`;
-      chk.checked=data.check[chk.id]||false;
-      if(modoRevisaoAtivo) chk.disabled = true;
-      chk.onchange=()=>{ 
-        data.check[chk.id]=chk.checked; 
-        salvar(); 
-        atualizarProgresso(); 
-        checarConfete(idx); 
-        adicionarHistorico(semana, t, chk.checked); 
-      };
-      let label=document.createElement('label'); 
-      label.htmlFor=chk.id; 
-      label.textContent=t;
-      tarefasDiv.appendChild(chk); tarefasDiv.appendChild(label); tarefasDiv.appendChild(document.createElement('br'));
-    });
-    div.appendChild(tarefasDiv);
-    container.appendChild(div);
-  });
-  atualizarProgresso();
-}
-
+// iniciar app
 window.onload=carregar;
 </script>
 </body>
