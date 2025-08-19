@@ -41,6 +41,7 @@
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
 </div>
+
 <div id="badges-container"></div>
 <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
 <div id="conteudo"></div>
@@ -49,152 +50,179 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
-const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
-const plano={
-  "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis (let, const, var) e tipos de dados.","Operadores matemáticos e de comparação.","Operadores lógicos (&&, ||, !).","Exercícios práticos (mini-calculadora, olá usuário)."],
-  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for.","Estruturas de repetição: while e do...while.","Exercícios práticos (tabuada, par/ímpar)."],
-  "Semana 3 – Funções e Escopo":["Declaração de funções e parâmetros.","Retorno de funções.","Arrow functions.","Escopo (global, local, bloco).","Funções anônimas, setTimeout e setInterval."],
-  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().", ".map(), .filter(), .reduce().", "Objetos: propriedades e acesso (. e []).", "Iteração em objetos (for...in, Object.keys).", "Exercícios (lista de compras, objeto carro)."],
-  "Semana 5 – DOM":["Selecionar elementos (getElementById, querySelector).", "Alterar conteúdo (innerText, innerHTML).", "Alterar estilos (.style).", "Criar e remover elementos (createElement, appendChild).", "Eventos (onclick, addEventListener)."],
-  "Semana 6 – Projeto To-Do List":["Estrutura HTML básica e input para tarefas.","Adicionar itens à lista com JS.","Marcar tarefas como concluídas.","Excluir tarefas.","Melhorias: salvar no localStorage."],
-  "Semana 7 – JavaScript Moderno":["Template literals e desestruturação.","Spread/rest.","Módulos (import e export).", "fetch e Promises.", "async/await."],
-  "Semana 8 – Projeto Final":["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
+const coresSemana = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const plano = {
+  "Semana 1 – Fundamentos": ["O que é JS, onde roda, configurar ambiente.", "Variáveis (let, const, var) e tipos de dados.", "Operadores matemáticos e de comparação.", "Operadores lógicos (&&, ||, !).", "Exercícios práticos (mini-calculadora, olá usuário)."],
+  "Semana 2 – Controle de Fluxo": ["if, else if, else.", "Operador ternário e switch.", "Estruturas de repetição: for.", "Estruturas de repetição: while e do...while.", "Exercícios práticos (tabuada, par/ímpar)."],
+  "Semana 3 – Funções e Escopo": ["Declaração de funções e parâmetros.", "Retorno de funções.", "Arrow functions.", "Escopo (global, local, bloco).", "Funções anônimas, setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos": ["Criar arrays e usar .push(), .pop().", ".map(), .filter(), .reduce().", "Objetos: propriedades e acesso (. e []).", "Iteração em objetos (for...in, Object.keys).", "Exercícios (lista de compras, objeto carro)."],
+  "Semana 5 – DOM": ["Selecionar elementos (getElementById, querySelector).", "Alterar conteúdo (innerText, innerHTML).", "Alterar estilos (.style).", "Criar e remover elementos (createElement, appendChild).", "Eventos (onclick, addEventListener)."],
+  "Semana 6 – Projeto To-Do List": ["Estrutura HTML básica e input para tarefas.", "Adicionar itens à lista com JS.", "Marcar tarefas como concluídas.", "Excluir tarefas.", "Melhorias: salvar no localStorage."],
+  "Semana 7 – JavaScript Moderno": ["Template literals e desestruturação.", "Spread/rest.", "Módulos (import e export).", "fetch e Promises.", "async/await."],
+  "Semana 8 – Projeto Final": ["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
-let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
-let modoRevisaoAtivo=false;
+let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
+let modoRevisaoAtivo = false;
 
-function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
-function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
+// --- LocalStorage ---
+const salvar = () => { localStorage.setItem('data', JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); };
+const carregar = () => { gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); };
 
-function atualizarEstatisticas(){
-  let total=0, concluidas=0;
-  Object.keys(plano).forEach((semana, idx)=>{
-    let tarefas = plano[semana];
-    total += tarefas.length;
-    tarefas.forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; });
+// --- Estatísticas ---
+const atualizarEstatisticas = () => {
+  let concluidas = 0;
+  Object.keys(plano).forEach((semana, idx) => {
+    plano[semana].forEach((_, i) => { if(data.check[`s${idx}d${i}`]) concluidas++; });
   });
-  data.pontos=concluidas;
-}
-
-function atualizarBadges(){
+  data.pontos = concluidas;
+};
+const atualizarBadges = () => {
   const container = document.getElementById('badges-container');
-  container.innerHTML='';
-  if(data.pontos>=10 && !data.badges.includes('10 Tarefas')) data.badges.push('10 Tarefas');
-  if(data.pontos>=20 && !data.badges.includes('20 Tarefas')) data.badges.push('20 Tarefas');
-  data.badges.forEach(b=>{
-    let span = document.createElement('span');
-    span.className='badge';
-    span.textContent=b;
-    container.appendChild(span);
+  container.innerHTML = '';
+  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
+    if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
   });
-}
-
-function atualizarProgresso(){
+  data.badges.forEach(b => { const span = document.createElement('span'); span.className = 'badge'; span.textContent = b; container.appendChild(span); });
+};
+const atualizarProgresso = () => {
   const totalTarefas = Object.keys(data.check).length;
-  const concluidas = Object.values(data.check).filter(v => v).length;
+  const concluidas = Object.values(data.check).filter(Boolean).length;
   const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
-  const bar = document.getElementById('progressBar');
-  bar.style.width = perc + '%';
-  bar.textContent = perc + '%';
+  document.getElementById('progressBar').style.width = perc + '%';
+  document.getElementById('progressBar').textContent = perc + '%';
   Object.keys(plano).forEach((semana, idx) => {
     const tarefas = plano[semana];
-    const conclu = tarefas.filter((t,i) => data.check[`s${idx}d${i}`]).length;
+    const conclu = tarefas.filter((_,i)=>data.check[`s${idx}d${i}`]).length;
     const percSemana = tarefas.length ? Math.round((conclu/tarefas.length)*100) : 0;
     const fill = document.getElementById(`semana-progress-fill-${idx}`);
-    if(fill) fill.style.width = percSemana + '%';
     const txt = document.getElementById(`semana-progress-${idx}`);
+    if(fill) fill.style.width = percSemana + '%';
     if(txt) txt.textContent = percSemana + '% concluído';
   });
-}
+};
 
-function checarConfete(idx){
+// --- Confete e histórico ---
+const checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
-  const concluidas = semana.filter((t,i)=>data.check[`s${idx}d${i}`]).length;
-  if(concluidas === semana.length){
-    const confeteContainer = document.getElementById('confete-container');
-    confeteContainer.innerHTML = '🎉'.repeat(20);
-    setTimeout(()=>{ confeteContainer.innerHTML = ''; },1500);
+  if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
+    const confete = document.getElementById('confete-container');
+    confete.innerHTML = '🎉'.repeat(20);
+    setTimeout(()=>confete.innerHTML='',1500);
   }
-}
-
-function adicionarHistorico(semana, tarefa, status){
-  data.historico.push({semana, tarefa, status, timestamp: new Date().toISOString()});
+};
+const adicionarHistorico = (semana, tarefa, status) => {
+  data.historico.push({semana, tarefa, status, timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
-}
+};
 
-function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
-function exportar(){ const json = JSON.stringify(data, null, 2); const blob = new Blob([json], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'checklist.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-function exportarAvancado(){
-  const jsonAvancado = {check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges};
-  const blob = new Blob([JSON.stringify(jsonAvancado, null, 2)], {type: 'application/json'});
+// --- Tema ---
+const toggleTheme = () => { document.body.classList.toggle('dark-mode'); data.dark = document.body.classList.contains('dark-mode'); salvar(); };
+
+// --- Export/Import ---
+const criarDownload = (json, nome) => {
+  const blob = new Blob([JSON.stringify(json,null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'checklist_avancado.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-function gerarPDF(){ const conteudo = document.getElementById('conteudo'); html2pdf().from(conteudo).save('checklist.pdf'); }
+  const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};
+const exportar = () => criarDownload(data,'checklist.json');
+const exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges},'checklist_avancado.json');
+const gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
+const marcarSemana = (idx, marcar) => {
+  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => { chk.checked = marcar; data.check[chk.id] = marcar; });
+  salvar();
+};
 
-function ativarModoRevisao(){
- ativarModoRevisao
-}
+// --- Criação de DOM ---
+const criarTarefa = (semana, idx, t, i) => {
+  const chk = document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked=data.check[chk.id]||false;
+  chk.onchange = ()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked); };
+  const label = document.createElement('label'); label.htmlFor=chk.id; label.textContent=t;
+  const div = document.createElement('div'); div.appendChild(chk); div.appendChild(label); return div;
+};
+const gerarSemana = (semana, tarefas, idx) => {
+  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+  const header=document.createElement('div'); header.className='semana-header';
+  header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
+    <div>
+      <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
+      <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
+    </div>`; div.appendChild(header);
+  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+  const tarefasDiv=document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`; tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i))); div.appendChild(tarefasDiv);
+  return div;
+};
+const gerar = () => { const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); };
 
-// Expor funções globais para os botões
-window.toggleTheme = toggleTheme;
-window.exportar = exportar;
-window.exportarAvancado = exportarAvancado;
-window.gerarPDF = gerarPDF;
-window.ativarModoRevisao = ativarModoRevisao;
+// --- Busca e Collapse ---
+const filtrar = () => { const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); };
+const toggleCollapse = idx => { const el=document.getElementById(`tarefas-${idx}`); el.style.display=el.style.display==='none'?'block':'none'; };
 
-function marcarSemana(idx, marcar){ 
-  const semanaTarefas = document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`); 
-  semanaTarefas.forEach(chk => { chk.checked = marcar; data.check[chk.id] = marcar; }); 
-  salvar(); 
-}
-
-function gerar(){
-  const container=document.getElementById('conteudo'); container.innerHTML='';
-  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
-    let div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
-    let header=document.createElement('div'); header.className='semana-header';
-    header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2><div><button onclick='marcarSemana(${idx},true)'>Marcar todos</button><button onclick='marcarSemana(${idx},false)'>Resetar semana</button></div>`;
-    div.appendChild(header);
-
-    let progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-    let progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
-
-    let tarefasDiv=document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.className='tarefas-div';
-    tarefas.forEach((t,i)=>{
-      const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
-      chk.checked = data.check[chk.id] || false;
-      chk.onchange = ()=>{ 
-        data.check[chk.id]=chk.checked; 
-        salvar(); 
-        atualizarProgresso(); 
-        checarConfete(idx); 
-        adicionarHistorico(semana, t, chk.checked); 
+// --- Limpar e Importar ---
+const limpar = () => {
+  if(confirm("Deseja realmente limpar todos os dados?")){
+    data={check:{},notes:{},dark:false,historico:[],pontos:0,badges:[]};
+    localStorage.removeItem('data'); carregar();
+  }
+};
+const importar = () => {
+  const input=document.createElement('input'); input.type='file'; input.accept='application/json';
+  input.onchange=e=>{
+    const file=e.target.files[0];
+    if(file){
+      const reader=new FileReader();
+      reader.onload=evt=>{
+        try{ data=JSON.parse(evt.target.result); salvar(); carregar(); } catch { alert("Arquivo inválido!"); }
       };
-      tarefasDiv.appendChild(chk);
-      const label=document.createElement('label'); label.htmlFor=chk.id; label.textContent=t;
-      tarefasDiv.appendChild(label);
-      tarefasDiv.appendChild(document.createElement('br'));
+      reader.readAsText(file);
+    }
+  };
+  input.click();
+};
+
+// --- Exportar Calendário ---
+const exportarParaCalendario = () => {
+  let ics="BEGIN:VCALENDAR\nVERSION:2.0\n";
+  Object.keys(plano).forEach((semana, idx)=>{
+    plano[semana].forEach((t,i)=>{
+      if(data.check[`s${idx}d${i}`]) ics+=`BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nEND:VEVENT\n`;
     });
-    div.appendChild(tarefasDiv);
-    container.appendChild(div);
   });
-  atualizarProgresso();
+  ics+="END:VCALENDAR";
+  const blob=new Blob([ics],{type:'text/calendar'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+};
+
+// --- Modo Revisão ---
+function ativarModoRevisao(){
+  modoRevisaoAtivo = !modoRevisaoAtivo;
+  document.querySelectorAll('#conteudo input[type=checkbox]').forEach(chk=>{
+    chk.disabled = modoRevisaoAtivo;
+    const label = chk.nextElementSibling;
+    if(modoRevisaoAtivo){
+      if(!chk.checked) label.style.backgroundColor = '#FFF59D';
+      label.style.padding='2px 5px';
+      label.style.borderRadius='3px';
+    } else {
+      label.style.backgroundColor='';
+      label.style.padding='';
+      label.style.borderRadius='';
+    }
+  });
+  let revisadas=0, total=0;
+  Object.keys(plano).forEach((semana,sIdx)=>{
+    plano[semana].forEach((t,i)=>{
+      total++;
+      if(data.check[`s${sIdx}d${i}`]) revisadas++;
+    });
+  });
+  alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}\nTarefas concluídas: ${revisadas}/${total}`);
 }
 
-function filtrar(){
-  let termo=document.getElementById('busca').value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(semana=>{
-    const texto=semana.innerText.toLowerCase();
-    semana.style.display = texto.includes(termo) ? '' : 'none';
-  });
-}
-
-// Inicializa
-carregar();
+// --- Inicialização ---
+window.onload = carregar;
 </script>
 </body>
 </html>
