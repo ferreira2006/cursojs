@@ -136,8 +136,7 @@ function exportarAvancado(){
 function gerarPDF(){ const conteudo = document.getElementById('conteudo'); html2pdf().from(conteudo).save('checklist.pdf'); }
 
 function ativarModoRevisao(){
-  modoRevisaoAtivo = !modoRevisaoAtivo; 
-  alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado')); 
+ ativarModoRevisao
 }
 
 // Expor funções globais para os botões
