@@ -50,7 +50,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
-// cores e plano
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
   "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis (let, const, var) e tipos de dados.","Operadores matemáticos e de comparação.","Operadores lógicos (&&, ||, !).","Exercícios práticos (mini-calculadora, olá usuário)."],
@@ -63,124 +62,165 @@ const plano={
   "Semana 8 – Projeto Final":["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
-// dados e estado
 let data=JSON.parse(localStorage.getItem('data'))||{check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
 let modoRevisaoAtivo=false;
 
-// salvamento e carregamento
-function salvar(){ localStorage.setItem('data',JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); }
-function carregar(){ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); }
+const salvar = () => {
+  localStorage.setItem('data',JSON.stringify(data));
+  atualizarEstatisticas();
+  atualizarBadges();
+  atualizarProgresso();
+};
 
-// estatísticas
-function atualizarEstatisticas(){
-  let total=0, concluidas=0;
+const carregar = () => {
+  gerar();
+  if(data.dark) document.body.classList.add('dark-mode');
+  atualizarProgresso();
+  atualizarBadges();
+};
+
+// --- Estatísticas e progresso ---
+const atualizarEstatisticas = () => {
+  let concluidas=0;
   Object.keys(plano).forEach((semana, idx)=>{
-    let tarefas = plano[semana];
-    total += tarefas.length;
-    tarefas.forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; });
+    plano[semana].forEach((_,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; });
   });
   data.pontos=concluidas;
-}
+};
 
-function atualizarBadges(){
+const atualizarBadges = () => {
   const container = document.getElementById('badges-container');
   container.innerHTML='';
-  if(data.pontos>=10 && !data.badges.includes('10 Tarefas')) data.badges.push('10 Tarefas');
-  if(data.pontos>=20 && !data.badges.includes('20 Tarefas')) data.badges.push('20 Tarefas');
-  data.badges.forEach(b=>{
-    let span = document.createElement('span');
+  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
+    if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
+  });
+  data.badges.forEach(badge => {
+    const span=document.createElement('span');
     span.className='badge';
-    span.textContent=b;
+    span.textContent=badge;
     container.appendChild(span);
   });
-}
+};
 
-function atualizarProgresso(){
+const atualizarProgresso = () => {
   const totalTarefas = Object.keys(data.check).length;
-  const concluidas = Object.values(data.check).filter(v => v).length;
+  const concluidas = Object.values(data.check).filter(Boolean).length;
   const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
   const bar = document.getElementById('progressBar');
   bar.style.width = perc + '%';
   bar.textContent = perc + '%';
-  Object.keys(plano).forEach((semana, idx) => {
+
+  Object.keys(plano).forEach((semana, idx)=>{
     const tarefas = plano[semana];
-    const conclu = tarefas.filter((t,i) => data.check[`s${idx}d${i}`]).length;
+    const conclu = tarefas.filter((_,i) => data.check[`s${idx}d${i}`]).length;
     const percSemana = tarefas.length ? Math.round((conclu/tarefas.length)*100) : 0;
     const fill = document.getElementById(`semana-progress-fill-${idx}`);
-    if(fill) fill.style.width = percSemana + '%';
     const txt = document.getElementById(`semana-progress-${idx}`);
+    if(fill) fill.style.width = percSemana + '%';
     if(txt) txt.textContent = percSemana + '% concluído';
   });
-}
+};
 
-// confete e histórico
-function checarConfete(idx){
+// --- Funções utilitárias ---
+const checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
-  const concluidas = semana.filter((t,i)=>data.check[`s${idx}d${i}`]).length;
-  if(concluidas === semana.length){
-    const confeteContainer = document.getElementById('confete-container');
-    confeteContainer.innerHTML = '🎉'.repeat(20);
-    setTimeout(()=>{ confeteContainer.innerHTML = ''; },1500);
+  if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
+    const confete = document.getElementById('confete-container');
+    confete.innerHTML='🎉'.repeat(20);
+    setTimeout(()=>confete.innerHTML='',1500);
   }
-}
+};
 
-function adicionarHistorico(semana, tarefa, status){
-  data.historico.push({semana, tarefa, status, timestamp: new Date().toISOString()});
+const adicionarHistorico = (semana, tarefa, status) => {
+  data.historico.push({semana,tarefa,status,timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
-}
+};
 
-// funcionalidades principais
-function toggleTheme(){ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); }
-function exportar(){ const json = JSON.stringify(data,null,2); const blob = new Blob([json],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='checklist.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-function exportarAvancado(){ const jsonAvancado={check:data.check,notes:data.notes,historico:data.historico,pontos:data.pontos,badges:data.badges}; const blob=new Blob([JSON.stringify(jsonAvancado,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='checklist_avancado.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
-function gerarPDF(){ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); }
-function ativarModoRevisao(){ modoRevisaoAtivo = !modoRevisaoAtivo; alert('Modo Revisão ' + (modoRevisaoAtivo ? 'Ativado' : 'Desativado')); }
-function marcarSemana(idx, marcar){ document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvar(); }
-function filtrar(){ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); }
+// --- Tema ---
+const toggleTheme = () => {
+  document.body.classList.toggle('dark-mode');
+  data.dark = document.body.classList.contains('dark-mode');
+  salvar();
+};
 
-// gerar checklist
-function gerar(){
-  const container=document.getElementById('conteudo');
+// --- Export/Import ---
+const exportar = () => {
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download='checklist.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+const exportarAvancado = () => {
+  const advanced={check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges};
+  const blob = new Blob([JSON.stringify(advanced,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='checklist_avancado.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+};
+
+const gerarPDF = () => { html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); };
+
+const marcarSemana = (idx,marcar) => {
+  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => {
+    chk.checked=marcar;
+    data.check[chk.id]=marcar;
+  });
+  salvar();
+};
+
+// --- Gerar interface ---
+const gerar = () => {
+  const container = document.getElementById('conteudo');
   container.innerHTML='';
   Object.entries(plano).forEach(([semana,tarefas],idx)=>{
-    const div=document.createElement('div');
+    const div = document.createElement('div');
     div.className='semana';
     div.style.background=coresSemana[idx%coresSemana.length];
 
-    const header=document.createElement('div');
+    const header = document.createElement('div');
     header.className='semana-header';
     header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
-                      <div>
-                        <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
-                        <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
-                      </div>`;
+      <div>
+        <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
+        <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
+      </div>`;
     div.appendChild(header);
 
-    const progresso=document.createElement('div');
+    const progresso = document.createElement('div');
     progresso.className='semana-progress';
     progresso.id=`semana-progress-${idx}`;
     div.appendChild(progresso);
 
-    const progressBar=document.createElement('div');
+    const progressBar = document.createElement('div');
     progressBar.className='semana-progress-bar';
     progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
     div.appendChild(progressBar);
 
-    const tarefasDiv=document.createElement('div');
+    const tarefasDiv = document.createElement('div');
     tarefasDiv.id=`tarefas-${idx}`;
     tarefas.forEach((t,i)=>{
-      const chk=document.createElement('input');
+      const chk = document.createElement('input');
       chk.type='checkbox';
       chk.id=`s${idx}d${i}`;
-      chk.checked=data.check[chk.id]||false;
-      chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked); };
-      tarefasDiv.appendChild(chk);
-
-      const label=document.createElement('label');
-     
+      chk.checked = data.check[chk.id]||false;
+      chk.onchange = ()=>{ 
+        data.check[chk.id]=chk.checked;
+        salvar();
+        atualizarProgresso();
+        checarConfete(idx);
+        adicionarHistorico(semana,t,chk.checked);
+      };
+      const label = document.createElement('label');
       label.htmlFor = chk.id;
       label.textContent = t;
+      tarefasDiv.appendChild(chk);
       tarefasDiv.appendChild(label);
       tarefasDiv.appendChild(document.createElement('br'));
     });
@@ -188,49 +228,54 @@ function gerar(){
     div.appendChild(tarefasDiv);
     container.appendChild(div);
   });
-
   atualizarProgresso();
-}
+};
 
-// colapsar/expandir
-function toggleCollapse(idx){
-  const tarefasDiv = document.getElementById(`tarefas-${idx}`);
-  tarefasDiv.style.display = tarefasDiv.style.display === 'none' ? 'block' : 'none';
-}
+// --- Busca ---
+const filtrar = () => {
+  const termo = document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(div => {
+    div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none';
+  });
+};
 
-// limpar todos dados
-function limpar(){
+// --- Collapse ---
+const toggleCollapse = idx => {
+  const el = document.getElementById(`tarefas-${idx}`);
+  el.style.display = el.style.display==='none'?'block':'none';
+};
+
+// --- Limpar dados ---
+const limpar = () => {
   if(confirm("Deseja realmente limpar todos os dados?")){
     data={check:{},notes:{},dark:false,importante:{},historico:[],pontos:0,badges:[]};
     localStorage.removeItem('data');
     carregar();
   }
-}
+};
 
-// importar JSON
-function importar(){
+// --- Importar JSON ---
+const importar = () => {
   const input = document.createElement('input');
-  input.type='file';
-  input.accept='application/json';
-  input.onchange=e=>{
+  input.type='file'; input.accept='application/json';
+  input.onchange = e => {
     const file = e.target.files[0];
     if(file){
       const reader = new FileReader();
       reader.onload = evt => {
         try{
           data = JSON.parse(evt.target.result);
-          salvar();
-          carregar();
-        }catch(err){ alert("Arquivo inválido!"); }
+          salvar(); carregar();
+        }catch{ alert("Arquivo inválido!"); }
       };
       reader.readAsText(file);
     }
   };
   input.click();
-}
+};
 
-// exportar calendário (simples exemplo)
-function exportarParaCalendario(){
+// --- Exportar calendário ---
+const exportarParaCalendario = () => {
   let ics = "BEGIN:VCALENDAR\nVERSION:2.0\n";
   Object.keys(plano).forEach((semana,idx)=>{
     plano[semana].forEach((t,i)=>{
@@ -239,20 +284,20 @@ function exportarParaCalendario(){
       }
     });
   });
-  ics += "END:VCALENDAR";
+  ics+="END:VCALENDAR";
   const blob = new Blob([ics],{type:'text/calendar'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'checklist.ics';
+  a.href = url; a.download='checklist.ics';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
+};
 
 // iniciar app
 window.onload=carregar;
 </script>
+
 </body>
 </html>
