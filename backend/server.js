@@ -8,20 +8,18 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Variáveis de ambiente
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = 'https://cursojs-8012.onrender.com/auth-url'; // URI do Render
 const PORT = process.env.PORT || 5000;
+const REDIRECT_URI = `https://cursojs-8012.onrender.com/oauth2callback`;
 
-// OAuth2 Client
 const oAuth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
   REDIRECT_URI
 );
 
-// Endpoint para gerar URL de autenticação
+// Gera URL de login
 app.get('/auth-url', (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -30,12 +28,27 @@ app.get('/auth-url', (req, res) => {
   res.json({ url });
 });
 
-// Endpoint para salvar dados
+// Callback OAuth
+app.get('/oauth2callback', async (req, res) => {
+  const code = req.query.code;
+  if (!code) return res.send('Erro: código não fornecido');
+
+  try {
+    const { tokens } = await oAuth2Client.getToken(code);
+    oAuth2Client.setCredentials(tokens);
+    // Redireciona para frontend com token em query string (simples)
+    res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Erro ao trocar código pelo token');
+  }
+});
+
+// Salvar dados no Drive
 app.post('/save', async (req, res) => {
   try {
     const { token, filename, content } = req.body;
-    if (!token || !filename || !content)
-      return res.status(400).json({ error: 'Token, filename e content são obrigatórios.' });
+    if (!token || !filename || !content) return res.status(400).json({ error: 'Token, filename e content são obrigatórios' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
@@ -45,7 +58,7 @@ app.post('/save', async (req, res) => {
 
     const existing = await drive.files.list({
       q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)',
+      fields: 'files(id, name)'
     });
 
     if (existing.data.files.length) {
@@ -61,19 +74,18 @@ app.post('/save', async (req, res) => {
   }
 });
 
-// Endpoint para carregar dados
+// Carregar dados do Drive
 app.post('/load', async (req, res) => {
   try {
     const { token, filename } = req.body;
-    if (!token || !filename)
-      return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
+    if (!token || !filename) return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
     const files = await drive.files.list({
       q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)',
+      fields: 'files(id, name)'
     });
 
     if (!files.data.files.length) return res.status(404).json({ error: 'Arquivo não encontrado.' });
@@ -87,5 +99,4 @@ app.post('/load', async (req, res) => {
   }
 });
 
-// Inicia servidor
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
