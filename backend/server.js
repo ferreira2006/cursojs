@@ -1,10 +1,7 @@
 import express from "express";
 import { google } from "googleapis";
-import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,13 +12,13 @@ const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(express.json());
-app.use(express.static(path.join(__dirname, ".."))); // serve arquivos da raiz (index.html, success.html)
+app.use(express.static(path.join(__dirname, ".."))); // serve arquivos da raiz (index.html, etc)
 
 // Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  "https://cursojs-8012.onrender.com/oauth2callback" // Redirect URI configurado no console do Google
+  process.env.CLIENT_ID,
+  process.env.CLIENT_SECRET,
+  "https://cursojs-8012.onrender.com/oauth2callback" // BASE_URL é sua URL do Render, ex: https://meuapp.onrender.com
 );
 
 // 🔹 Gera a URL de login do Google
@@ -34,15 +31,15 @@ app.get("/auth-url", (req, res) => {
   res.json({ url });
 });
 
-// 🔹 Callback do Google (troca code por token)
+// 🔹 Callback do Google (troca code por token e redireciona para index.html)
 app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
-    // Redireciona para success.html com o token na query string
-    res.redirect(`/success.html?token=${encodeURIComponent(JSON.stringify(tokens))}`);
+    // Redireciona para index.html com token na query string
+    res.redirect(`/index.html?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error("Erro ao trocar code por token:", err);
     res.status(500).send("Erro na autenticação");
