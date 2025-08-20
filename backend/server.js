@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public"))); // pasta frontend
+app.use(express.static(path.join(__dirname, "frontend"))); // pasta frontend
 
 // Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
