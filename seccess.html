@@ -1,1 +1,23 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login concluído</title>
+</head>
+<body>
+  <h2>Login realizado com sucesso! 🎉</h2>
+  <p>Você pode fechar esta janela.</p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (token) {
+      // Envia token para a janela que abriu o popup
+      window.opener.postMessage({ token: JSON.parse(token) }, "*");
+      window.close(); // Fecha o popup automaticamente
+    }
+  </script>
+</body>
+</html>
