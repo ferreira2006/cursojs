@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist v3 - JavaScript Avançado</title>
+<title>Checklist v3 Industrial - JavaScript Avançado</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
@@ -59,96 +59,75 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 // ================= BACKEND URL =================
 const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 
-// ================= LOGIN GOOGLE =================
-window.addEventListener('load', () => {
-  const params = new URLSearchParams(window.location.search);
-  const tokenStr = params.get('token');
-  if(tokenStr){
-    try {
-      const token = JSON.parse(decodeURIComponent(tokenStr));
-      localStorage.setItem('googleToken', JSON.stringify(token));
-      console.log('Token do Google salvo localmente');
-      window.history.replaceState({}, document.title, window.location.pathname);
-      alert('Login Google concluído! Token salvo localmente.');
-    } catch(e){
-      console.error("Erro ao processar token do Google:", e);
-    }
-  }
-});
-
-function loginGoogle() {
-  fetch(`${BACKEND_URL}/auth-url`)
-    .then(res=>res.json())
-    .then(data=>{
-      const popup = window.open(data.url, "loginGoogle", "width=500,height=600");
-      window.addEventListener("message", function(event){
-        if(event.data.googleToken){
-          localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
-          alert('Login Google concluído! Token salvo localmente.');
-          popup.close();
-        }
-      }, { once:true });
-    });
-}
-
-// ================= SALVAR NO GOOGLE DRIVE =================
-function salvarNoDrive() {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) return alert('Você precisa fazer login no Google antes.');
-
-  // Salva exatamente o JSON local, igual ao exportar
-  fetch(`${BACKEND_URL}/save`, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token, filename:'checklist.json', content: data })
-  })
-  .then(res => res.json())
-  .then(resp => {
-    if(resp.success) alert('Checklist salvo com sucesso no Google Drive!');
-    else alert('Erro ao salvar: ' + (resp.error || 'desconhecido'));
-  })
-  .catch(err => alert('Erro ao salvar no Google Drive: ' + err));
-}
-
 // ================= CHECKLIST =================
 let data = {};
-const conteudo = document.getElementById('conteudo');
-const badgesContainer = document.getElementById('badges-container');
+
+// Estrutura inicial: semanas e tarefas
+const SEMANAS = 12;
+function initData(){
+  for(let i=1;i<=SEMANAS;i++){
+    if(!data[i]) data[i]={nota:"", tarefas:[], importante:false};
+  }
+}
+
+const conteudo=document.getElementById('conteudo');
+const badgesContainer=document.getElementById('badges-container');
 
 function carregar(){
-  const salvo = localStorage.getItem('checklistData');
-  if(salvo) data = JSON.parse(salvo);
+  const salvo=localStorage.getItem('checklistData');
+  if(salvo) data=JSON.parse(salvo);
+  initData();
   gerarSemanas();
   atualizarProgresso();
   atualizarBadges();
 }
 
 function gerarSemanas(){
-  conteudo.innerHTML = "";
-  for(let i=1;i<=10;i++){
-    const semana = document.createElement('div');
-    semana.className = "semana";
-    semana.innerHTML = `
+  conteudo.innerHTML="";
+  for(let i=1;i<=SEMANAS;i++){
+    const semana=document.createElement('div');
+    semana.className="semana";
+    const tarefasHTML=(data[i].tarefas||[]).map((t,j)=>`
+      <div>
+        <input type="checkbox" ${t.concluido?"checked":""} onchange="marcarTarefa(${i},${j},this.checked)">
+        <span>${t.titulo}</span>
+      </div>
+    `).join("");
+    semana.innerHTML=`
       <div class="semana-header">
         <h2 onclick="toggleSemana(this)">Semana ${i}</h2>
         <span class="importante" onclick="marcarImportante(${i})">★</span>
       </div>
-      <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i}, this.value)">${data[i]?.nota || ""}</textarea>
-      <div class="semana-progress">${data[i]?.progresso || 0}% concluído</div>
-      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${data[i]?.progresso || 0}%"></div></div>
+      <div>${tarefasHTML}</div>
+      <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i},this.value)">${data[i].nota}</textarea>
+      <div class="semana-progress">${data[i].progresso||0}% concluído</div>
+      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${data[i].progresso||0}%"></div></div>
     `;
     conteudo.appendChild(semana);
   }
 }
 
-function salvarNota(semana, texto){
-  if(!data[semana]) data[semana] = {};
-  data[semana].nota = texto;
+function salvarNota(semana,texto){
+  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
+  data[semana].nota=texto;
+  salvar();
+}
+
+function marcarImportante(semana){
+  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
+  data[semana].importante=!data[semana].importante;
+  salvar();
+}
+
+function marcarTarefa(semana,idx,concluido){
+  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
+  if(!data[semana].tarefas[idx]) data[semana].tarefas[idx]={titulo:"",concluido:0};
+  data[semana].tarefas[idx].concluido=concluido?1:0;
   salvar();
 }
 
 function salvar(){
-  localStorage.setItem('checklistData', JSON.stringify(data));
+  localStorage.setItem('checklistData',JSON.stringify(data));
   atualizarProgresso();
   atualizarBadges();
 }
@@ -157,28 +136,32 @@ function toggleSemana(el){
   el.parentElement.parentElement.querySelector('.nota').classList.toggle('hidden');
 }
 
-function marcarImportante(semana){
-  if(!data[semana]) data[semana] = {};
-  data[semana].importante = !data[semana].importante;
-  salvar();
-}
-
 function atualizarProgresso(){
-  let total=0, concluidos=0;
-  for(let i in data){
-    total++;
-    if(data[i].nota && data[i].nota.trim()!=="") concluidos++;
+  for(let i=1;i<=SEMANAS;i++){
+    const semana=data[i];
+    const concluidos=(semana.tarefas||[]).filter(t=>t.concluido).length;
+    const total=(semana.tarefas||[]).length;
+    semana.progresso=total?Math.round(concluidos/total*100):0;
   }
-  const perc = total? Math.round((concluidos/total)*100):0;
-  document.getElementById('progressBar').style.width = perc+"%";
-  document.getElementById('progressBar').textContent = perc+"%";
+  const totalSemanas=SEMANAS;
+  const totalConcluidos=Object.values(data).reduce((acc,s)=>acc+(s.progresso||0),0);
+  const perc=Math.round(totalConcluidos/totalSemanas);
+  document.getElementById('progressBar').style.width=perc+"%";
+  document.getElementById('progressBar').textContent=perc+"%";
+
+  // Atualiza barras por semana
+  document.querySelectorAll('.semana').forEach((s,i)=>{
+    const fill=s.querySelector('.semana-progress-fill');
+    fill.style.width=(data[i+1].progresso||0)+"%";
+    s.querySelector('.semana-progress').textContent=(data[i+1].progresso||0)+"% concluído";
+  });
 }
 
 function atualizarBadges(){
   badgesContainer.innerHTML="";
-  for(let i in data){
+  for(let i=1;i<=SEMANAS;i++){
     if(data[i].importante){
-      const badge = document.createElement('div');
+      const badge=document.createElement('div');
       badge.className="badge";
       badge.textContent="Semana "+i+" ★";
       badgesContainer.appendChild(badge);
@@ -186,18 +169,19 @@ function atualizarBadges(){
   }
 }
 
+// ================= EXPORT/IMPORT =================
 function exportar(){
-  const blob = new Blob([JSON.stringify(data)],{type:"application/json"});
-  const a = document.createElement('a');
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download="checklist.json";
   a.click();
 }
 
 function exportarAvancado(){
-  const avancado = { data, exportadoEm:new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(avancado)],{type:"application/json"});
-  const a = document.createElement('a');
+  const avancado={data,exportadoEm:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"});
+  const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download="checklist-avancado.json";
   a.click();
@@ -211,6 +195,7 @@ function importar(){
     const reader=new FileReader();
     reader.onload=()=>{
       data=JSON.parse(reader.result);
+      initData();
       salvar();
       gerarSemanas();
     };
@@ -223,6 +208,7 @@ function limpar(){
   if(confirm("Deseja realmente limpar tudo?")){
     localStorage.removeItem('checklistData');
     data={};
+    initData();
     gerarSemanas();
     atualizarProgresso();
     atualizarBadges();
@@ -247,7 +233,7 @@ function ativarModoRevisao(){
 
 function exportarParaCalendario(){
   let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
-  for(let i in data){
+  for(let i=1;i<=SEMANAS;i++){
     if(data[i].nota){
       ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
     }
@@ -260,11 +246,57 @@ function exportarParaCalendario(){
   a.click();
 }
 
-function toggleTheme(){
-  document.body.classList.toggle('dark-mode');
+// ================= THEME =================
+function toggleTheme(){document.body.classList.toggle('dark-mode');}
+
+// ================= LOGIN GOOGLE =================
+window.addEventListener('load',()=>{
+  const params=new URLSearchParams(window.location.search);
+  const tokenStr=params.get('token');
+  if(tokenStr){
+    try{
+      const token=JSON.parse(decodeURIComponent(tokenStr));
+      localStorage.setItem('googleToken',JSON.stringify(token));
+      console.log('Token do Google salvo localmente');
+      window.history.replaceState({},document.title,window.location.pathname);
+      alert('Login Google concluído! Token salvo localmente.');
+    }catch(e){console.error("Erro ao processar token do Google:",e);}
+  }
+});
+
+function loginGoogle(){
+  fetch(`${BACKEND_URL}/auth-url`)
+    .then(res=>res.json())
+    .then(data=>{
+      const popup=window.open(data.url,"loginGoogle","width=500,height=600");
+      window.addEventListener("message",function(event){
+        if(event.data.googleToken){
+          localStorage.setItem('googleToken',JSON.stringify(event.data.googleToken));
+          alert('Login Google concluído! Token salvo localmente.');
+          popup.close();
+        }
+      },{once:true});
+    });
 }
 
-window.onload = carregar;
+function salvarNoDrive(){
+  const token=JSON.parse(localStorage.getItem('googleToken'));
+  if(!token) return alert('Você precisa fazer login no Google antes.');
+
+  fetch(`${BACKEND_URL}/save`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token,filename:'checklist.json',content:data})
+  })
+  .then(res=>res.json())
+  .then(resp=>{
+    if(resp.success) alert('Checklist salvo com sucesso no Google Drive!');
+    else alert('Erro ao salvar: '+(resp.error||'desconhecido'));
+  })
+  .catch(err=>alert('Erro ao salvar no Google Drive: '+err));
+}
+
+window.onload=carregar;
 </script>
 </body>
 </html>
