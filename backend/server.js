@@ -42,9 +42,7 @@ app.get("/oauth2callback", async (req, res) => {
     oAuth2Client.setCredentials(tokens);
 
     // Redireciona para página estática com token
-    res.redirect(
-      `/success.html?token=${encodeURIComponent(JSON.stringify(tokens))}`
-    );
+   res.redirect(`/success.html?token=${encodeURIComponent(JSON.stringify(token))}`);
   } catch (err) {
     console.error("Erro ao trocar code por token:", err);
     res.status(500).send("Erro na autenticação");
