@@ -59,6 +59,9 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+// --- URL do backend no Render ---
+const BACKEND_URL = 'https://cursojs-8012.onrender.com';
+
 // --- Captura token do Google na query string ---
 window.addEventListener('load', () => {
   const params = new URLSearchParams(window.location.search);
@@ -68,7 +71,6 @@ window.addEventListener('load', () => {
       const token = JSON.parse(decodeURIComponent(tokenStr));
       localStorage.setItem('googleToken', JSON.stringify(token));
       console.log('Token do Google salvo localmente');
-      // Limpa a query string
       window.history.replaceState({}, document.title, window.location.pathname);
       alert('Login Google concluído! Token salvo localmente.');
     } catch(e){
@@ -118,10 +120,10 @@ const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\n"; let
 
 // --- Google Drive integrado ---
 function loginGoogle() {
-  fetch('/auth-url')
+  fetch(`${BACKEND_URL}/auth-url`)
     .then(res => res.json())
     .then(data => {
-      window.location.href = data.url; // redireciona para login do Google
+      window.location.href = data.url;
     });
 }
 
@@ -129,7 +131,7 @@ function salvarNoDrive() {
   const token = JSON.parse(localStorage.getItem('googleToken'));
   if (!token) return alert('Você precisa fazer login no Google antes.');
 
-  fetch('/save', {
+  fetch(`${BACKEND_URL}/save`, {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
     body: JSON.stringify({ token, filename:'checklist.json', content: data })
