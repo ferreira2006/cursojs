@@ -43,6 +43,7 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
   <button onclick="loginGoogle()">Login Google</button>
   <button onclick="salvarNoDrive()">Salvar no Drive</button>
+  <button onclick="carregarDoDrive()">Carregar do Drive</button>
 </div>
 
 <div id="badges-container"></div>
@@ -67,7 +68,7 @@ const plano = {
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
 let modoRevisaoAtivo = false;
 
-// --- Funções principais ---
+// --- Funções antigas v3 ---
 const salvar = ()=>{ localStorage.setItem('data', JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); };
 const carregar = ()=>{ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); if(modoRevisaoAtivo) ativarModoRevisao(); };
 const atualizarEstatisticas = ()=>{ let concluidas=0; Object.keys(plano).forEach((semana,idx)=>{ plano[semana].forEach((_,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; }); }); data.pontos=concluidas; };
@@ -91,21 +92,78 @@ const limpar=()=>{ if(confirm("Deseja realmente limpar todos os dados?")){ data=
 const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ const file=e.target.files[0]; if(file){ const reader=new FileReader(); reader.onload=evt=>{ try{ data=JSON.parse(evt.target.result); salvar(); carregar(); } catch{ alert("Arquivo inválido!"); } }; reader.readAsText(file); } }; input.click(); };
 const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\n"; let baseDate=new Date(); Object.keys(plano).forEach((semana,idx)=>{ plano[semana].forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]){ let dt=new Date(baseDate.getTime()+idx*7*24*60*60*1000); let dtStr=dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; ics+=`BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${dtStr}\nEND:VEVENT\n`; } }); }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
-// --- Integração Google Drive ---
-function loginGoogle(){
-  fetch('https://cursojs-8012.onrender.com/auth-url')
-    .then(res=>res.json())
-    .then(data=>{ window.open(data.url,'_blank'); alert('Após autorizar, o backend armazenará o token automaticamente.'); });
+// --- Integração Google Drive com token real do backend ---
+async function loginGoogle() {
+  try {
+    const res = await fetch('https://cursojs-8012.onrender.com/auth-url');
+    const dataUrl = await res.json();
+    const authWindow = window.open(dataUrl.url, '_blank', 'width=500,height=600');
+    const checkClosed = setInterval(async () => {
+      if (authWindow.closed) {
+        clearInterval(checkClosed);
+        const tokenRes = await fetch('https://cursojs-8012.onrender.com/get-token');
+        const tokenData = await tokenRes.json();
+        if (tokenData.token) {
+          localStorage.setItem('googleToken', JSON.stringify(tokenData.token));
+          alert('Login Google realizado com sucesso!');
+        } else {
+          alert('Não foi possível obter o token do Google.');
+        }
+      }
+    }, 500);
+  } catch (err) {
+    console.error(err);
+    alert('Erro no login Google.');
+  }
 }
-function salvarNoDrive(){
-  fetch('https://cursojs-8012.onrender.com/save',{
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body: JSON.stringify({ token: null, filename:'checklist.json', content:data })
-  })
-  .then(res=>res.json())
-  .then(resp=>alert(resp.success?'Checklist salvo no Google Drive!':resp.error))
-  .catch(err=>console.error(err));
+
+async function salvarNoDrive() {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) return alert('Você precisa fazer login no Google antes de salvar.');
+  try {
+    const res = await fetch('https://cursojs-8012.onrender.com/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        filename: 'checklist.json',
+        content: data
+      })
+    });
+    const resp = await res.json();
+    if (resp.success) {
+      alert('Checklist salvo no Google Drive!');
+    } else {
+      alert('Erro: ' + resp.error);
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao salvar no Google Drive.');
+  }
+}
+
+async function carregarDoDrive() {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) return alert('Você precisa fazer login no Google antes de carregar.');
+  try {
+    const res = await fetch('https://cursojs-8012.onrender.com/load', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, filename: 'checklist.json' })
+    });
+    const resp = await res.json();
+    if (resp.content) {
+      data = resp.content;
+      salvar();
+      carregar();
+      alert('Checklist carregado do Google Drive!');
+    } else {
+      alert('Arquivo não encontrado no Google Drive.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Erro ao carregar do Google Drive.');
+  }
 }
 
 window.onload = carregar;
