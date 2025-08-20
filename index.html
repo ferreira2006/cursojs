@@ -2,14 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist de Estudo - JavaScript Avançado v2</title>
+<title>Checklist de Estudo - JavaScript Avançado v3</title>
 <style>
   body { font-family: Arial, sans-serif; margin:10px; transition: background 0.3s, color 0.3s; }
   .dark-mode { background:#1e1e1e; color:#f4f4f9; }
   h2 { margin-top:0; cursor:pointer; }
   .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s; }
   .semana.modo-revisao { background: #fff3cd !important; }
-  .nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
+  .nota { width:100%; min-height:50px; margin-top:5px; padding:6px; border-radius:4px; border:1px solid #ccc; }
   .top-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
   .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
   .progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:white; line-height:20px; transition: width 0.3s; }
@@ -23,7 +23,7 @@
   button:hover { background-color:#45a049; }
   input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
-  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; font-size:24px; }
   .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
   .tempo { font-size:0.8em; color:#555; margin-left:5px; }
   #badges-container { margin-bottom:10px; }
@@ -41,6 +41,7 @@
   <button onclick="gerarPDF()">Exportar PDF</button>
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
+  <button onclick="undo()">Undo</button>
 </div>
 
 <div id="badges-container"></div>
@@ -73,13 +74,6 @@ const salvar = () => {
   atualizarProgresso();
 };
 
-const carregar = () => {
-  gerar();
-  if(data.dark) document.body.classList.add('dark-mode');
-  atualizarProgresso();
-  atualizarBadges();
-};
-
 // --- Estatísticas ---
 const atualizarEstatisticas = () => {
   let concluidas = 0;
@@ -89,10 +83,11 @@ const atualizarEstatisticas = () => {
   data.pontos = concluidas;
 };
 
+// --- Badges ---
 const atualizarBadges = () => {
   const container = document.getElementById('badges-container');
   container.innerHTML = '';
-  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
+  ['10 Tarefas','20 Tarefas','30 Tarefas','50 Tarefas'].forEach((b, i)=>{
     if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
   });
   data.badges.forEach(b => {
@@ -103,6 +98,7 @@ const atualizarBadges = () => {
   });
 };
 
+// --- Progresso ---
 const atualizarProgresso = () => {
   const totalTarefas = Object.keys(data.check).length;
   const concluidas = Object.values(data.check).filter(Boolean).length;
@@ -121,20 +117,35 @@ const atualizarProgresso = () => {
   });
 };
 
-// --- Funções utilitárias ---
+// --- Confete ---
 const checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
   if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
     const confete = document.getElementById('confete-container');
-    confete.innerHTML = '🎉'.repeat(20);
+    confete.innerHTML = '🎉'.repeat(30);
     setTimeout(()=>confete.innerHTML='',1500);
   }
 };
 
+// --- Histórico ---
 const adicionarHistorico = (semana, tarefa, status) => {
   data.historico.push({semana, tarefa, status, timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
+};
+
+// --- Undo ---
+const undo = () => {
+  if(data.historico.length===0){ alert("Nada para desfazer"); return; }
+  const last = data.historico.pop();
+  const idxSemana = Object.keys(plano).indexOf(last.semana);
+  const idxTarefa = plano[last.semana].indexOf(last.tarefa);
+  if(idxSemana>=0 && idxTarefa>=0){
+    const key = `s${idxSemana}d${idxTarefa}`;
+    data.check[key] = !last.status;
+    salvar();
+    gerar();
+  }
 };
 
 // --- Tema ---
@@ -173,27 +184,36 @@ const ativarModoRevisao = () => {
   alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}`);
 };
 
-// --- Criação de DOM modular ---
+// --- Criação de DOM ---
 const criarTarefa = (semana, idx, t, i) => {
+  const div = document.createElement('div');
+  div.style.marginBottom='6px';
+
   const chk = document.createElement('input');
   chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
   chk.onchange = ()=>{
     data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked);
-    if(modoRevisaoAtivo) ativarModoRevisao(); // atualiza visual
+    if(modoRevisaoAtivo) ativarModoRevisao();
   };
 
   const label = document.createElement('label'); label.htmlFor = chk.id; label.textContent = t;
+  label.style.marginRight='5px';
 
-  const div = document.createElement('div');
+  const nota = document.createElement('textarea');
+  nota.className='nota'; nota.placeholder='Adicionar nota...';
+  nota.value = data.notes[chk.id]||'';
+  nota.oninput = ()=>{ data.notes[chk.id]=nota.value; salvar(); };
+
   div.appendChild(chk);
   div.appendChild(label);
+  div.appendChild(nota);
+
   return div;
 };
 
 const gerarSemana = (semana, tarefas, idx) => {
   const div = document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
 
-  // Header
   const header = document.createElement('div'); header.className='semana-header';
   header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
     <div>
@@ -202,13 +222,11 @@ const gerarSemana = (semana, tarefas, idx) => {
     </div>`;
   div.appendChild(header);
 
-  // Progresso
   const progresso = document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
   const progressBar = document.createElement('div'); progressBar.className='semana-progress-bar';
   progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
   div.appendChild(progressBar);
 
-  // Tarefas
   const tarefasDiv = document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`;
   tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
   div.appendChild(tarefasDiv);
@@ -226,7 +244,9 @@ const gerar = () => {
 // --- Busca e Collapse ---
 const filtrar = () => {
   const termo = document.getElementById('busca').value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(div => { div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none'; });
+  document.querySelectorAll('.semana').forEach(div => {
+    div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none';
+  });
 };
 const toggleCollapse = idx => {
   const el = document.getElementById(`tarefas-${idx}`);
@@ -241,7 +261,6 @@ const limpar = () => {
     carregar();
   }
 };
-
 const importar = () => {
   const input = document.createElement('input'); input.type='file'; input.accept='application/json';
   input.onchange = e => {
@@ -264,7 +283,7 @@ const exportarParaCalendario = () => {
   Object.keys(plano).forEach((semana, idx)=>{
     plano[semana].forEach((t,i)=>{
       if(data.check[`s${idx}d${i}`]){
-        let dt = new Date(baseDate.getTime() + idx*7*24*60*60*1000); // + semanas
+        let dt = new Date(baseDate.getTime() + idx*7*24*60*60*1000);
         let dtStr = dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
         ics += `BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${dtStr}\nEND:VEVENT\n`;
       }
