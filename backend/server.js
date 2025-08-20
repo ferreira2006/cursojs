@@ -8,11 +8,17 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// --- Configuração CSP ---
+// --- CSP mínima e segura ---
 app.use((req, res, next) => {
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; img-src 'self';"
+    "default-src 'self'; " +
+    "style-src 'self' https://fonts.googleapis.com; " + // Google Fonts
+    "font-src https://fonts.gstatic.com; " + // Fonts do Google
+    "script-src 'self' https://cdnjs.cloudflare.com; " + // html2pdf.js
+    "connect-src 'self' https://accounts.google.com https://www.googleapis.com; " + // OAuth + Drive API
+    "img-src 'self' data:; " +
+    "frame-src https://accounts.google.com;"
   );
   next();
 });
@@ -45,7 +51,6 @@ app.get('/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    // Redireciona para frontend com token na query string
     res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error(err);
@@ -53,7 +58,7 @@ app.get('/oauth2callback', async (req, res) => {
   }
 });
 
-// --- Salvar dados no Google Drive ---
+// --- Rotas de salvar/carregar no Google Drive ---
 app.post('/save', async (req, res) => {
   try {
     const { token, filename, content } = req.body;
@@ -84,7 +89,6 @@ app.post('/save', async (req, res) => {
   }
 });
 
-// --- Carregar dados do Google Drive ---
 app.post('/load', async (req, res) => {
   try {
     const { token, filename } = req.body;
