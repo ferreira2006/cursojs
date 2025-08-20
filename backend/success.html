@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <title>Login Google Concluído</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align:center; padding:50px; background:#f0f0f0; }
-  .container { background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); display:inline-block; }
-  h1 { color:#4caf50; }
-  p { margin-top:20px; }
+body { font-family: Arial, sans-serif; text-align:center; padding:50px; background:#f0f0f0; }
+.container { background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); display:inline-block; }
+h1 { color:#4caf50; }
+p { margin-top:20px; }
 </style>
 </head>
 <body>
@@ -15,29 +15,17 @@
   <h1>✅ Login Concluído!</h1>
   <p>Você pode fechar esta janela e voltar ao app.</p>
 </div>
-
 <script>
 (function() {
-  // Pega o token da query string
   const params = new URLSearchParams(window.location.search);
   const tokenStr = params.get('token');
-
   if (tokenStr) {
     try {
       const token = JSON.parse(decodeURIComponent(tokenStr));
-      // Salva localmente
       localStorage.setItem('googleToken', JSON.stringify(token));
-
-      // Opcional: envia o token de volta para a janela pai (frontend)
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ googleToken: token }, "*");
-      }
-
-      // Fecha automaticamente após 2 segundos
+      if (window.opener && !window.opener.closed) window.opener.postMessage({ googleToken: token }, "*");
       setTimeout(() => window.close(), 2000);
-    } catch (e) {
-      console.error("Erro ao processar token:", e);
-    }
+    } catch (e) { console.error("Erro ao processar token:", e); }
   }
 })();
 </script>
