@@ -10,16 +10,15 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve todos os arquivos estáticos dentro da pasta backend (index.html, success.html)
+// Serve arquivos estáticos (index.html, success.html, etc)
 app.use(express.static(__dirname));
-
 app.use(express.json());
 
 // Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  "https://cursojs-8012.onrender.com/oauth2callback" // URL do Render
+  "https://cursojs-8012.onrender.com/oauth2callback"
 );
 
 // 🔹 URL de login
