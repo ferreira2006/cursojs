@@ -24,43 +24,60 @@
 <pre id="loadedContent"></pre>
 
 <script>
+const BACKEND_URL = 'https://cursojs-8012.onrender.com'; // Seu backend
+
 let userToken = ''; // Armazena token do OAuth 2.0
 
 // 1️⃣ Gerar URL OAuth
 document.getElementById('btnAuth').onclick = async () => {
-  const res = await fetch('https://cursojs-8012.onrender.com/auth-url');
-  const data = await res.json();
-  document.getElementById('authLink').innerHTML = `<a href="${data.url}" target="_blank">Clique aqui para autenticar</a>`;
-  alert('Após autenticar, copie o token do Playground e cole no prompt.');
-  userToken = prompt('Cole aqui o token do OAuth 2.0:');
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth-url`);
+    if(!res.ok) throw new Error('Erro ao gerar URL');
+    const data = await res.json();
+    document.getElementById('authLink').innerHTML = `<a href="${data.url}" target="_blank">Clique aqui para autenticar</a>`;
+    alert('Após autenticar, copie o token do Playground e cole no prompt.');
+    userToken = prompt('Cole aqui o token do OAuth 2.0:');
+  } catch (err) {
+    alert(err.message);
+  }
 };
 
 // 2️⃣ Salvar dados
 document.getElementById('btnSave').onclick = async () => {
-  const filename = document.getElementById('filename').value;
-  const content = document.getElementById('content').value;
+  const filename = document.getElementById('filename').value.trim();
+  const content = document.getElementById('content').value.trim();
   if(!userToken || !filename || !content) return alert('Preencha tudo e autentique!');
-  const res = await fetch('https://SEU_BACKEND.onrender.com/save', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token: JSON.parse(userToken), filename, content: JSON.parse(content) })
-  });
-  const data = await res.json();
-  alert(data.success ? 'Salvo com sucesso!' : data.error);
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ token: JSON.parse(userToken), filename, content: JSON.parse(content) })
+    });
+    const data = await res.json();
+    alert(data.success ? 'Salvo com sucesso!' : data.error);
+  } catch (err) {
+    alert('Erro ao salvar: ' + err.message);
+  }
 };
 
 // 3️⃣ Carregar dados
 document.getElementById('btnLoad').onclick = async () => {
-  const filename = document.getElementById('filenameLoad').value;
+  const filename = document.getElementById('filenameLoad').value.trim();
   if(!userToken || !filename) return alert('Preencha tudo e autentique!');
-  const res = await fetch('https://SEU_BACKEND.onrender.com/load', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token: JSON.parse(userToken), filename })
-  });
-  const data = await res.json();
-  if(data.error) alert(data.error);
-  else document.getElementById('loadedContent').textContent = JSON.stringify(data.content, null, 2);
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/load`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ token: JSON.parse(userToken), filename })
+    });
+    const data = await res.json();
+    if(data.error) alert(data.error);
+    else document.getElementById('loadedContent').textContent = JSON.stringify(data.content, null, 2);
+  } catch (err) {
+    alert('Erro ao carregar: ' + err.message);
+  }
 };
 </script>
 </body>
