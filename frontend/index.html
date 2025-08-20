@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Checklist v3 - JavaScript Avançado</title>
+
+<!-- Fontes externas -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+
 <style>
-body { font-family: Arial; margin:10px; transition: background 0.3s, color 0.3s; }
+body { font-family: 'Inter', Arial, sans-serif; margin:10px; transition: background 0.3s, color 0.3s; }
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
 h2 { margin-top:0; cursor:pointer; }
 .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s; }
@@ -97,14 +103,21 @@ function loginGoogle() {
     .then(res => res.json())
     .then(data => {
       const popup = window.open(data.url, 'GoogleLogin', 'width=500,height=600');
-      window.addEventListener('message', function receberToken(event) {
-        const token = event.data;
-        if (token && token.access_token) {
-          localStorage.setItem('googleToken', JSON.stringify(token));
-          alert('Login Google concluído! Token salvo localmente.');
-          window.removeEventListener('message', receberToken);
-        }
-      }, false);
+      const interval = setInterval(() => {
+        try {
+          if (popup.location.href.includes('token=')) {
+            const url = new URL(popup.location.href);
+            const tokenStr = url.searchParams.get('token');
+            if (tokenStr) {
+              const token = JSON.parse(decodeURIComponent(tokenStr));
+              localStorage.setItem('googleToken', JSON.stringify(token));
+              alert('Login Google concluído! Token salvo localmente.');
+              popup.close();
+              clearInterval(interval);
+            }
+          }
+        } catch(e) { /* cross-origin, ignorar */ }
+      }, 500);
     });
 }
 
@@ -114,9 +127,8 @@ function salvarNoDrive() {
 
   fetch('https://cursojs-8012.onrender.com/save', {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ data, token, filename:'checklist.json', content: data })
+    body: JSON.stringify({ token, filename:'checklist.json', content: data })
   })
   .then(res => res.json())
   .then(resp => {
