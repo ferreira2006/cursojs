@@ -71,33 +71,9 @@ let modoRevisaoAtivo = false;
 const salvar = ()=>{ localStorage.setItem('data', JSON.stringify(data)); atualizarEstatisticas(); atualizarBadges(); atualizarProgresso(); };
 const carregar = ()=>{ gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); if(modoRevisaoAtivo) ativarModoRevisao(); };
 const atualizarEstatisticas = ()=>{ let concluidas=0; Object.keys(plano).forEach((semana,idx)=>{ plano[semana].forEach((_,i)=>{ if(data.check[`s${idx}d${i}`]) concluidas++; }); }); data.pontos=concluidas; };
-const atualizarBadges = ()=>{
-  const container = document.getElementById('badges-container'); container.innerHTML='';
-  ['10 Tarefas','20 Tarefas'].forEach((b,i)=>{ if(data.pontos>=(i+1)*10 && !data.badges.includes(b)) data.badges.push(b); });
-  data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); });
-};
-const atualizarProgresso = ()=>{
-  const totalTarefas = Object.keys(data.check).length;
-  const concluidas = Object.values(data.check).filter(Boolean).length;
-  const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
-  document.getElementById('progressBar').style.width=perc+'%';
-  document.getElementById('progressBar').textContent=perc+'%';
-  Object.keys(plano).forEach((semana,idx)=>{
-    const tarefas=plano[semana];
-    const conclu=tarefas.filter((_,i)=>data.check[`s${idx}d${i}`]).length;
-    const percSemana=tarefas.length?Math.round((conclu/tarefas.length)*100):0;
-    const fill=document.getElementById(`semana-progress-fill-${idx}`);
-    const txt=document.getElementById(`semana-progress-${idx}`);
-    if(fill) fill.style.width=percSemana+'%';
-    if(txt) txt.textContent=percSemana+'% concluído';
-  });
-};
-const checarConfete=idx=>{
-  const semana=plano[Object.keys(plano)[idx]];
-  if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
-    const confete=document.getElementById('confete-container'); confete.innerHTML='🎉'.repeat(20); setTimeout(()=>confete.innerHTML='',1500);
-  }
-};
+const atualizarBadges = ()=>{ const container = document.getElementById('badges-container'); container.innerHTML=''; ['10 Tarefas','20 Tarefas'].forEach((b,i)=>{ if(data.pontos>=(i+1)*10 && !data.badges.includes(b)) data.badges.push(b); }); data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); };
+const atualizarProgresso = ()=>{ const totalTarefas = Object.keys(data.check).length; const concluidas = Object.values(data.check).filter(Boolean).length; const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0; document.getElementById('progressBar').style.width=perc+'%'; document.getElementById('progressBar').textContent=perc+'%'; Object.keys(plano).forEach((semana,idx)=>{ const tarefas=plano[semana]; const conclu=tarefas.filter((_,i)=>data.check[`s${idx}d${i}`]).length; const percSemana=tarefas.length?Math.round((conclu/tarefas.length)*100):0; const fill=document.getElementById(`semana-progress-fill-${idx}`); const txt=document.getElementById(`semana-progress-${idx}`); if(fill) fill.style.width=percSemana+'%'; if(txt) txt.textContent=percSemana+'% concluído'; }); };
+const checarConfete=idx=>{ const semana=plano[Object.keys(plano)[idx]]; if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){ const confete=document.getElementById('confete-container'); confete.innerHTML='🎉'.repeat(20); setTimeout(()=>confete.innerHTML='',1500); } };
 const adicionarHistorico=(semana,tarefa,status)=>{ data.historico.push({semana,tarefa,status,timestamp:new Date().toISOString()}); if(data.historico.length>100) data.historico.shift(); salvar(); };
 const toggleTheme=()=>{ document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar(); };
 const criarDownload=(json,nome)=>{ const blob=new Blob([JSON.stringify(json,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); };
@@ -115,15 +91,26 @@ const limpar=()=>{ if(confirm("Deseja realmente limpar todos os dados?")){ data=
 const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ const file=e.target.files[0]; if(file){ const reader=new FileReader(); reader.onload=evt=>{ try{ data=JSON.parse(evt.target.result); salvar(); carregar(); } catch{ alert("Arquivo inválido!"); } }; reader.readAsText(file); } }; input.click(); };
 const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\n"; let baseDate=new Date(); Object.keys(plano).forEach((semana,idx)=>{ plano[semana].forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]){ let dt=new Date(baseDate.getTime()+idx*7*24*60*60*1000); let dtStr=dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; ics+=`BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${dtStr}\nEND:VEVENT\n`; } }); }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; document.body.appendChild(a); a.click(); document.body.removeChild(a); };
 
-// ----------------- NOVO: Google Drive -----------------
-function loginGoogle(){ window.location.href='http://localhost:3000/auth'; }
+// --- Integração Google Drive via backend Render ---
+function loginGoogle(){
+  // Redireciona para endpoint do backend que fornece URL OAuth
+  fetch('https://cursojs-8012.onrender.com/auth-url')
+    .then(res=>res.json())
+    .then(data=>{
+      window.open(data.url, '_blank');
+      alert('Após autorizar, o backend armazenará o token automaticamente.');
+    });
+}
+
 function salvarNoDrive(){
-  fetch('http://localhost:3000/save',{
-    method:'POST', credentials:'include',
-    headers:{'Content-Type':'application/json'},
+  fetch('https://cursojs-8012.onrender.com/save', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type':'application/json' },
     body: JSON.stringify({ data })
-  }).then(r=>r.json())
-  .then(resp=>alert('Checklist salvo no Google Drive!'))
+  })
+  .then(res=>res.json())
+  .then(resp=>alert(resp.success ? 'Checklist salvo no Google Drive!' : resp.error))
   .catch(err=>console.error(err));
 }
 
