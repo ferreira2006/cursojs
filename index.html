@@ -41,6 +41,7 @@
   <button onclick="gerarPDF()">Exportar PDF</button>
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
+  <button onclick="undo()">Undo</button>
 </div>
 
 <div id="badges-container"></div>
@@ -62,27 +63,19 @@ const plano = {
   "Semana 8 – Projeto Final": ["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
-let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
-let modoRevisaoAtivo = false;
+window.data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [], undoStack: [] };
+window.modoRevisaoAtivo = false;
 
 // --- LocalStorage ---
-const salvar = () => {
+window.salvar = () => {
   localStorage.setItem('data', JSON.stringify(data));
   atualizarEstatisticas();
   atualizarBadges();
   atualizarProgresso();
 };
 
-// --- Carregar ---
-const carregar = () => {
-  gerar();
-  if(data.dark) document.body.classList.add('dark-mode');
-  atualizarProgresso();
-  atualizarBadges();
-};
-
 // --- Estatísticas ---
-const atualizarEstatisticas = () => {
+window.atualizarEstatisticas = () => {
   let concluidas = 0;
   Object.keys(plano).forEach((semana, idx) => {
     plano[semana].forEach((_, i) => { if(data.check[`s${idx}d${i}`]) concluidas++; });
@@ -91,10 +84,10 @@ const atualizarEstatisticas = () => {
 };
 
 // --- Badges ---
-const atualizarBadges = () => {
+window.atualizarBadges = () => {
   const container = document.getElementById('badges-container');
   container.innerHTML = '';
-  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
+  ['10 Tarefas','20 Tarefas','30 Tarefas'].forEach((b, i)=>{
     if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
   });
   data.badges.forEach(b => {
@@ -106,7 +99,7 @@ const atualizarBadges = () => {
 };
 
 // --- Progresso ---
-const atualizarProgresso = () => {
+window.atualizarProgresso = () => {
   const totalTarefas = Object.keys(data.check).length;
   const concluidas = Object.values(data.check).filter(Boolean).length;
   const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
@@ -125,7 +118,7 @@ const atualizarProgresso = () => {
 };
 
 // --- Confete ---
-const checarConfete = idx => {
+window.checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
   if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
     const confete = document.getElementById('confete-container');
@@ -135,84 +128,80 @@ const checarConfete = idx => {
 };
 
 // --- Histórico ---
-const adicionarHistorico = (semana, tarefa, status) => {
+window.adicionarHistorico = (semana, tarefa, status) => {
   data.historico.push({semana, tarefa, status, timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
 };
 
+// --- Undo ---
+window.undo = () => {
+  const last = data.undoStack.pop();
+  if(last){
+    data.check[last.id] = last.prev;
+    salvar();
+    gerar();
+  } else alert('Nada para desfazer!');
+};
+
 // --- Tema ---
-const toggleTheme = () => {
+window.toggleTheme = () => {
   document.body.classList.toggle('dark-mode');
   data.dark = document.body.classList.contains('dark-mode');
   salvar();
 };
 
 // --- Export/Import ---
-const criarDownload = (json, nome) => {
+window.criarDownload = (json, nome) => {
   const blob = new Blob([JSON.stringify(json,null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
-const exportar = () => criarDownload(data, 'checklist.json');
-const exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges}, 'checklist_avancado.json');
-const gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
+
+window.exportar = () => criarDownload(data, 'checklist.json');
+window.exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges}, 'checklist_avancado.json');
+window.gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
 
 // --- Modo Revisão ---
-const ativarModoRevisao = () => {
+window.ativarModoRevisao = () => {
   modoRevisaoAtivo = !modoRevisaoAtivo;
-
-  document.querySelectorAll('.semana').forEach((semanaDiv, idx)=>{
-    const tarefas = semanaDiv.querySelectorAll('input[type=checkbox]');
-    let semanaEmRevisao = false;
-
-    tarefas.forEach(chk=>{
-      if(modoRevisaoAtivo){
-        if(!chk.checked){
-          chk.parentElement.classList.add('modo-revisao'); // destaca apenas tarefas pendentes
-          semanaEmRevisao = true;
-        } else {
-          chk.parentElement.classList.remove('modo-revisao');
-        }
-      } else {
-        chk.parentElement.classList.remove('modo-revisao');
-      }
-    });
-
-    // Adiciona fundo de revisão na semana se houver tarefas pendentes
-    if(modoRevisaoAtivo && semanaEmRevisao){
-      semanaDiv.classList.add('modo-revisao');
+  document.querySelectorAll('.semana').forEach(div=>{
+    if(modoRevisaoAtivo && [...div.querySelectorAll('input[type=checkbox]')].some(chk=>!chk.checked)){
+      div.classList.add('modo-revisao');
     } else {
-      semanaDiv.classList.remove('modo-revisao');
+      div.classList.remove('modo-revisao');
     }
   });
-
   alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}`);
 };
 
-// --- Criação de DOM ---
-const criarTarefa = (semana, idx, t, i) => {
+// --- Criar tarefas ---
+window.criarTarefa = (semana, idx, t, i) => {
   const chk = document.createElement('input');
   chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
   chk.onchange = ()=>{
+    data.undoStack.push({id:chk.id, prev:data.check[chk.id]});
     data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked);
-    if(modoRevisaoAtivo) ativarModoRevisao();
+    if(modoRevisaoAtivo) ativarModoRevisao(); 
   };
-  const label = document.createElement('label'); label.htmlFor = chk.id; label.textContent = t;
 
-  const nota = document.createElement('textarea');
-  nota.className='nota';
-  nota.value = data.notes[chk.id] || '';
-  nota.oninput = ()=>{ data.notes[chk.id] = nota.value; salvar(); };
+  const label = document.createElement('label'); label.htmlFor = chk.id; label.textContent = t;
 
   const div = document.createElement('div');
   div.appendChild(chk);
   div.appendChild(label);
+
+  // Adicionar nota
+  const nota = document.createElement('textarea'); nota.className='nota'; nota.placeholder='Notas...';
+  nota.value = data.notes[chk.id]||'';
+  nota.oninput = ()=>{ data.notes[chk.id]=nota.value; salvar(); };
   div.appendChild(nota);
+
   return div;
 };
 
-const gerarSemana = (semana, tarefas, idx) => {
+// --- Gerar semana ---
+window.gerarSemana = (semana, tarefas, idx) => {
   const div = document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
 
   const header = document.createElement('div'); header.className='semana-header';
@@ -234,8 +223,15 @@ const gerarSemana = (semana, tarefas, idx) => {
   return div;
 };
 
+// --- Marcar/resetar semana ---
+window.marcarSemana = (idx, marcar) => {
+  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => { data.undoStack.push({id:chk.id, prev:data.check[chk.id]}); chk.checked = marcar; data.check[chk.id]=marcar; });
+  salvar();
+  gerar();
+};
+
 // --- Gerar interface ---
-const gerar = () => {
+window.gerar = () => {
   const container = document.getElementById('conteudo'); container.innerHTML='';
   Object.entries(plano).forEach(([semana,tarefas],idx)=> container.appendChild(gerarSemana(semana,tarefas,idx)));
   atualizarProgresso();
@@ -243,24 +239,24 @@ const gerar = () => {
 };
 
 // --- Busca e Collapse ---
-const filtrar = () => {
+window.filtrar = () => {
   const termo = document.getElementById('busca').value.toLowerCase();
   document.querySelectorAll('.semana').forEach(div => { div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none'; });
 };
-const toggleCollapse = idx => {
+window.toggleCollapse = idx => {
   const el = document.getElementById(`tarefas-${idx}`);
   el.style.display = el.style.display==='none'?'block':'none';
 };
 
 // --- Limpar e Importar ---
-const limpar = () => {
+window.limpar = () => {
   if(confirm("Deseja realmente limpar todos os dados?")){
-    data={check:{},notes:{},dark:false,historico:[],pontos:0,badges:[]};
+    data={check:{},notes:{},dark:false,historico:[],pontos:0,badges:[],undoStack:[]};
     localStorage.removeItem('data');
     carregar();
   }
 };
-const importar = () => {
+window.importar = () => {
   const input = document.createElement('input'); input.type='file'; input.accept='application/json';
   input.onchange = e => {
     const file = e.target.files[0];
@@ -276,7 +272,7 @@ const importar = () => {
 };
 
 // --- Exportar Calendário ---
-const exportarParaCalendario = () => {
+window.exportarParaCalendario = () => {
   let ics = "BEGIN:VCALENDAR\nVERSION:2.0\n";
   let baseDate = new Date();
   Object.keys(plano).forEach((semana, idx)=>{
@@ -294,6 +290,7 @@ const exportarParaCalendario = () => {
 };
 
 // --- Iniciar ---
+window.carregar = () => { gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); };
 window.onload = carregar;
 </script>
 </body>
