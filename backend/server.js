@@ -11,7 +11,9 @@ app.use(bodyParser.json());
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 5000;
-const REDIRECT_URI = `https://cursojs-8012.onrender.com/auth-url`;
+
+// ✅ Corrigido: redirect_uri deve apontar para o callback que processa o code
+const REDIRECT_URI = `https://cursojs-8012.onrender.com/oauth2callback`;
 
 const oAuth2Client = new google.auth.OAuth2(
   CLIENT_ID,
