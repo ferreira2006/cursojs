@@ -1,63 +1,76 @@
-const express = require('express');
-const session = require('express-session');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const { google } = require('googleapis');
-require('dotenv').config();
+// backend.js
+import express from "express";
+import { google } from "googleapis";
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5500', credentials: true })); // front-end na porta 5500
-app.use(bodyParser.json());
-app.use(session({ secret: 'checklist_secret', resave: false, saveUninitialized: true }));
+app.use(express.json());
 
+// 🔑 Pegando variáveis de ambiente definidas no Render
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = 'http://localhost:3000/oauth2callback';
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const PORT = process.env.PORT || 3000;
 
-const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
+// ⚠️ Redirecionamento precisa estar configurado no Google Cloud Console
+const REDIRECT_URI = `https://seuapp.onrender.com/oauth2callback`;
 
-// Login / autenticação
-app.get('/auth', (req, res) => {
+let TOKENS = null;
+
+const oauth2Client = new google.auth.OAuth2(
+  CLIENT_ID,
+  CLIENT_SECRET,
+  REDIRECT_URI
+);
+
+// 🔗 URL de autenticação
+app.get("/auth", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: SCOPES
+    access_type: "offline",
+    scope: ["https://www.googleapis.com/auth/drive.file"],
   });
-  res.redirect(url);
+  res.send(`<a href="${url}">Conectar ao Google Drive</a>`);
 });
 
-// Callback do OAuth2
-app.get('/oauth2callback', async (req, res) => {
+// 🔄 Callback OAuth
+app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
-  const { tokens } = await oauth2Client.getToken(code);
-  req.session.tokens = tokens;
-  oauth2Client.setCredentials(tokens);
-  res.send('Login realizado! Feche essa aba e volte ao checklist.');
-});
-
-// Salvar checklist no Drive
-app.post('/save', async (req, res) => {
   try {
-    if (!req.session.tokens) return res.status(401).json({ error: 'Usuário não logado' });
-    oauth2Client.setCredentials(req.session.tokens);
-
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-    const fileMetadata = { name: 'checklist.json' };
-    const media = { mimeType: 'application/json', body: JSON.stringify(req.body.data) };
-
-    // Procura arquivo existente
-    const existing = await drive.files.list({ q: "name='checklist.json'" });
-    if (existing.data.files.length > 0) {
-      await drive.files.update({ fileId: existing.data.files[0].id, media });
-    } else {
-      await drive.files.create({ resource: fileMetadata, media });
-    }
-
-    res.json({ success: true });
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+    TOKENS = tokens;
+    res.send("✅ Autenticado com sucesso! Pode fechar esta aba.");
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erro ao salvar no Google Drive' });
+    res.status(500).send("Erro na autenticação");
   }
 });
 
-app.listen(3000, () => console.log('Servidor rodando na porta 3000'));
+// 💾 Salvar arquivo no Google Drive
+app.post("/salvar", async (req, res) => {
+  if (!TOKENS) return res.status(401).send("Não autenticado no Google");
+
+  oauth2Client.setCredentials(TOKENS);
+  const drive = google.drive({ version: "v3", auth: oauth2Client });
+
+  try {
+    const fileMetadata = { name: "cursojs-dados.json" };
+    const media = {
+      mimeType: "application/json",
+      body: JSON.stringify(req.body),
+    };
+
+    const response = await drive.files.create({
+      resource: fileMetadata,
+      media,
+      fields: "id",
+    });
+
+    res.json({ fileId: response.data.id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Erro ao salvar no Google Drive");
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
+});
