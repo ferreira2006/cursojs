@@ -19,7 +19,7 @@ const oAuth2Client = new google.auth.OAuth2(
   REDIRECT_URI
 );
 
-// Gera URL de login
+// --- URL de login OAuth ---
 app.get('/auth-url', (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -28,7 +28,7 @@ app.get('/auth-url', (req, res) => {
   res.json({ url });
 });
 
-// Callback OAuth
+// --- Callback OAuth ---
 app.get('/oauth2callback', async (req, res) => {
   const code = req.query.code;
   if (!code) return res.send('Erro: código não fornecido');
@@ -36,7 +36,7 @@ app.get('/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    // Redireciona para frontend com token em query string (simples)
+    // Redireciona para frontend com token na query string
     res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error(err);
@@ -44,11 +44,12 @@ app.get('/oauth2callback', async (req, res) => {
   }
 });
 
-// Salvar dados no Drive
+// --- Salvar dados no Google Drive ---
 app.post('/save', async (req, res) => {
   try {
     const { token, filename, content } = req.body;
-    if (!token || !filename || !content) return res.status(400).json({ error: 'Token, filename e content são obrigatórios' });
+    if (!token || !filename || !content)
+      return res.status(400).json({ error: 'Token, filename e content são obrigatórios' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
@@ -74,11 +75,12 @@ app.post('/save', async (req, res) => {
   }
 });
 
-// Carregar dados do Drive
+// --- Carregar dados do Google Drive ---
 app.post('/load', async (req, res) => {
   try {
     const { token, filename } = req.body;
-    if (!token || !filename) return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
+    if (!token || !filename)
+      return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
@@ -88,7 +90,8 @@ app.post('/load', async (req, res) => {
       fields: 'files(id, name)'
     });
 
-    if (!files.data.files.length) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    if (!files.data.files.length)
+      return res.status(404).json({ error: 'Arquivo não encontrado.' });
 
     const fileId = files.data.files[0].id;
     const response = await drive.files.get({ fileId, alt: 'media' });
