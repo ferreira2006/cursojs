@@ -76,9 +76,122 @@ window.addEventListener('load', () => {
   }
 });
 
-// --- (aqui entra todo o seu código de checklist: gerar, salvar, filtrar, progresso, badges, etc) ---
+// ---------------- CHECKLIST ANTIGO ----------------
+let dados = JSON.parse(localStorage.getItem('checklist')) || { semanas: [] };
 
-// Google Drive integrado
+function salvar() {
+  localStorage.setItem('checklist', JSON.stringify(dados));
+  atualizarProgresso();
+}
+
+function carregar() {
+  const container = document.getElementById('conteudo');
+  container.innerHTML = '';
+  dados.semanas.forEach((semana, i) => {
+    const div = document.createElement('div');
+    div.className = 'semana';
+    div.innerHTML = `
+      <div class="semana-header">
+        <h2 onclick="toggleSemana(${i})">${semana.titulo}</h2>
+        <span class="semana-progress" id="sp-${i}"></span>
+      </div>
+      <div id="semana-${i}">
+        ${semana.tarefas.map((t,j)=>`
+          <div>
+            <input type="checkbox" id="t-${i}-${j}" ${t.feito?'checked':''} onchange="toggleTarefa(${i},${j})">
+            <label for="t-${i}-${j}">${t.texto}</label>
+          </div>
+        `).join('')}
+        <textarea class="nota" oninput="editarNota(${i}, this.value)" placeholder="Anotações...">${semana.nota||''}</textarea>
+        <div class="semana-progress-bar"><div class="semana-progress-fill" id="spf-${i}"></div></div>
+      </div>`;
+    container.appendChild(div);
+  });
+  atualizarProgresso();
+}
+
+function toggleSemana(i){
+  const el = document.getElementById(`semana-${i}`);
+  el.classList.toggle('hidden');
+}
+
+function toggleTarefa(i,j){
+  dados.semanas[i].tarefas[j].feito = !dados.semanas[i].tarefas[j].feito;
+  salvar();
+  carregar();
+}
+
+function editarNota(i,val){
+  dados.semanas[i].nota = val;
+  salvar();
+}
+
+function atualizarProgresso(){
+  let total=0, feitos=0;
+  dados.semanas.forEach((s,i)=>{
+    const t = s.tarefas.length;
+    const f = s.tarefas.filter(x=>x.feito).length;
+    total += t; feitos += f;
+    const pct = t ? Math.round((f/t)*100) : 0;
+    document.getElementById(`sp-${i}`).innerText = pct+'%';
+    document.getElementById(`spf-${i}`).style.width = pct+'%';
+  });
+  const geral = total ? Math.round((feitos/total)*100) : 0;
+  const bar = document.getElementById('progressBar');
+  bar.style.width = geral+'%';
+  bar.innerText = geral+'%';
+}
+
+// --- utilitários antigos (exportar, importar, pdf, badges etc) ---
+function exportar(){
+  const blob = new Blob([JSON.stringify(dados)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checklist.json';
+  a.click();
+}
+
+function importar(){
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='application/json';
+  inp.onchange = e=>{
+    const file = e.target.files[0];
+    const r = new FileReader();
+    r.onload = ev=>{
+      dados = JSON.parse(ev.target.result);
+      salvar();
+      carregar();
+    };
+    r.readAsText(file);
+  };
+  inp.click();
+}
+
+function limpar(){
+  if(confirm('Tem certeza?')){
+    localStorage.removeItem('checklist');
+    dados={semanas:[]};
+    carregar();
+  }
+}
+
+function gerarPDF(){
+  html2pdf().from(document.body).save('checklist.pdf');
+}
+
+function ativarModoRevisao(){
+  document.querySelectorAll('.semana').forEach(s=>s.classList.toggle('modo-revisao'));
+}
+
+function filtrar(){
+  const q=document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(s=>{
+    s.style.display = s.innerText.toLowerCase().includes(q)?'block':'none';
+  });
+}
+
+// ---------------- GOOGLE DRIVE ----------------
 function loginGoogle() {
   fetch(`${BACKEND_URL}/auth-url`)
     .then(res => res.json())
@@ -91,7 +204,7 @@ function salvarNoDrive() {
   fetch(`${BACKEND_URL}/save`, {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token, filename:'checklist.json', content: data })
+    body: JSON.stringify({ token, filename:'checklist.json', content: dados })
   })
   .then(res => res.json())
   .then(resp => {
@@ -101,6 +214,7 @@ function salvarNoDrive() {
   .catch(err => alert('Erro ao salvar no Google Drive: ' + err));
 }
 
+// Inicialização
 window.onload = carregar;
 </script>
 </body>
