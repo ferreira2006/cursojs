@@ -9,7 +9,7 @@
   h2 { margin-top:0; cursor:pointer; }
   .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s; }
   .semana.modo-revisao { background: #fff3cd !important; }
-  .nota { width:100%; min-height:50px; margin-top:5px; padding:6px; border-radius:4px; border:1px solid #ccc; }
+  .nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
   .top-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
   .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
   .progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:white; line-height:20px; transition: width 0.3s; }
@@ -23,7 +23,7 @@
   button:hover { background-color:#45a049; }
   input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
-  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; font-size:24px; }
+  .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
   .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
   .tempo { font-size:0.8em; color:#555; margin-left:5px; }
   #badges-container { margin-bottom:10px; }
@@ -41,7 +41,6 @@
   <button onclick="gerarPDF()">Exportar PDF</button>
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
-  <button onclick="undo()">Undo</button>
 </div>
 
 <div id="badges-container"></div>
@@ -74,6 +73,14 @@ const salvar = () => {
   atualizarProgresso();
 };
 
+// --- Carregar ---
+const carregar = () => {
+  gerar();
+  if(data.dark) document.body.classList.add('dark-mode');
+  atualizarProgresso();
+  atualizarBadges();
+};
+
 // --- Estatísticas ---
 const atualizarEstatisticas = () => {
   let concluidas = 0;
@@ -87,7 +94,7 @@ const atualizarEstatisticas = () => {
 const atualizarBadges = () => {
   const container = document.getElementById('badges-container');
   container.innerHTML = '';
-  ['10 Tarefas','20 Tarefas','30 Tarefas','50 Tarefas'].forEach((b, i)=>{
+  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
     if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
   });
   data.badges.forEach(b => {
@@ -122,7 +129,7 @@ const checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
   if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
     const confete = document.getElementById('confete-container');
-    confete.innerHTML = '🎉'.repeat(30);
+    confete.innerHTML = '🎉'.repeat(20);
     setTimeout(()=>confete.innerHTML='',1500);
   }
 };
@@ -132,20 +139,6 @@ const adicionarHistorico = (semana, tarefa, status) => {
   data.historico.push({semana, tarefa, status, timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
-};
-
-// --- Undo ---
-const undo = () => {
-  if(data.historico.length===0){ alert("Nada para desfazer"); return; }
-  const last = data.historico.pop();
-  const idxSemana = Object.keys(plano).indexOf(last.semana);
-  const idxTarefa = plano[last.semana].indexOf(last.tarefa);
-  if(idxSemana>=0 && idxTarefa>=0){
-    const key = `s${idxSemana}d${idxTarefa}`;
-    data.check[key] = !last.status;
-    salvar();
-    gerar();
-  }
 };
 
 // --- Tema ---
@@ -161,15 +154,9 @@ const criarDownload = (json, nome) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
-
 const exportar = () => criarDownload(data, 'checklist.json');
 const exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges}, 'checklist_avancado.json');
-
 const gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
-const marcarSemana = (idx, marcar) => {
-  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => { chk.checked = marcar; data.check[chk.id] = marcar; });
-  salvar();
-};
 
 // --- Modo Revisão ---
 const ativarModoRevisao = () => {
@@ -186,28 +173,23 @@ const ativarModoRevisao = () => {
 
 // --- Criação de DOM ---
 const criarTarefa = (semana, idx, t, i) => {
-  const div = document.createElement('div');
-  div.style.marginBottom='6px';
-
   const chk = document.createElement('input');
   chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
   chk.onchange = ()=>{
     data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked);
     if(modoRevisaoAtivo) ativarModoRevisao();
   };
-
   const label = document.createElement('label'); label.htmlFor = chk.id; label.textContent = t;
-  label.style.marginRight='5px';
 
   const nota = document.createElement('textarea');
-  nota.className='nota'; nota.placeholder='Adicionar nota...';
-  nota.value = data.notes[chk.id]||'';
-  nota.oninput = ()=>{ data.notes[chk.id]=nota.value; salvar(); };
+  nota.className='nota';
+  nota.value = data.notes[chk.id] || '';
+  nota.oninput = ()=>{ data.notes[chk.id] = nota.value; salvar(); };
 
+  const div = document.createElement('div');
   div.appendChild(chk);
   div.appendChild(label);
   div.appendChild(nota);
-
   return div;
 };
 
@@ -244,9 +226,7 @@ const gerar = () => {
 // --- Busca e Collapse ---
 const filtrar = () => {
   const termo = document.getElementById('busca').value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(div => {
-    div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none';
-  });
+  document.querySelectorAll('.semana').forEach(div => { div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none'; });
 };
 const toggleCollapse = idx => {
   const el = document.getElementById(`tarefas-${idx}`);
