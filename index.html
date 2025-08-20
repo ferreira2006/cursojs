@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -38,6 +37,7 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 </style>
 </head>
 <body>
+
 <div class="top-bar">
   <button onclick="toggleTheme()">🌙/☀️ Tema</button>
   <button onclick="exportar()">Exportar JSON</button>
@@ -59,6 +59,24 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+// --- Captura token do Google na query string ---
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tokenStr = params.get('token');
+  if(tokenStr){
+    try {
+      const token = JSON.parse(decodeURIComponent(tokenStr));
+      localStorage.setItem('googleToken', JSON.stringify(token));
+      console.log('Token do Google salvo localmente');
+      // Limpa a query string
+      window.history.replaceState({}, document.title, window.location.pathname);
+      alert('Login Google concluído! Token salvo localmente.');
+    } catch(e){
+      console.error("Erro ao processar token do Google:", e);
+    }
+  }
+});
+
 // --- Dados e configuração ---
 const coresSemana = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano = {
@@ -100,25 +118,10 @@ const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\n"; let
 
 // --- Google Drive integrado ---
 function loginGoogle() {
-  fetch('https://cursojs-8012.onrender.com/auth-url')
+  fetch('/auth-url')
     .then(res => res.json())
     .then(data => {
-      const popup = window.open(data.url, 'GoogleLogin', 'width=500,height=600');
-      const interval = setInterval(() => {
-        try {
-          if (popup.location.href.includes('token=')) {
-            const url = new URL(popup.location.href);
-            const tokenStr = url.searchParams.get('token');
-            if (tokenStr) {
-              const token = JSON.parse(decodeURIComponent(tokenStr));
-              localStorage.setItem('googleToken', JSON.stringify(token));
-              alert('Login Google concluído! Token salvo localmente.');
-              popup.close();
-              clearInterval(interval);
-            }
-          }
-        } catch(e) { /* cross-origin, ignorar */ }
-      }, 500);
+      window.location.href = data.url; // redireciona para login do Google
     });
 }
 
@@ -126,7 +129,7 @@ function salvarNoDrive() {
   const token = JSON.parse(localStorage.getItem('googleToken'));
   if (!token) return alert('Você precisa fazer login no Google antes.');
 
-  fetch('https://cursojs-8012.onrender.com/save', {
+  fetch('/save', {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
     body: JSON.stringify({ token, filename:'checklist.json', content: data })
