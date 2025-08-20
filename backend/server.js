@@ -8,11 +8,18 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// --- Configuração CSP ---
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; img-src 'self';"
+  );
+  next();
+});
+
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 5000;
-
-// ✅ Corrigido: redirect_uri deve apontar para o callback que processa o code
 const REDIRECT_URI = `https://cursojs-8012.onrender.com/oauth2callback`;
 
 const oAuth2Client = new google.auth.OAuth2(
