@@ -11,8 +11,8 @@ app.use(bodyParser.json());
 // Variáveis de ambiente
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
-const PORT = process.env.PORT || 3000;
+const REDIRECT_URI = 'https://cursojs-8012.onrender.com/auth-url'; // URI do Render
+const PORT = process.env.PORT || 5000;
 
 // OAuth2 Client
 const oAuth2Client = new google.auth.OAuth2(
@@ -34,30 +34,23 @@ app.get('/auth-url', (req, res) => {
 app.post('/save', async (req, res) => {
   try {
     const { token, filename, content } = req.body;
-
-    if (!token || !filename || !content) return res.status(400).json({ error: 'Token, filename e content são obrigatórios.' });
+    if (!token || !filename || !content)
+      return res.status(400).json({ error: 'Token, filename e content são obrigatórios.' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
-    // Cria ou atualiza arquivo
     const fileMetadata = { name: filename };
     const media = { mimeType: 'application/json', body: JSON.stringify(content) };
 
-    // Tenta achar arquivo existente
     const existing = await drive.files.list({
       q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)'
+      fields: 'files(id, name)',
     });
 
     if (existing.data.files.length) {
-      // Atualiza
-      await drive.files.update({
-        fileId: existing.data.files[0].id,
-        media
-      });
+      await drive.files.update({ fileId: existing.data.files[0].id, media });
     } else {
-      // Cria
       await drive.files.create({ resource: fileMetadata, media });
     }
 
@@ -72,14 +65,15 @@ app.post('/save', async (req, res) => {
 app.post('/load', async (req, res) => {
   try {
     const { token, filename } = req.body;
-    if (!token || !filename) return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
+    if (!token || !filename)
+      return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
 
     oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: 'v3', auth: oAuth2Client });
 
     const files = await drive.files.list({
       q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)'
+      fields: 'files(id, name)',
     });
 
     if (!files.data.files.length) return res.status(404).json({ error: 'Arquivo não encontrado.' });
