@@ -1,118 +1,84 @@
-// server.js
-import express from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import { google } from 'googleapis';
+import express from "express";
+import { google } from "googleapis";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(bodyParser.json());
+const PORT = process.env.PORT || 3000;
 
-// --- Configuração CSP para permitir fontes Google ---
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy",
-    "default-src 'self'; " +
-    "style-src 'self' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
-    "script-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data:;"
-  );
-  next();
-});
+// Configuração de paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// --- Variáveis de ambiente ---
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const PORT = process.env.PORT || 5000;
-const REDIRECT_URI = `https://cursojs-8012.onrender.com/oauth2callback`;
+// Middlewares
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // pasta frontend
 
+// Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "https://cursojs-8012.onrender.com/oauth2callback" // Redirect URI configurado no console do Google
 );
 
-// --- URL de login OAuth ---
-app.get('/auth-url', (req, res) => {
+// 🔹 Gera a URL de login do Google
+app.get("/auth-url", (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/drive.file'],
+    access_type: "offline",
+    scope: ["https://www.googleapis.com/auth/drive.file"],
+    prompt: "consent"
   });
   res.json({ url });
 });
 
-// --- Callback OAuth ---
-app.get('/oauth2callback', async (req, res) => {
+// 🔹 Callback do Google (troca code por token)
+app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
-  if (!code) return res.send('Erro: código não fornecido');
-
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    // Redireciona para frontend com token na query string
-    res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
+
+    // Redireciona para página estática com token
+    res.redirect(
+      `/success.html?token=${encodeURIComponent(JSON.stringify(tokens))}`
+    );
   } catch (err) {
-    console.error(err);
-    res.send('Erro ao trocar código pelo token');
+    console.error("Erro ao trocar code por token:", err);
+    res.status(500).send("Erro na autenticação");
   }
 });
 
-// --- Salvar dados no Google Drive ---
-app.post('/save', async (req, res) => {
+// 🔹 Exemplo de rota para salvar no Drive
+app.post("/upload", async (req, res) => {
   try {
-    const { token, filename, content } = req.body;
-    if (!token || !filename || !content)
-      return res.status(400).json({ error: 'Token, filename e content são obrigatórios' });
-
+    const { token, filename, data } = req.body;
     oAuth2Client.setCredentials(token);
-    const drive = google.drive({ version: 'v3', auth: oAuth2Client });
+
+    const drive = google.drive({ version: "v3", auth: oAuth2Client });
 
     const fileMetadata = { name: filename };
-    const media = { mimeType: 'application/json', body: JSON.stringify(content) };
+    const media = {
+      mimeType: "application/json",
+      body: JSON.stringify(data)
+    };
 
-    const existing = await drive.files.list({
-      q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)'
+    const response = await drive.files.create({
+      resource: fileMetadata,
+      media: { mimeType: media.mimeType, body: media.body },
+      fields: "id"
     });
 
-    if (existing.data.files.length) {
-      await drive.files.update({ fileId: existing.data.files[0].id, media });
-    } else {
-      await drive.files.create({ resource: fileMetadata, media });
-    }
-
-    res.json({ success: true });
+    res.json({ fileId: response.data.id });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao salvar no Google Drive.' });
+    console.error("Erro ao enviar arquivo para o Drive:", err);
+    res.status(500).send("Erro no upload");
   }
 });
 
-// --- Carregar dados do Google Drive ---
-app.post('/load', async (req, res) => {
-  try {
-    const { token, filename } = req.body;
-    if (!token || !filename)
-      return res.status(400).json({ error: 'Token e filename são obrigatórios.' });
-
-    oAuth2Client.setCredentials(token);
-    const drive = google.drive({ version: 'v3', auth: oAuth2Client });
-
-    const files = await drive.files.list({
-      q: `name='${filename}' and trashed=false`,
-      fields: 'files(id, name)'
-    });
-
-    if (!files.data.files.length)
-      return res.status(404).json({ error: 'Arquivo não encontrado.' });
-
-    const fileId = files.data.files[0].id;
-    const response = await drive.files.get({ fileId, alt: 'media' });
-    res.json({ content: response.data });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao carregar do Google Drive.' });
-  }
+// Inicializa servidor
+app.listen(PORT, () => {
+  console.log(`✅ Server rodando em http://localhost:${PORT}`);
 });
-
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
