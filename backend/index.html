@@ -78,8 +78,17 @@ window.addEventListener('load', () => {
 
 function loginGoogle() {
   fetch(`${BACKEND_URL}/auth-url`)
-    .then(res => res.json())
-    .then(data => { window.location.href = data.url; });
+    .then(res=>res.json())
+    .then(data=>{
+      const popup = window.open(data.url, "loginGoogle", "width=500,height=600");
+      window.addEventListener("message", function(event){
+        if(event.data.googleToken){
+          localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
+          alert('Login Google concluído! Token salvo localmente.');
+          popup.close();
+        }
+      }, { once:true });
+    });
 }
 
 function salvarNoDrive() {
