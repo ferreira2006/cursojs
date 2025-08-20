@@ -11,7 +11,6 @@ app.use(bodyParser.json());
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 5000;
-// Corrigido para OAuth funcionar corretamente
 const REDIRECT_URI = `https://cursojs-8012.onrender.com/oauth2callback`;
 
 const oAuth2Client = new google.auth.OAuth2(
@@ -37,7 +36,6 @@ app.get('/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    // Redireciona para frontend com token
     res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error(err);
