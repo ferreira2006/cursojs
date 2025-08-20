@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Exemplo Frontend - Google Drive</title>
+</head>
+<body>
+<h2>Exemplo Frontend</h2>
+
+<!-- Botão para gerar URL OAuth -->
+<button id="btnAuth">Gerar link de autenticação</button>
+<p id="authLink"></p>
+
+<!-- Inputs para salvar -->
+<h3>Salvar Dados</h3>
+<input type="text" id="filename" placeholder="Nome do arquivo"><br><br>
+<textarea id="content" placeholder="Conteúdo JSON"></textarea><br><br>
+<button id="btnSave">Salvar</button>
+
+<!-- Inputs para carregar -->
+<h3>Carregar Dados</h3>
+<input type="text" id="filenameLoad" placeholder="Nome do arquivo"><br><br>
+<button id="btnLoad">Carregar</button>
+<pre id="loadedContent"></pre>
+
+<script>
+let userToken = ''; // Armazena token do OAuth 2.0
+
+// 1️⃣ Gerar URL OAuth
+document.getElementById('btnAuth').onclick = async () => {
+  const res = await fetch('https://SEU_BACKEND.onrender.com/auth-url');
+  const data = await res.json();
+  document.getElementById('authLink').innerHTML = `<a href="${data.url}" target="_blank">Clique aqui para autenticar</a>`;
+  alert('Após autenticar, copie o token do Playground e cole no prompt.');
+  userToken = prompt('Cole aqui o token do OAuth 2.0:');
+};
+
+// 2️⃣ Salvar dados
+document.getElementById('btnSave').onclick = async () => {
+  const filename = document.getElementById('filename').value;
+  const content = document.getElementById('content').value;
+  if(!userToken || !filename || !content) return alert('Preencha tudo e autentique!');
+  const res = await fetch('https://SEU_BACKEND.onrender.com/save', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ token: JSON.parse(userToken), filename, content: JSON.parse(content) })
+  });
+  const data = await res.json();
+  alert(data.success ? 'Salvo com sucesso!' : data.error);
+};
+
+// 3️⃣ Carregar dados
+document.getElementById('btnLoad').onclick = async () => {
+  const filename = document.getElementById('filenameLoad').value;
+  if(!userToken || !filename) return alert('Preencha tudo e autentique!');
+  const res = await fetch('https://SEU_BACKEND.onrender.com/load', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ token: JSON.parse(userToken), filename })
+  });
+  const data = await res.json();
+  if(data.error) alert(data.error);
+  else document.getElementById('loadedContent').textContent = JSON.stringify(data.content, null, 2);
+};
+</script>
+</body>
+</html>
