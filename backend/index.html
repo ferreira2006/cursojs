@@ -91,29 +91,16 @@ function loginGoogle() {
     });
 }
 
+// ================= SALVAR NO GOOGLE DRIVE =================
 function salvarNoDrive() {
   const token = JSON.parse(localStorage.getItem('googleToken'));
   if (!token) return alert('Você precisa fazer login no Google antes.');
 
-  // Transformar data no formato completo
-  const semanas = Object.keys(plano).map((semana, idx) => {
-    const tarefas = plano[semana].map((t, i) => ({
-      titulo: t,
-      concluido: data.check[`s${idx}d${i}`] ? 1 : 0
-    }));
-    return {
-      titulo: semana,
-      tarefas,
-      notas: data.notes[semana] || "",
-      concluido: tarefas.filter(t => t.concluido).length,
-      total: tarefas.length
-    };
-  });
-
+  // Salva exatamente o JSON local, igual ao exportar
   fetch(`${BACKEND_URL}/save`, {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token, filename:'checklist.json', content: semanas })
+    body: JSON.stringify({ token, filename:'checklist.json', content: data })
   })
   .then(res => res.json())
   .then(resp => {
