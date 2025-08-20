@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "."))); // serve arquivos da raiz (index.html, success.html)
+app.use(express.static(path.join(__dirname, ".."))); // serve arquivos da raiz (index.html, success.html)
 
 // Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
