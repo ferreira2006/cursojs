@@ -8,6 +8,19 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// --- Configuração CSP para permitir fontes Google ---
+app.use((req, res, next) => {
+  res.setHeader("Content-Security-Policy",
+    "default-src 'self'; " +
+    "style-src 'self' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "script-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data:;"
+  );
+  next();
+});
+
+// --- Variáveis de ambiente ---
 const CLIENT_ID = process.env.CLIENT_ID;
 const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const PORT = process.env.PORT || 5000;
@@ -36,6 +49,7 @@ app.get('/oauth2callback', async (req, res) => {
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
+    // Redireciona para frontend com token na query string
     res.redirect(`/?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error(err);
