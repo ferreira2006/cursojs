@@ -56,9 +56,10 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+// ================= BACKEND URL =================
 const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 
-// --- LOGIN GOOGLE ---
+// ================= LOGIN GOOGLE =================
 window.addEventListener('load', () => {
   const params = new URLSearchParams(window.location.search);
   const tokenStr = params.get('token');
@@ -68,7 +69,7 @@ window.addEventListener('load', () => {
       localStorage.setItem('googleToken', JSON.stringify(token));
       console.log('Token do Google salvo localmente');
       window.history.replaceState({}, document.title, window.location.pathname);
-      alert('Login Google concluído!');
+      alert('Login Google concluído! Token salvo localmente.');
     } catch(e){
       console.error("Erro ao processar token do Google:", e);
     }
@@ -84,11 +85,10 @@ function loginGoogle() {
 function salvarNoDrive() {
   const token = JSON.parse(localStorage.getItem('googleToken'));
   if (!token) return alert('Você precisa fazer login no Google antes.');
-  const data = JSON.stringify(semanas);
   fetch(`${BACKEND_URL}/save`, {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ token, filename:'checklist.json', content: data })
+    body: JSON.stringify({ token, filename:'checklist.json', content: localStorage.getItem('checklistData') })
   })
   .then(res => res.json())
   .then(resp => {
@@ -98,72 +98,159 @@ function salvarNoDrive() {
   .catch(err => alert('Erro ao salvar no Google Drive: ' + err));
 }
 
-// --- CHECKLIST ANTIGO ---
-let semanas = [];
+// ================= CHECKLIST =================
+let data = {};
+const conteudo = document.getElementById('conteudo');
+const badgesContainer = document.getElementById('badges-container');
 
-function carregar() {
-  const salvo = localStorage.getItem('checklist');
-  semanas = salvo ? JSON.parse(salvo) : gerarSemanas(12);
-  renderizar();
-}
-
-function gerarSemanas(qtd) {
-  let arr = [];
-  for(let i=1;i<=qtd;i++){
-    arr.push({ titulo:"Semana "+i, tarefas:[], notas:"", concluido:0, total:0 });
-  }
-  return arr;
-}
-
-function salvar() {
-  localStorage.setItem('checklist', JSON.stringify(semanas));
+function carregar(){
+  const salvo = localStorage.getItem('checklistData');
+  if(salvo) data = JSON.parse(salvo);
+  gerarSemanas();
   atualizarProgresso();
+  atualizarBadges();
 }
 
-function renderizar() {
-  const container = document.getElementById('conteudo');
-  container.innerHTML = '';
-  semanas.forEach((s, i) => {
-    const div = document.createElement('div');
-    div.className = 'semana';
-    div.innerHTML = `
+function gerarSemanas(){
+  conteudo.innerHTML = "";
+  for(let i=1;i<=10;i++){
+    const semana = document.createElement('div');
+    semana.className = "semana";
+    semana.innerHTML = `
       <div class="semana-header">
-        <h2 onclick="toggleSemana(${i})">${s.titulo}</h2>
-        <span class="semana-progress">${s.concluido}/${s.total}</span>
+        <h2 onclick="toggleSemana(this)">Semana ${i}</h2>
+        <span class="importante" onclick="marcarImportante(${i})">★</span>
       </div>
-      <div id="semana-${i}">
-        <textarea class="nota" oninput="editarNota(${i}, this.value)">${s.notas||''}</textarea>
-      </div>
-      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${s.total?s.concluido/s.total*100:0}%"></div></div>
+      <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i}, this.value)">${data[i]?.nota || ""}</textarea>
+      <div class="semana-progress">${data[i]?.progresso || 0}% concluído</div>
+      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${data[i]?.progresso || 0}%"></div></div>
     `;
-    container.appendChild(div);
-  });
+    conteudo.appendChild(semana);
+  }
+}
+
+function salvarNota(semana, texto){
+  if(!data[semana]) data[semana] = {};
+  data[semana].nota = texto;
+  salvar();
+}
+
+function salvar(){
+  localStorage.setItem('checklistData', JSON.stringify(data));
   atualizarProgresso();
+  atualizarBadges();
 }
 
-function editarNota(i, val){ semanas[i].notas = val; salvar(); }
-function toggleSemana(i){ const el=document.getElementById('semana-'+i); el.classList.toggle('hidden'); }
-
-function atualizarProgresso() {
-  let total=0, concl=0;
-  semanas.forEach(s => { total+=s.total; concl+=s.concluido; });
-  const pct = total? Math.round(concl/total*100):0;
-  const bar = document.getElementById('progressBar');
-  bar.style.width = pct+'%';
-  bar.innerText = pct+'%';
+function toggleSemana(el){
+  el.parentElement.parentElement.querySelector('.nota').classList.toggle('hidden');
 }
 
-// --- Funções auxiliares antigas ---
-function toggleTheme(){ document.body.classList.toggle('dark-mode'); }
-function exportar(){ const blob=new Blob([JSON.stringify(semanas)],{type:'application/json'}); baixar(blob,'checklist.json'); }
-function exportarAvancado(){ gerarPDF(); }
-function importar(){ const inp=document.createElement('input'); inp.type='file'; inp.onchange=e=>{const f=e.target.files[0]; f.text().then(txt=>{ semanas=JSON.parse(txt); salvar(); renderizar(); });}; inp.click(); }
-function limpar(){ if(confirm('Tem certeza?')){ localStorage.removeItem('checklist'); semanas=gerarSemanas(12); renderizar(); } }
-function filtrar(){ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none';}); }
-function gerarPDF(){ html2pdf().from(document.body).save('checklist.pdf'); }
-function ativarModoRevisao(){ document.querySelectorAll('.semana').forEach(div=>div.classList.toggle('modo-revisao')); }
-function exportarParaCalendario(){ alert('Exportar para calendário ainda não implementado.'); }
-function baixar(blob,nome){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=nome; a.click(); URL.revokeObjectURL(url); }
+function marcarImportante(semana){
+  if(!data[semana]) data[semana] = {};
+  data[semana].importante = !data[semana].importante;
+  salvar();
+}
+
+function atualizarProgresso(){
+  let total=0, concluidos=0;
+  for(let i in data){
+    total++;
+    if(data[i].nota && data[i].nota.trim()!=="") concluidos++;
+  }
+  const perc = total? Math.round((concluidos/total)*100):0;
+  document.getElementById('progressBar').style.width = perc+"%";
+  document.getElementById('progressBar').textContent = perc+"%";
+}
+
+function atualizarBadges(){
+  badgesContainer.innerHTML="";
+  for(let i in data){
+    if(data[i].importante){
+      const badge = document.createElement('div');
+      badge.className="badge";
+      badge.textContent="Semana "+i+" ★";
+      badgesContainer.appendChild(badge);
+    }
+  }
+}
+
+function exportar(){
+  const blob = new Blob([JSON.stringify(data)],{type:"application/json"});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="checklist.json";
+  a.click();
+}
+
+function exportarAvancado(){
+  const avancado = { data, exportadoEm:new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(avancado)],{type:"application/json"});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="checklist-avancado.json";
+  a.click();
+}
+
+function importar(){
+  const input=document.createElement('input');
+  input.type="file"; input.accept=".json";
+  input.onchange=e=>{
+    const file=e.target.files[0];
+    const reader=new FileReader();
+    reader.onload=()=>{
+      data=JSON.parse(reader.result);
+      salvar();
+      gerarSemanas();
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function limpar(){
+  if(confirm("Deseja realmente limpar tudo?")){
+    localStorage.removeItem('checklistData');
+    data={};
+    gerarSemanas();
+    atualizarProgresso();
+    atualizarBadges();
+  }
+}
+
+function filtrar(){
+  const termo=document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(s=>{
+    const texto=s.innerText.toLowerCase();
+    s.style.display=texto.includes(termo)?"block":"none";
+  });
+}
+
+function gerarPDF(){
+  html2pdf().from(document.body).save("checklist.pdf");
+}
+
+function ativarModoRevisao(){
+  document.querySelectorAll('.semana').forEach(s=>s.classList.toggle('modo-revisao'));
+}
+
+function exportarParaCalendario(){
+  let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
+  for(let i in data){
+    if(data[i].nota){
+      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
+    }
+  }
+  ics+="END:VCALENDAR";
+  const blob=new Blob([ics],{type:"text/calendar"});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download="checklist.ics";
+  a.click();
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('dark-mode');
+}
 
 window.onload = carregar;
 </script>
