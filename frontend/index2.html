@@ -28,7 +28,7 @@ let userToken = ''; // Armazena token do OAuth 2.0
 
 // 1️⃣ Gerar URL OAuth
 document.getElementById('btnAuth').onclick = async () => {
-  const res = await fetch('https://SEU_BACKEND.onrender.com/auth-url');
+  const res = await fetch('https://cursojs-8012.onrender.com/auth');
   const data = await res.json();
   document.getElementById('authLink').innerHTML = `<a href="${data.url}" target="_blank">Clique aqui para autenticar</a>`;
   alert('Após autenticar, copie o token do Playground e cole no prompt.');
