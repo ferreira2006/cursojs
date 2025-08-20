@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 
 // Middlewares
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "."))); // pasta raiz
+app.use(express.static(path.join(__dirname, "."))); // serve arquivos da raiz (index.html, success.html)
 
 // Google OAuth2
 const oAuth2Client = new google.auth.OAuth2(
@@ -41,18 +41,18 @@ app.get("/oauth2callback", async (req, res) => {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
 
-    // Redireciona para página estática com token
-   res.redirect(`/success.html?token=${encodeURIComponent(JSON.stringify(token))}`);
+    // Redireciona para success.html com o token na query string
+    res.redirect(`/success.html?token=${encodeURIComponent(JSON.stringify(tokens))}`);
   } catch (err) {
     console.error("Erro ao trocar code por token:", err);
     res.status(500).send("Erro na autenticação");
   }
 });
 
-// 🔹 Exemplo de rota para salvar no Drive
-app.post("/upload", async (req, res) => {
+// 🔹 Rota para salvar no Google Drive
+app.post("/save", async (req, res) => {
   try {
-    const { token, filename, data } = req.body;
+    const { token, filename, content } = req.body;
     oAuth2Client.setCredentials(token);
 
     const drive = google.drive({ version: "v3", auth: oAuth2Client });
@@ -60,7 +60,7 @@ app.post("/upload", async (req, res) => {
     const fileMetadata = { name: filename };
     const media = {
       mimeType: "application/json",
-      body: JSON.stringify(data)
+      body: JSON.stringify(content)
     };
 
     const response = await drive.files.create({
@@ -69,10 +69,10 @@ app.post("/upload", async (req, res) => {
       fields: "id"
     });
 
-    res.json({ fileId: response.data.id });
+    res.json({ success: true, fileId: response.data.id });
   } catch (err) {
     console.error("Erro ao enviar arquivo para o Drive:", err);
-    res.status(500).send("Erro no upload");
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
