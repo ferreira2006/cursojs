@@ -41,7 +41,7 @@
   <button onclick="gerarPDF()">Exportar PDF</button>
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
-  <button onclick="undo()">Undo</button>
+  <button onclick="desfazer()">Undo</button>
 </div>
 
 <div id="badges-container"></div>
@@ -63,19 +63,28 @@ const plano = {
   "Semana 8 – Projeto Final": ["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
-window.data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [], undoStack: [] };
-window.modoRevisaoAtivo = false;
+// --- Dados ---
+let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [], undoStack: [] };
+let modoRevisaoAtivo = false;
 
-// --- LocalStorage ---
-window.salvar = () => {
+// --- Salvar ---
+const salvar = () => {
   localStorage.setItem('data', JSON.stringify(data));
   atualizarEstatisticas();
   atualizarBadges();
   atualizarProgresso();
 };
 
+// --- Carregar ---
+const carregar = () => {
+  gerar();
+  if(data.dark) document.body.classList.add('dark-mode');
+  atualizarProgresso();
+  atualizarBadges();
+};
+
 // --- Estatísticas ---
-window.atualizarEstatisticas = () => {
+const atualizarEstatisticas = () => {
   let concluidas = 0;
   Object.keys(plano).forEach((semana, idx) => {
     plano[semana].forEach((_, i) => { if(data.check[`s${idx}d${i}`]) concluidas++; });
@@ -83,11 +92,10 @@ window.atualizarEstatisticas = () => {
   data.pontos = concluidas;
 };
 
-// --- Badges ---
-window.atualizarBadges = () => {
+const atualizarBadges = () => {
   const container = document.getElementById('badges-container');
   container.innerHTML = '';
-  ['10 Tarefas','20 Tarefas','30 Tarefas'].forEach((b, i)=>{
+  ['10 Tarefas','20 Tarefas'].forEach((b, i)=>{
     if(data.pontos >= (i+1)*10 && !data.badges.includes(b)) data.badges.push(b);
   });
   data.badges.forEach(b => {
@@ -98,8 +106,7 @@ window.atualizarBadges = () => {
   });
 };
 
-// --- Progresso ---
-window.atualizarProgresso = () => {
+const atualizarProgresso = () => {
   const totalTarefas = Object.keys(data.check).length;
   const concluidas = Object.values(data.check).filter(Boolean).length;
   const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
@@ -118,7 +125,7 @@ window.atualizarProgresso = () => {
 };
 
 // --- Confete ---
-window.checarConfete = idx => {
+const checarConfete = idx => {
   const semana = plano[Object.keys(plano)[idx]];
   if(semana.every((_,i)=>data.check[`s${idx}d${i}`])){
     const confete = document.getElementById('confete-container');
@@ -128,42 +135,33 @@ window.checarConfete = idx => {
 };
 
 // --- Histórico ---
-window.adicionarHistorico = (semana, tarefa, status) => {
+const adicionarHistorico = (semana, tarefa, status) => {
   data.historico.push({semana, tarefa, status, timestamp:new Date().toISOString()});
   if(data.historico.length>100) data.historico.shift();
   salvar();
 };
 
-// --- Undo ---
-window.undo = () => {
-  const last = data.undoStack.pop();
-  if(last){
-    data.check[last.id] = last.prev;
-    salvar();
-    gerar();
-  } else alert('Nada para desfazer!');
-};
-
 // --- Tema ---
-window.toggleTheme = () => {
+const toggleTheme = () => {
   document.body.classList.toggle('dark-mode');
   data.dark = document.body.classList.contains('dark-mode');
   salvar();
 };
 
 // --- Export/Import ---
-window.criarDownload = (json, nome) => {
+const criarDownload = (json, nome) => {
   const blob = new Blob([JSON.stringify(json,null,2)],{type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = nome; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 };
 
-window.exportar = () => criarDownload(data, 'checklist.json');
-window.exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges}, 'checklist_avancado.json');
-window.gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
+const exportar = () => criarDownload(data, 'checklist.json');
+const exportarAvancado = () => criarDownload({check:data.check, notes:data.notes, historico:data.historico, pontos:data.pontos, badges:data.badges}, 'checklist_avancado.json');
+
+const gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
 
 // --- Modo Revisão ---
-window.ativarModoRevisao = () => {
+const ativarModoRevisao = () => {
   modoRevisaoAtivo = !modoRevisaoAtivo;
   document.querySelectorAll('.semana').forEach(div=>{
     if(modoRevisaoAtivo && [...div.querySelectorAll('input[type=checkbox]')].some(chk=>!chk.checked)){
@@ -175,35 +173,26 @@ window.ativarModoRevisao = () => {
   alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}`);
 };
 
-// --- Criar tarefas ---
-window.criarTarefa = (semana, idx, t, i) => {
+// --- Criar Tarefas ---
+const criarTarefa = (semana, idx, t, i) => {
   const chk = document.createElement('input');
   chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
   chk.onchange = ()=>{
+    if(!data.undoStack) data.undoStack = [];
     data.undoStack.push({id:chk.id, prev:data.check[chk.id]});
-    data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked);
-    if(modoRevisaoAtivo) ativarModoRevisao(); 
+    data.check[chk.id]=chk.checked;
+    salvar(); atualizarProgresso(); checarConfete(idx); adicionarHistorico(semana,t,chk.checked);
+    if(modoRevisaoAtivo) ativarModoRevisao();
   };
-
   const label = document.createElement('label'); label.htmlFor = chk.id; label.textContent = t;
-
   const div = document.createElement('div');
-  div.appendChild(chk);
-  div.appendChild(label);
-
-  // Adicionar nota
-  const nota = document.createElement('textarea'); nota.className='nota'; nota.placeholder='Notas...';
-  nota.value = data.notes[chk.id]||'';
-  nota.oninput = ()=>{ data.notes[chk.id]=nota.value; salvar(); };
-  div.appendChild(nota);
-
+  div.appendChild(chk); div.appendChild(label);
   return div;
 };
 
-// --- Gerar semana ---
-window.gerarSemana = (semana, tarefas, idx) => {
+// --- Gerar Semana ---
+const gerarSemana = (semana, tarefas, idx) => {
   const div = document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
-
   const header = document.createElement('div'); header.className='semana-header';
   header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
     <div>
@@ -211,59 +200,78 @@ window.gerarSemana = (semana, tarefas, idx) => {
       <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
     </div>`;
   div.appendChild(header);
-
   const progresso = document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
   const progressBar = document.createElement('div'); progressBar.className='semana-progress-bar';
   progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
   div.appendChild(progressBar);
-
   const tarefasDiv = document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`;
   tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
   div.appendChild(tarefasDiv);
   return div;
 };
 
-// --- Marcar/resetar semana ---
-window.marcarSemana = (idx, marcar) => {
-  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => { data.undoStack.push({id:chk.id, prev:data.check[chk.id]}); chk.checked = marcar; data.check[chk.id]=marcar; });
-  salvar();
-  gerar();
-};
-
-// --- Gerar interface ---
-window.gerar = () => {
+// --- Gerar Interface ---
+const gerar = () => {
   const container = document.getElementById('conteudo'); container.innerHTML='';
   Object.entries(plano).forEach(([semana,tarefas],idx)=> container.appendChild(gerarSemana(semana,tarefas,idx)));
   atualizarProgresso();
   if(modoRevisaoAtivo) ativarModoRevisao();
 };
 
-// --- Busca e Collapse ---
-window.filtrar = () => {
+// --- Busca ---
+const filtrar = () => {
   const termo = document.getElementById('busca').value.toLowerCase();
   document.querySelectorAll('.semana').forEach(div => { div.style.display = div.innerText.toLowerCase().includes(termo)?'block':'none'; });
 };
-window.toggleCollapse = idx => {
+
+// --- Collapse ---
+const toggleCollapse = idx => {
   const el = document.getElementById(`tarefas-${idx}`);
   el.style.display = el.style.display==='none'?'block':'none';
 };
 
-// --- Limpar e Importar ---
-window.limpar = () => {
+// --- Marcar Semana ---
+window.marcarSemana = (idx, marcar) => {
+  if(!data.undoStack) data.undoStack = [];
+  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk => {
+    data.undoStack.push({id:chk.id, prev:data.check[chk.id]});
+    chk.checked = marcar;
+    data.check[chk.id] = marcar;
+  });
+  salvar();
+  gerar();
+};
+
+// --- Undo ---
+window.desfazer = () => {
+  if(data.undoStack && data.undoStack.length>0){
+    const last = data.undoStack.pop();
+    data.check[last.id] = last.prev;
+    salvar();
+    gerar();
+  } else {
+    alert("Nada para desfazer!");
+  }
+};
+
+// --- Limpar ---
+const limpar = () => {
   if(confirm("Deseja realmente limpar todos os dados?")){
     data={check:{},notes:{},dark:false,historico:[],pontos:0,badges:[],undoStack:[]};
     localStorage.removeItem('data');
     carregar();
   }
 };
-window.importar = () => {
+
+// --- Importar ---
+const importar = () => {
   const input = document.createElement('input'); input.type='file'; input.accept='application/json';
   input.onchange = e => {
     const file = e.target.files[0];
     if(file){
       const reader = new FileReader();
       reader.onload = evt => {
-        try{ data = JSON.parse(evt.target.result); salvar(); carregar(); } catch { alert("Arquivo inválido!"); }
+        try{ data = JSON.parse(evt.target.result); if(!data.undoStack) data.undoStack = []; salvar(); carregar(); } catch { alert("Arquivo inválido!"); }
       };
       reader.readAsText(file);
     }
@@ -272,7 +280,7 @@ window.importar = () => {
 };
 
 // --- Exportar Calendário ---
-window.exportarParaCalendario = () => {
+const exportarParaCalendario = () => {
   let ics = "BEGIN:VCALENDAR\nVERSION:2.0\n";
   let baseDate = new Date();
   Object.keys(plano).forEach((semana, idx)=>{
@@ -290,7 +298,6 @@ window.exportarParaCalendario = () => {
 };
 
 // --- Iniciar ---
-window.carregar = () => { gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); };
 window.onload = carregar;
 </script>
 </body>
