@@ -116,13 +116,17 @@ function salvarNoDrive() {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ data, token })
+    body: JSON.stringify({ data, token, filename:'checklist.json', content: data })
   })
   .then(res => res.json())
-  .then(resp => alert(resp.success ? 'Checklist salvo no Google Drive!' : resp.error))
-  .catch(err => console.error(err));
+  .then(resp => {
+    if(resp.success) alert('Checklist salvo com sucesso no Google Drive!');
+    else alert('Erro ao salvar: ' + (resp.error || 'desconhecido'));
+  })
+  .catch(err => alert('Erro ao salvar no Google Drive: ' + err));
 }
 
+// --- Inicialização ---
 window.onload = carregar;
 </script>
 </body>
