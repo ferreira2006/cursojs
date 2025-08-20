@@ -161,13 +161,32 @@ const gerarPDF = () => html2pdf().from(document.getElementById('conteudo')).save
 // --- Modo Revisão ---
 const ativarModoRevisao = () => {
   modoRevisaoAtivo = !modoRevisaoAtivo;
-  document.querySelectorAll('.semana').forEach(div=>{
-    if(modoRevisaoAtivo && [...div.querySelectorAll('input[type=checkbox]')].some(chk=>!chk.checked)){
-      div.classList.add('modo-revisao');
+
+  document.querySelectorAll('.semana').forEach((semanaDiv, idx)=>{
+    const tarefas = semanaDiv.querySelectorAll('input[type=checkbox]');
+    let semanaEmRevisao = false;
+
+    tarefas.forEach(chk=>{
+      if(modoRevisaoAtivo){
+        if(!chk.checked){
+          chk.parentElement.classList.add('modo-revisao'); // destaca apenas tarefas pendentes
+          semanaEmRevisao = true;
+        } else {
+          chk.parentElement.classList.remove('modo-revisao');
+        }
+      } else {
+        chk.parentElement.classList.remove('modo-revisao');
+      }
+    });
+
+    // Adiciona fundo de revisão na semana se houver tarefas pendentes
+    if(modoRevisaoAtivo && semanaEmRevisao){
+      semanaDiv.classList.add('modo-revisao');
     } else {
-      div.classList.remove('modo-revisao');
+      semanaDiv.classList.remove('modo-revisao');
     }
   });
+
   alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}`);
 };
 
