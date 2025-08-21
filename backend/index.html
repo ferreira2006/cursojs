@@ -208,36 +208,52 @@ const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getIte
 // ================= Export/Import ======================
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const exportarAvancado=()=>{ const exportData = { check:data.check, notes:data.notes, plano:plano }; const blob = new Blob([JSON.stringify(exportData,null,2)], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'checklist_avancado.json'; a.click(); showToast('Exportação avançada concluída!'); };
-const gerarPDF = () => {
-  // Cria um container temporário para o PDF
-  const conteudo = document.getElementById('conteudo');
-  const pdfContainer = document.createElement('div');
+const gerarPDF = () => { 
+  const conteudo = document.createElement('div'); 
+  conteudo.style.fontFamily = "'Inter', Arial, sans-serif";
+  conteudo.style.padding = "15px";
 
-  // Adiciona cabeçalho bonito
+  // ===== Cabeçalho bonito =====
   const cabecalho = document.createElement('div');
   cabecalho.style.textAlign = 'center';
   cabecalho.style.marginBottom = '20px';
   cabecalho.innerHTML = `
-    <h1 style="font-family:'Inter', Arial, sans-serif; color:#4caf50;">Checklist de Estudo - JavaScript Avançado</h1>
-    <p style="font-family:'Inter', Arial, sans-serif; color:#333;">Relatório gerado em ${new Date().toLocaleDateString()}</p>
-    <hr style="border:1px solid #4caf50;">
+    <h1 style="color:#4caf50; margin-bottom:5px;">Checklist de Estudo - JavaScript Avançado</h1>
+    <p style="color:#333; margin-top:0;">Relatório gerado em ${new Date().toLocaleDateString()}</p>
+    <hr style="border:1px solid #4caf50; margin-top:10px;">
   `;
-  pdfContainer.appendChild(cabecalho);
+  conteudo.appendChild(cabecalho);
 
-  // Clona o conteúdo atual
-  const clone = conteudo.cloneNode(true);
-  clone.querySelectorAll('canvas, #toast-container').forEach(el => el.remove()); // remove confete e toasts
-  pdfContainer.appendChild(clone);
+  // ===== Conteúdo das semanas =====
+  Object.entries(plano).forEach(([semana, tarefas], idx) => {
+    const h2 = document.createElement('h2'); 
+    h2.textContent = semana; 
+    conteudo.appendChild(h2);
 
-  // Gera PDF usando html2pdf
+    const ul = document.createElement('ul'); 
+    tarefas.forEach((t, i) => {
+      const li = document.createElement('li'); 
+      li.textContent = `[${data.check[`s${idx}d${i}`] ? '✔' : ' '}] ${t}`; 
+      ul.appendChild(li);
+    }); 
+    conteudo.appendChild(ul);
+
+    if(data.notes[`s${idx}`]) { 
+      const p = document.createElement('p'); 
+      p.innerHTML = `<strong>Notas:</strong> ${data.notes[`s${idx}`]}`; 
+      conteudo.appendChild(p);
+    }
+  });
+
+  // ===== Gera PDF =====
   html2pdf()
     .set({
       margin: 10,
-      filename: 'checklist.pdf',
+      filename: 'checklist_avancado.pdf',
       html2canvas: { scale: 2 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     })
-    .from(pdfContainer)
+    .from(conteudo)
     .save();
 };
 const exportarParaCalendario=()=>{
