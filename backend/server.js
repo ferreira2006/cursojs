@@ -2,6 +2,7 @@ import express from "express";
 import { google } from "googleapis";
 import path from "path";
 import { fileURLToPath } from "url";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,7 +11,8 @@ const PORT = process.env.PORT || 5000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve arquivos estáticos (index.html, success.html, etc)
+// Middlewares
+app.use(cors());
 app.use(express.static(__dirname));
 app.use(express.json());
 
@@ -18,13 +20,13 @@ app.use(express.json());
 const oAuth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  "https://cursojs-8012.onrender.com/oauth2callback" // Certifique-se de cadastrar esse redirect no Google Cloud
+  "https://cursojs-8012.onrender.com/oauth2callback"
 );
 
 // 🔹 URL de login
 app.get("/auth-url", (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
-    access_type: "offline",        // Para receber refresh token
+    access_type: "offline",
     scope: [
       "https://www.googleapis.com/auth/drive.file",
       "https://www.googleapis.com/auth/userinfo.email",
@@ -35,13 +37,12 @@ app.get("/auth-url", (req, res) => {
   res.json({ url });
 });
 
-// 🔹 Callback do Google (recebe code e retorna tokens de forma segura)
+// 🔹 Callback do Google
 app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    // Retorna HTML com postMessage para popup do front-end
     res.send(`
       <script>
         window.opener.postMessage({ googleToken: ${JSON.stringify(tokens)} }, "*");
@@ -52,11 +53,6 @@ app.get("/oauth2callback", async (req, res) => {
     console.error("Erro ao trocar code por token:", err);
     res.status(500).send("Erro na autenticação");
   }
-});
-
-// 🔹 Logout
-app.get("/logout", (req, res) => {
-  res.redirect('/');
 });
 
 // 🔹 Salvar arquivo no Drive
@@ -73,7 +69,7 @@ app.post("/save", async (req, res) => {
 
     const response = await drive.files.create({
       resource: fileMetadata,
-      media: media,
+      media,
       fields: "id"
     });
 
@@ -85,14 +81,12 @@ app.post("/save", async (req, res) => {
 });
 
 // 🔹 Obter informações do usuário (email e avatar)
-app.get("/userinfo", async (req, res) => {
+app.post("/userinfo", async (req, res) => {
   try {
-    const tokenHeader = req.headers.authorization;
-    if (!tokenHeader) return res.status(401).send("Token ausente");
+    const { token } = req.body;
+    if (!token) return res.status(401).send("Token ausente");
 
-    const token = JSON.parse(tokenHeader.split(" ")[1]);
     oAuth2Client.setCredentials(token);
-
     const oauth2 = google.oauth2({ version: "v2", auth: oAuth2Client });
     const userinfo = await oauth2.userinfo.get();
 
