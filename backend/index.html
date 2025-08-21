@@ -43,8 +43,15 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 .semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
 .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
-.expand-icon { transition: transform 0.3s; display:inline-block; }
-.expand-icon.collapsed { transform: rotate(-90deg); }
+.expand-icon {
+  display: inline-block;
+  margin-left: 5px;
+  transition: transform 0.2s;
+}
+
+.expand-icon.collapsed {
+  transform: rotate(-90deg);
+}
 .google-group { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
 .google-group .dropbtn { flex-shrink:0; }
 @media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} }
@@ -183,16 +190,43 @@ const criarTarefa=(semana,idx,t,i)=>{
 };
 
 const gerarSemana=(semana,tarefas,idx)=>{
-  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
-  const header=document.createElement('div'); header.className='semana-header';
-  header.innerHTML=`<h2 onclick="toggleCollapse(${idx})"><span class="expand-icon collapsed">▶</span>${semana}</h2><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button><button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button></div>`;
+   const div = document.createElement('div');
+  div.className = 'semana';
+  div.style.background = coresSemana[idx % coresSemana.length];
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'semana-header';
+  header.innerHTML = `
+    <h2 onclick="toggleCollapse(${idx})">
+      ${semana} <span class="expand-icon collapsed">▼</span>
+    </h2>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
+      <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
+    </div>
+  `;
   div.appendChild(header);
-  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar';
-  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
-  const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`;
-  const fragment=document.createDocumentFragment(); tarefas.forEach((t,i)=>fragment.appendChild(criarTarefa(semana,idx,t,i)));
-  tarefasDiv.appendChild(fragment); div.appendChild(tarefasDiv);
+
+  // Progresso
+  const progresso = document.createElement('div');
+  progresso.className = 'semana-progress';
+  progresso.id = `semana-progress-${idx}`;
+  div.appendChild(progresso);
+
+  const progressBar = document.createElement('div');
+  progressBar.className = 'semana-progress-bar';
+  progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
+  div.appendChild(progressBar);
+
+  // Tarefas
+  const tarefasDiv = document.createElement('div');
+  tarefasDiv.className = 'tarefas';
+  tarefasDiv.id = `tarefas-${idx}`;
+  tarefasDiv.style.display = 'none'; // inicia colapsada
+  tarefas.forEach((t, i) => tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
+  div.appendChild(tarefasDiv);
+
   return div;
 };
 
