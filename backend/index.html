@@ -208,23 +208,24 @@ const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getIte
 // ================= Export/Import ======================
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const exportarAvancado=()=>{ const exportData = { check:data.check, notes:data.notes, plano:plano }; const blob = new Blob([JSON.stringify(exportData,null,2)], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'checklist_avancado.json'; a.click(); showToast('Exportação avançada concluída!'); };
-const gerarPDF=()=>{ 
-  const conteudo = document.createElement('div'); 
-  conteudo.style.fontFamily="'Inter', Arial, sans-serif";
-  conteudo.style.padding="15px";
-  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
-    const h2=document.createElement('h2'); h2.textContent=semana; conteudo.appendChild(h2);
-    const ul=document.createElement('ul'); tarefas.forEach((t,i)=>{
-      const li=document.createElement('li'); 
-      li.textContent=`[${data.check[`s${idx}d${i}`]?'✔':' '}] ${t}`; 
-      ul.appendChild(li);
-    }); 
-    conteudo.appendChild(ul);
-    if(data.notes[`s${idx}`]){ 
-      const p=document.createElement('p'); p.innerHTML=`<strong>Notas:</strong> ${data.notes[`s${idx}`]}`; conteudo.appendChild(p);
-    }
-  });
-  html2pdf().from(conteudo).save('checklist_avancado.pdf');
+const gerarPDF = () => {
+  // Clonar o conteúdo para não mexer na tela
+  const conteudo = document.getElementById('conteudo').cloneNode(true);
+
+  // Criar cabeçalho
+  const cabecalho = document.createElement('div');
+  cabecalho.style.textAlign = 'center';
+  cabecalho.style.marginBottom = '20px';
+  cabecalho.innerHTML = `
+    <h1>Checklist de Estudo - JavaScript Avançado v5.0</h1>
+    <p>${new Date().toLocaleString()}</p>
+  `;
+
+  // Inserir cabeçalho antes do conteúdo
+  conteudo.insertBefore(cabecalho, conteudo.firstChild);
+
+  // Gerar PDF com html2pdf
+  html2pdf().from(conteudo).save('checklist.pdf');
 };
 const exportarParaCalendario=()=>{
   let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
