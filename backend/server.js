@@ -23,7 +23,7 @@ const oAuth2Client = new google.auth.OAuth2(
   "https://cursojs-8012.onrender.com/oauth2callback"
 );
 
-// 🔹 Redireciona direto para login Google
+// 🔹 URL de login
 app.get("/auth-url", (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
     access_type: "offline",
@@ -34,7 +34,7 @@ app.get("/auth-url", (req, res) => {
     ],
     prompt: "consent"
   });
-  res.redirect(url); // ❌ Redirecionamento direto
+  res.json({ url });
 });
 
 // 🔹 Callback do Google
