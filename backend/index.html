@@ -52,6 +52,10 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   <button onclick="salvarNoDrive()">Salvar no Drive</button>
   <button onclick="logoutGoogle()">Logout Google</button>
   <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+  <div id="usuario-logado" style="margin-left:auto; display:flex; align-items:center; gap:8px; font-weight:bold;">
+  <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
+  <span id="usuario-email">Nenhuma conta conectada</span>
+</div>
 </div>
 
 <div id="badges-container"></div>
@@ -142,6 +146,37 @@ const checarConfete=(idx)=>{
 const logoutGoogle = () => {
   localStorage.removeItem('googleToken');
   alert('Logout realizado. Faça login com outra conta.');
+  mostrarUsuario();
+};
+
+  const mostrarUsuario = async () => {
+   const token = JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan = document.getElementById('usuario-email');
+  const avatarImg = document.getElementById('usuario-avatar');
+
+  if (!token) {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+    return;
+  }
+
+  try {
+    const resp = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+      headers: { Authorization: `Bearer ${token.access_token}` }
+    });
+    const perfil = await resp.json();
+    emailSpan.textContent = perfil.email;
+    if (perfil.picture) {
+      avatarImg.src = perfil.picture;
+      avatarImg.style.display = "inline-block";
+    } else {
+      avatarImg.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Erro ao buscar perfil do usuário:", err);
+    emailSpan.textContent = "Erro ao obter usuário";
+    avatarImg.style.display = "none";
+  }
 };
 
 // ================= Confete Canvas =================
@@ -189,7 +224,7 @@ const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('da
 
 // ================= Login Google / Salvar Drive =================
 const BACKEND_URL = 'https://cursojs-8012.onrender.com'; // ou process.env.BASE_URL se quiser flexibilizar
-window.addEventListener('load',()=>{ gerar(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); alert('Login Google concluído!'); }catch(e){console.error(e);} }});
+window.addEventListener('load',()=>{ gerar(); mostrarUsuario(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); alert('Login Google concluído!'); }catch(e){console.error(e);} }});
 
 const loginGoogle=()=>{
   fetch(`${BACKEND_URL}/auth-url`)
@@ -201,6 +236,7 @@ const loginGoogle=()=>{
           localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
           alert('Login Google concluído!');
           popup.close();
+          mostrarUsuario();
         }
       }, {once:true});
     });
