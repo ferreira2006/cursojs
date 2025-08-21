@@ -263,9 +263,33 @@ const toggleTheme=()=>{
 
 // ================= Google ======================
 let oAuthWindow;
-const loginGoogle=()=>{ 
-  window.open(`${BACKEND_URL}/auth-url`,'_blank','width=500,height=600'); 
-  window.addEventListener('message',e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } },{once:true});
+const loginGoogle = async () => { 
+  try {
+    // Busca a URL real do backend
+    const resp = await fetch(`${BACKEND_URL}/auth-url`);
+    const data = await resp.json();
+    if (!data.url) {
+      showToast('Erro ao obter URL de login');
+      console.error(data);
+      return;
+    }
+
+    // Abre popup com URL real
+    const popup = window.open(data.url, '_blank', 'width=500,height=600');
+
+    // Recebe token do popup
+    window.addEventListener('message', e => {
+      if (e.data.googleToken) {
+        localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+        atualizarUsuarioLogado();
+        showToast('Login Google realizado!');
+      }
+    }, { once: true });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao iniciar login Google');
+  }
 };
 const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); };
 const atualizarUsuarioLogado=()=>{
