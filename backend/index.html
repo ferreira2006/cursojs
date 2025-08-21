@@ -192,6 +192,7 @@ const criarTarefa=(semana,idx,t,i)=>{
 
 const gerarSemana=(semana,tarefas,idx)=>{
   const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+
   const header=document.createElement('div'); header.className='semana-header';
   header.innerHTML=`
     <h2 onclick="toggleCollapse(${idx})">
@@ -203,11 +204,24 @@ const gerarSemana=(semana,tarefas,idx)=>{
     </div>
   `;
   div.appendChild(header);
+
   const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+
+  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; 
+  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+
   const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.style.display='none';
   tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i)));
   div.appendChild(tarefasDiv);
+
+  // ======= NOVO: Textarea para notas da semana =======
+  const nota=document.createElement('textarea');
+  nota.className='nota';
+  nota.placeholder='Anotações...';
+  nota.value = data.notes[`s${idx}`] || '';
+  nota.oninput = () => { data.notes[`s${idx}`] = nota.value; salvarDados(); };
+  div.appendChild(nota);
+
   return div;
 };
 
