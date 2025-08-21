@@ -2,39 +2,18 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Login Google Concluído</title>
-<style>
-  body { font-family: Arial, sans-serif; text-align:center; padding:50px; background:#f0f0f0; }
-  .container { background:white; padding:20px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2); display:inline-block; }
-  h1 { color:#4caf50; }
-  p { margin-top:20px; }
-</style>
+<title>Login Concluído</title>
 </head>
 <body>
-<div class="container">
-  <h1>✅ Login Concluído!</h1>
-  <p>Você pode fechar esta janela e voltar ao app.</p>
-</div>
-
+<h2>Login Google concluído!</h2>
 <script>
-(function() {
+  // Pega token da URL
   const params = new URLSearchParams(window.location.search);
-  const tokenStr = params.get('token');
-
-  if(tokenStr){
-    try{
-      const token = JSON.parse(decodeURIComponent(tokenStr));
-      // envia o token de volta para a janela pai
-      if(window.opener && !window.opener.closed){
-        window.opener.postMessage({ googleToken: token }, "*");
-      }
-      // Fecha popup automaticamente após 1.5s
-      setTimeout(()=>window.close(),1500);
-    } catch(e){
-      console.error("Erro ao processar token:", e);
-    }
+  const token = params.get('token');
+  if (token && window.opener) {
+    window.opener.postMessage({ googleToken: JSON.parse(decodeURIComponent(token)) }, "*");
+    window.close();
   }
-})();
 </script>
 </body>
 </html>
