@@ -18,26 +18,36 @@ app.use(express.json());
 const oAuth2Client = new google.auth.OAuth2(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  "https://cursojs-8012.onrender.com/oauth2callback"
+  "https://cursojs-8012.onrender.com/oauth2callback" // Certifique-se de cadastrar esse redirect no Google Cloud
 );
 
 // 🔹 URL de login
 app.get("/auth-url", (req, res) => {
   const url = oAuth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: ["https://www.googleapis.com/auth/drive.file"],
+    access_type: "offline",        // Para receber refresh token
+    scope: [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ],
     prompt: "consent"
   });
   res.json({ url });
 });
 
-// 🔹 Callback do Google
+// 🔹 Callback do Google (recebe code e retorna tokens de forma segura)
 app.get("/oauth2callback", async (req, res) => {
   const code = req.query.code;
   try {
     const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
-    res.redirect(`/success.html?token=${encodeURIComponent(JSON.stringify(tokens))}`);
+    // Retorna HTML com postMessage para popup do front-end
+    res.send(`
+      <script>
+        window.opener.postMessage({ googleToken: ${JSON.stringify(tokens)} }, "*");
+        window.close();
+      </script>
+    `);
   } catch (err) {
     console.error("Erro ao trocar code por token:", err);
     res.status(500).send("Erro na autenticação");
@@ -53,15 +63,17 @@ app.get("/logout", (req, res) => {
 app.post("/save", async (req, res) => {
   try {
     const { token, filename, content } = req.body;
-    oAuth2Client.setCredentials(token);
+    if (!token) return res.status(401).json({ success: false, error: "Token ausente" });
 
+    oAuth2Client.setCredentials(token);
     const drive = google.drive({ version: "v3", auth: oAuth2Client });
+
     const fileMetadata = { name: filename };
     const media = { mimeType: "application/json", body: JSON.stringify(content) };
 
     const response = await drive.files.create({
       resource: fileMetadata,
-      media: { mimeType: media.mimeType, body: media.body },
+      media: media,
       fields: "id"
     });
 
@@ -72,4 +84,24 @@ app.post("/save", async (req, res) => {
   }
 });
 
+// 🔹 Obter informações do usuário (email e avatar)
+app.get("/userinfo", async (req, res) => {
+  try {
+    const tokenHeader = req.headers.authorization;
+    if (!tokenHeader) return res.status(401).send("Token ausente");
+
+    const token = JSON.parse(tokenHeader.split(" ")[1]);
+    oAuth2Client.setCredentials(token);
+
+    const oauth2 = google.oauth2({ version: "v2", auth: oAuth2Client });
+    const userinfo = await oauth2.userinfo.get();
+
+    res.json(userinfo.data);
+  } catch (err) {
+    console.error("Erro ao obter usuário:", err);
+    res.status(500).send("Erro ao obter usuário");
+  }
+});
+
+// 🔹 Inicialização do servidor
 app.listen(PORT, () => console.log(`✅ Server rodando em http://localhost:${PORT}`));
