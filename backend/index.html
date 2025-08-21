@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist V3 Dinâmico - JavaScript Avançado</title>
+<title>Checklist v4.1 Industrial - JavaScript Avançado</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
@@ -10,17 +10,18 @@
 body { font-family: 'Inter', Arial, sans-serif; margin:10px; transition: background 0.3s, color 0.3s; }
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
 h2 { margin-top:0; cursor:pointer; }
-.semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s; }
+.semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, border 0.3s; }
 .semana.modo-revisao { background: #fff3cd !important; }
+.semana.incompleta { border:2px solid red; }
 .nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
 .top-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
 .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
-.progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:white; line-height:20px; transition: width 0.3s; }
+.progress-bar { height:100%; width:0; background: linear-gradient(90deg,#4caf50,#81c784); text-align:center; color:white; line-height:20px; transition: width 0.3s; }
 .semana-header { display:flex; justify-content:space-between; align-items:center; }
 .semana-progress { font-size:0.9em; margin-top:5px; color:#666; }
 .dark-mode .semana-progress { color:#ccc; }
 .semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; }
-.semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
+.semana-progress-fill { height:100%; width:0; background: linear-gradient(90deg,#4caf50,#81c784); transition: width 0.3s; }
 .hidden { display:none; }
 button { cursor:pointer; border:none; border-radius:5px; padding:5px 10px; background-color:#4caf50; color:white; transition: background 0.2s; }
 button:hover { background-color:#45a049; }
@@ -30,6 +31,7 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
 .tempo { font-size:0.8em; color:#555; margin-left:5px; }
 #badges-container { margin-bottom:10px; }
+.draggable { cursor:grab; }
 @media (max-width:600px){ .top-bar{flex-direction:column;} }
 </style>
 </head>
@@ -55,179 +57,143 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 <div id="confete-container" class="confete"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
 <script>
+// ================= BACKEND URL =================
 const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 
+// ================= CHECKLIST =================
+const coresSemana = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano = {
-  1: ["Variáveis e tipos", "Operadores", "Mini calculadora"],
-  2: ["If, else e switch", "Loops for e while"],
-  3: ["Funções e escopo", "Arrow functions", "setTimeout e setInterval"],
-  4: ["Arrays e objetos", ".map, .filter, .reduce"],
-  5: ["DOM básico", "Eventos e Manipulação"],
-  6: ["Projeto To-Do List", "LocalStorage"],
-  7: ["JS moderno", "Async/await e fetch"],
-  8: ["Projeto Final", "Consumir API"]
+  "Semana 1 – Fundamentos": ["O que é JS, onde roda, configurar ambiente.", "Variáveis (let, const, var) e tipos de dados.", "Operadores matemáticos e de comparação.", "Operadores lógicos (&&, ||, !).", "Exercícios práticos (mini-calculadora, olá usuário)."],
+  "Semana 2 – Controle de Fluxo": ["if, else if, else.", "Operador ternário e switch.", "Estruturas de repetição: for.", "Estruturas de repetição: while e do...while.", "Exercícios práticos (tabuada, par/ímpar)."],
+  "Semana 3 – Funções e Escopo": ["Declaração de funções e parâmetros.", "Retorno de funções.", "Arrow functions.", "Escopo (global, local, bloco).", "Funções anônimas, setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos": ["Criar arrays e usar .push(), .pop().", ".map(), .filter(), .reduce().", "Objetos: propriedades e acesso (. e []).", "Iteração em objetos (for...in, Object.keys).", "Exercícios (lista de compras, objeto carro)."],
+  "Semana 5 – DOM": ["Selecionar elementos (getElementById, querySelector).", "Alterar conteúdo (innerText, innerHTML).", "Alterar estilos (.style).", "Criar e remover elementos (createElement, appendChild).", "Eventos (onclick, addEventListener)."],
+  "Semana 6 – Projeto To-Do List": ["Estrutura HTML básica e input para tarefas.", "Adicionar itens à lista com JS.", "Marcar tarefas como concluídas.", "Excluir tarefas.", "Melhorias: salvar no localStorage."],
+  "Semana 7 – JavaScript Moderno": ["Template literals e desestruturação.", "Spread/rest.", "Módulos (import e export).", "fetch e Promises.", "async/await."],
+  "Semana 8 – Projeto Final": ["Planejar o projeto (ex.: clima, quiz, galeria).", "Estruturar HTML/CSS inicial.", "Criar funções principais.", "Consumir API (se usar).", "Finalizar e adicionar melhorias extras."]
 };
 
-let data = JSON.parse(localStorage.getItem('checklistData')) || {};
-let modoRevisao = false;
+let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
+let modoRevisaoAtivo = false;
 
-function initData(){
-  for(let i=1;i<=8;i++){
-    if(!data[i]) data[i]={nota:'',tarefas:plano[i].map(t=>({titulo:t,concluido:false})),importante:false,progresso:0};
-  }
-}
+// --- Salvar e carregar ---
+const salvar = () => { localStorage.setItem('data', JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
+const carregar = () => { gerar(); if(data.dark) document.body.classList.add('dark-mode'); atualizarProgresso(); atualizarBadges(); };
 
-const conteudo=document.getElementById('conteudo');
-const badgesContainer=document.getElementById('badges-container');
-
-function carregar(){
-  initData();
-  gerarSemanas();
-  atualizarProgresso();
-  atualizarBadges();
-}
-
-function gerarSemanas(){
-  conteudo.innerHTML='';
-  for(let i=1;i<=8;i++){
-    const semanaDiv=document.createElement('div');
-    semanaDiv.className='semana';
-    semanaDiv.innerHTML=`
-      <div class="semana-header">
-        <h2 onclick="toggleSemana(this)">Semana ${i}</h2>
-        <span class="importante" onclick="marcarImportante(${i})">★</span>
-      </div>
-      <div id="tarefas-${i}" class="tarefas"></div>
-      <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i},this.value)">${data[i].nota}</textarea>
-      <div class="semana-progress">0% concluído</div>
-      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:0%"></div></div>
-    `;
-    conteudo.appendChild(semanaDiv);
-    renderizarTarefas(i);
-  }
-}
-
-function renderizarTarefas(semana){
-  const container=document.getElementById(`tarefas-${semana}`);
-  container.innerHTML='';
-  data[semana].tarefas.forEach((t,i)=>{
-    const div=document.createElement('div');
-    div.draggable=true;
-    div.innerHTML=`<input type="checkbox" ${t.concluido?'checked':''} onchange="marcarTarefa(${semana},${i},this.checked)"> <span>${t.titulo}</span>`;
-    div.addEventListener('dragstart',dragStart);
-    div.addEventListener('dragover',dragOver);
-    div.addEventListener('drop',drop);
-    container.appendChild(div);
+// --- Progresso ---
+const atualizarProgresso = () => {
+  const totalTarefas = Object.keys(data.check).length;
+  const concluidas = Object.values(data.check).filter(Boolean).length;
+  const perc = totalTarefas ? Math.round((concluidas/totalTarefas)*100) : 0;
+  document.getElementById('progressBar').style.width = perc + '%';
+  document.getElementById('progressBar').textContent = perc + '%';
+  Object.keys(plano).forEach((semana, idx) => {
+    const tarefas = plano[semana];
+    const conclu = tarefas.filter((_,i)=>data.check[`s${idx}d${i}`]).length;
+    const percSemana = tarefas.length ? Math.round((conclu/tarefas.length)*100) : 0;
+    const div = document.getElementById(`tarefas-${idx}`);
+    const fill = document.getElementById(`semana-progress-fill-${idx}`);
+    const txt = document.getElementById(`semana-progress-${idx}`);
+    if(fill) fill.style.width = percSemana + '%';
+    if(txt) txt.textContent = percSemana + '% concluído';
+    if(div) div.parentElement.classList.toggle('incompleta', percSemana < 100);
   });
-}
+};
 
-let dragged;
-function dragStart(e){ dragged = e.target; }
-function dragOver(e){ e.preventDefault(); }
-function drop(e){
-  e.preventDefault();
-  if(e.target.tagName==='DIV' && e.target.parentElement===dragged.parentElement){
-    const parent=dragged.parentElement;
-    parent.insertBefore(dragged,e.target.nextSibling);
-    const semana=parseInt(parent.id.replace('tarefas-',''));
-    const novaOrdem=[...parent.children].map(c=>({titulo:c.querySelector('span').textContent,concluido:c.querySelector('input').checked}));
-    data[semana].tarefas=novaOrdem;
-    salvar();
-  }
-}
-
-function salvarNota(semana,texto){ data[semana].nota=texto; salvar(); }
-function marcarImportante(semana){ data[semana].importante=!data[semana].importante; salvar(); gerarSemanas(); }
-function marcarTarefa(semana,idx,concluido){ data[semana].tarefas[idx].concluido=concluido; salvar(); }
-function salvar(){ localStorage.setItem('checklistData',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); }
-function toggleSemana(el){ el.parentElement.parentElement.querySelector('.nota').classList.toggle('hidden'); }
-
-function atualizarProgresso(){
-  let total=0, concluidos=0;
-  for(let i=1;i<=8;i++){
-    const sem=data[i];
-    const c=sem.tarefas.filter(t=>t.concluido).length;
-    sem.progresso=Math.round(c/sem.tarefas.length*100);
-    total+=sem.tarefas.length;
-    concluidos+=c;
-    const semanaDiv=conteudo.children[i-1];
-    semanaDiv.querySelector('.semana-progress').textContent=sem.progresso+'% concluído';
-    semanaDiv.querySelector('.semana-progress-fill').style.width=sem.progresso+'%';
-  }
-  const perc=Math.round(concluidos/total*100);
-  document.getElementById('progressBar').style.width=perc+'%';
-  document.getElementById('progressBar').textContent=perc+'%';
-}
-
-function atualizarBadges(){
-  badgesContainer.innerHTML='';
-  for(let i=1;i<=8;i++) if(data[i].importante){
-    const b=document.createElement('div'); b.className='badge'; b.textContent='Semana '+i+' ★'; badgesContainer.appendChild(b);
-  }
-}
-
-function exportar(){
-  const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click();
-}
-
-function exportarAvancado(){
-  const avancado={data,exportadoEm:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(avancado)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click();
-}
-
-function importar(){
-  const input=document.createElement('input'); input.type='file'; input.accept='.json';
-  input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader();
-    reader.onload=()=>{ data=JSON.parse(reader.result); initData(); salvar(); gerarSemanas(); };
-    reader.readAsText(file);
-  };
-  input.click();
-}
-
-function limpar(){ if(confirm('Deseja realmente limpar tudo?')){ localStorage.removeItem('checklistData'); data={}; initData(); gerarSemanas(); atualizarProgresso(); atualizarBadges(); } }
-
-function filtrar(){ const termo=document.getElementById('busca').value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(s=>s.style.display=s.innerText.toLowerCase().includes(termo)?'block':'none');
-}
-
-function gerarPDF(){ html2pdf().from(document.body).save('checklist.pdf'); }
-function ativarModoRevisao(){ modoRevisao=!modoRevisao; document.querySelectorAll('.semana').forEach(s=>s.classList.toggle('modo-revisao')); }
-function exportarParaCalendario(){
-  let ics='BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
-  for(let i=1;i<=8;i++){
-    if(data[i].nota){
-      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nEND:VEVENT\n`;
+// --- Badges ---
+const atualizarBadges = () => {
+  const container = document.getElementById('badges-container');
+  container.innerHTML = '';
+  ['10 Tarefas','20 Tarefas','50%','75%','100%'].forEach((b,i)=>{
+    if(!data.badges.includes(b)){
+      if(b.includes('Tarefas') && data.pontos >= parseInt(b) || b==='50%' || b==='75%' || b==='100%'){
+        data.badges.push(b);
+      }
     }
-  }
-  ics+='END:VCALENDAR';
-  const blob=new Blob([ics],{type:'text/calendar'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();
-}
+  });
+  data.badges.forEach(b => { const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); });
+};
 
-function toggleTheme(){document.body.classList.toggle('dark-mode');}
+// --- Modo Revisão ---
+const ativarModoRevisao = () => {
+  modoRevisaoAtivo = !modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(div=>{
+    if(modoRevisaoAtivo && [...div.querySelectorAll('input[type=checkbox]')].some(chk=>!chk.checked)){
+      div.classList.add('modo-revisao');
+    } else div.classList.remove('modo-revisao');
+  });
+  alert(`Modo Revisão ${modoRevisaoAtivo ? 'Ativado' : 'Desativado'}`);
+};
 
-// ================= LOGIN GOOGLE =================
+// --- Tema ---
+const toggleTheme = () => { document.body.classList.toggle('dark-mode'); data.dark = document.body.classList.contains('dark-mode'); salvar(); };
+
+// --- Criação de tarefas ---
+const criarTarefa = (semana, idx, t, i) => {
+  const chk = document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked=data.check[chk.id]||false;
+  chk.onchange = ()=>{ data.check[chk.id]=chk.checked; salvar(); atualizarProgresso(); };
+  const label = document.createElement('label'); label.htmlFor=chk.id; label.textContent=t;
+  const div = document.createElement('div'); div.appendChild(chk); div.appendChild(label); div.className='draggable';
+  return div;
+};
+
+// --- Gerar semana ---
+const gerarSemana = (semana, tarefas, idx) => {
+  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+  const header=document.createElement('div'); header.className='semana-header';
+  header.innerHTML=`<h2 onclick='toggleCollapse(${idx})'>${semana}</h2>
+    <div>
+      <button onclick='marcarSemana(${idx},true)'>Marcar todos</button>
+      <button onclick='marcarSemana(${idx},false)'>Resetar semana</button>
+    </div>`;
+  div.appendChild(header);
+  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar';
+  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+  const tarefasDiv=document.createElement('div'); tarefasDiv.id=`tarefas-${idx}`;
+  tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
+  div.appendChild(tarefasDiv);
+  // Drag-and-drop
+  new Sortable(tarefasDiv,{animation:150});
+  return div;
+};
+
+// --- Gerar interface ---
+const gerar = () => {
+  const container=document.getElementById('conteudo'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx)));
+  atualizarProgresso();
+  if(modoRevisaoAtivo) ativarModoRevisao();
+};
+
+// --- Busca e Collapse ---
+const filtrar = () => {
+  const termo=document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(div=>div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none');
+};
+const toggleCollapse = idx => { const el=document.getElementById(`tarefas-${idx}`); el.style.display=el.style.display==='none'?'block':'none'; };
+
+// --- Marcar semana ---
+const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvar(); atualizarProgresso(); };
+
+// --- Limpar e Importar ---
+const limpar=()=>{ if(confirm("Deseja realmente limpar todos os dados?")){ data={check:{},notes:{},dark:false,historico:[],pontos:0,badges:[]}; localStorage.removeItem('data'); carregar(); } };
+const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ const file=e.target.files[0]; if(file){ const reader=new FileReader(); reader.onload=evt=>{ try{ data=JSON.parse(evt.target.result); salvar(); carregar(); }catch{ alert("Arquivo inválido!"); } }; reader.readAsText(file); } }; input.click(); };
+
+// --- PDF e Calendário ---
+const gerarPDF=()=>html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf');
+const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ plano[semana].forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]){ let dt=new Date(); let dtStr=dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; ics+=`BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${dtStr}\nEND:VEVENT\n`; } }); }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click(); };
+
+// --- Login Google e salvar no Drive ---
 window.addEventListener('load',()=>{
-  const params=new URLSearchParams(window.location.search);
-  const tokenStr=params.get('token');
-  if(tokenStr){ try{ const token=JSON.parse(decodeURIComponent(tokenStr)); localStorage.setItem('googleToken',JSON.stringify(token)); window.history.replaceState({},document.title,window.location.pathname); alert('Login Google concluído! Token salvo localmente.'); }catch(e){console.error(e);} }
+  const params=new URLSearchParams(window.location.search); const tokenStr=params.get('token');
+  if(tokenStr){ try{ const token=JSON.parse(decodeURIComponent(tokenStr)); localStorage.setItem('googleToken',JSON.stringify(token)); console.log('Token do Google salvo localmente'); window.history.replaceState({},document.title,window.location.pathname); alert('Login Google concluído!'); }catch(e){console.error(e);} }
 });
-
-function loginGoogle(){ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(data=>{
-  const popup=window.open(data.url,'loginGoogle','width=500,height=600');
-  window.addEventListener('message',function(event){
-    if(event.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(event.data.googleToken)); alert('Login Google concluído! Token salvo localmente.'); popup.close(); }
-  },{once:true});
-});}
-
-function salvarNoDrive(){ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Você precisa fazer login no Google antes.');
-  fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,filename:'checklist.json',content:data})})
-  .then(res=>res.json()).then(resp=>{if(resp.success) alert('Checklist salvo com sucesso no Google Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido'));})
-  .catch(err=>alert('Erro ao salvar no Google Drive: '+err));
-}
+function loginGoogle(){ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(data=>{ const popup=window.open(data.url,"loginGoogle","width=500,height=600"); window.addEventListener("message",function(event){ if(event.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(event.data.googleToken)); alert('Login Google concluído!'); popup.close(); } },{once:true}); }); }
+function salvarNoDrive(){ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Você precisa fazer login no Google antes.'); fetch(`${BACKEND_URL}/save`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token,filename:'checklist.json',content:data}) }).then(res=>res.json()).then(resp=>{ if(resp.success) alert('Checklist salvo com sucesso no Google Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); }).catch(err=>alert('Erro ao salvar no Google Drive: '+err)); }
 
 window.onload=carregar;
 </script>
