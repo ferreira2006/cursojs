@@ -278,7 +278,7 @@ const salvarNoDrive=async()=>{
   try{
     const resp=await fetch(`${BACKEND_URL}/save`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
     const result=await resp.json();
-    if(result.success) showToast(`Salvo no Drive! File ID: ${result.fileId}`);
+    if(result.success) showToast(`Arquivo salvo no Google Drive com sucesso!`); //Salvo no Drive! File ID: ${result.fileId}
     else{ showToast('Erro ao salvar no Drive'); console.error(result); }
   }catch(err){ console.error(err); showToast('Erro ao salvar no Drive'); }
 };
