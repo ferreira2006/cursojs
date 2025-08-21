@@ -73,12 +73,14 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
     <button onclick="importar()">📥 Importar JSON</button>
   </div>
 
-<div class="top-bar-group google-group">
-  <button class="dropbtn">🔑 Google</button>
-  <div class="dropdown-content">
-    <button onclick="loginGoogle()">Login</button>
-    <button onclick="logoutGoogle()">Logout</button>
-    <button onclick="salvarNoDrive()">Salvar no Drive</button>
+<div class="top-bar-group">
+  <div class="dropdown">
+    <button class="dropbtn">🔑 Google</button>
+    <div class="dropdown-content">
+      <button onclick="loginGoogle()">Login</button>
+      <button onclick="logoutGoogle()">Logout</button>
+      <button onclick="salvarNoDrive()">Salvar no Drive</button>
+    </div>
   </div>
   <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;">
     <img id="usuario-avatar" src="" alt="Avatar" style="width:24px; height:24px; border-radius:50%; display:none;">
