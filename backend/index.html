@@ -22,6 +22,27 @@ h2 { margin-top:0; cursor:pointer; }
 .top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; }
 .dark-mode .top-bar { background:#2b2b2b; }
 .top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+  /* Padroniza todos os botões da top-bar */
+.top-bar button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.15s;
+}
+
+.top-bar button:hover {
+  background-color: #45a049;
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.top-bar button:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 .dropdown { position:relative; display:inline-block; }
 .dropbtn { background:#4caf50; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; transition:0.2s; }
 .dropdown-content { display:none; position:absolute; background:#f9f9f9; min-width:150px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:5px; z-index:1; flex-direction:column; }
