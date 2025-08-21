@@ -107,17 +107,22 @@ const plano={
   "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
   "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
 };
+const BACKEND_URL='https://cursojs-8012.onrender.com';
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
 let modoRevisaoAtivo=false;
-const BACKEND_URL='https://cursojs-8012.onrender.com';
 
 // ================= Toast ======================
 const showToast=(msg,duration=3000)=>{
   const container=document.getElementById('toast-container');
-  const toast=document.createElement('div'); toast.className='toast'; toast.textContent=msg;
+  const toast=document.createElement('div'); 
+  toast.className='toast'; 
+  toast.textContent=msg;
   container.appendChild(toast);
   setTimeout(()=>toast.classList.add('show'),50);
-  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast),300); },duration);
+  setTimeout(()=>{
+    toast.classList.remove('show'); 
+    setTimeout(()=>container.removeChild(toast),300);
+  },duration);
 };
 
 // ================= Confete Avançado ======================
@@ -194,10 +199,71 @@ const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCA
 const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode'); salvarDados(); };
 
 // ================= Login Google / Salvar Drive ======================
-const mostrarUsuario=async()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); const emailSpan=document.getElementById('usuario-email'); const avatarImg=document.getElementById('usuario-avatar'); if(!token){ emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none"; return; } try{ const resp=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:`Bearer ${token.access_token}`}}); if(resp.status!==200) throw new Error("Token inválido"); const perfil=await resp.json(); emailSpan.textContent=perfil.email; if(perfil.picture){ avatarImg.src=perfil.picture; avatarImg.style.display="inline-block"; } else avatarImg.style.display="none"; }catch(e){ emailSpan.textContent="Erro ao obter usuário"; avatarImg.style.display="none"; } };
-const loginGoogle=()=>{ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(d=>{ const popup=window.open(d.url,"loginGoogle","width=500,height=600"); window.addEventListener('message',e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); mostrarUsuario(); showToast('Login concluído'); popup.close(); } },{once:true}); }); };
-const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); mostrarUsuario(); showToast('Logout realizado'); };
-const salvarNoDrive=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return showToast('Faça login antes'); fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,filename:'checklist.json',content:data})}).then(r=>r.json()).then(resp=>{ if(resp.success) showToast('Checklist salvo no Drive'); else showToast('Erro ao salvar'); }).catch(e=>showToast('Erro ao salvar')); };
+const mostrarUsuario=async()=>{
+  const token=JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan=document.getElementById('usuario-email');
+  const avatarImg=document.getElementById('usuario-avatar');
+  if(!token){
+    emailSpan.textContent="Nenhuma conta conectada";
+    avatarImg.style.display="none";
+    return;
+  }
+  try{
+    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+      method: 'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ token })
+    });
+    if(resp.status!==200) throw new Error("Token inválido");
+    const perfil = await resp.json();
+    emailSpan.textContent = perfil.email;
+    if(perfil.picture){
+      avatarImg.src = perfil.picture;
+      avatarImg.style.display="inline-block";
+    } else avatarImg.style.display="none";
+  } catch(e){
+    emailSpan.textContent="Erro ao obter usuário";
+    avatarImg.style.display="none";
+  }
+};
+
+const loginGoogle=()=>{
+  fetch(`${BACKEND_URL}/auth-url`)
+    .then(res=>res.json())
+    .then(d=>{
+      const popup = window.open(d.url,"loginGoogle","width=500,height=600");
+      window.addEventListener('message',e=>{
+        if(e.data.googleToken){
+          localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken));
+          mostrarUsuario();
+          showToast('Login concluído');
+          popup.close();
+        }
+      },{once:true});
+    });
+};
+
+const logoutGoogle=()=>{
+  localStorage.removeItem('googleToken');
+  mostrarUsuario();
+  showToast('Logout realizado');
+};
+
+const salvarNoDrive=()=>{
+  const token=JSON.parse(localStorage.getItem('googleToken'));
+  if(!token) return showToast('Faça login antes');
+  fetch(`${BACKEND_URL}/save`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({token,filename:'checklist.json',content:data})
+  })
+  .then(r=>r.json())
+  .then(resp=>{
+    if(resp.success) showToast('Checklist salvo no Drive');
+    else showToast('Erro ao salvar');
+  })
+  .catch(e=>showToast('Erro ao salvar'));
+};
 
 // ================= Progresso / Badges ======================
 const atualizarProgresso=()=>{ Object.keys(plano).forEach((semana,idx)=>{ const total=plano[semana].length; const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length; const perc=Math.round((checkeds/total)*100); document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído'; document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%'; }); const totalPerc=Math.round(Object.keys(plano).reduce((acc,semana,idx)=>acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length); document.getElementById('progressBar').style.width=totalPerc+'%'; document.getElementById('progressBar').textContent=totalPerc+'%'; };
