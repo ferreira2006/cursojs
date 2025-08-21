@@ -33,6 +33,7 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
 .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
+.dark-mode label { color:#f4f4f9; }
 @media (max-width:600px){ .top-bar{flex-direction:column;} .botao-semana{width:100%;} }
 </style>
 </head>
@@ -89,7 +90,6 @@ const criarTarefa=(semana, idx, t, i)=>{
   const label = document.createElement('label'); 
   label.htmlFor=chk.id; 
   label.textContent=t;
-  label.style.color = data.dark ? '#222' : '#000'; // contraste no modo escuro
   const div = document.createElement('div'); 
   div.appendChild(chk); 
   div.appendChild(label); 
@@ -133,7 +133,6 @@ const marcarSemana=(idx,marcar)=>{
 };
 
 const checarConfete=(idx)=>{
-  const semana=plano[Object.keys(plano)[idx]];
   if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){
     confete.start();
   }
@@ -163,7 +162,11 @@ const confete = {
 };
 
 // ================= Funções utilitárias =================
-const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); el.style.display=el.style.display==='none'?'flex':'flex'; };
+const toggleCollapse = idx => {
+  const el = document.getElementById(`tarefas-${idx}`);
+  el.style.display = (el.style.display === 'none') ? 'flex' : 'none';
+};
+
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); };
 const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
 
@@ -172,7 +175,7 @@ const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'applicati
 const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); };
 const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); gerar(); salvar(); }; reader.readAsText(file); }; input.click(); };
 const limpar=()=>{ if(confirm("Deseja realmente limpar tudo?")){ data.check={}; data.notes={}; gerar(); salvar(); } };
-const gerarPDF=()=>html2pdf().from(document.body).save("checklist.pdf");
+const gerarPDF=()=>html2pdf().from(document.getElementById("conteudo")).save("checklist.pdf");
 const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); };
 
 // ================= Theme =================
@@ -181,14 +184,61 @@ const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('da
 // ================= Login Google / Salvar Drive =================
 const BACKEND_URL='https://cursojs-8012.onrender.com';
 window.addEventListener('load',()=>{ gerar(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); alert('Login Google concluído!'); }catch(e){console.error(e);} }});
-const loginGoogle=()=>{ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(d=>{ const popup=window.open(d.url,"loginGoogle","width=500,height=600"); window.addEventListener('message',e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); alert('Login Google concluído!'); popup.close(); } },{once:true}); }); };
-const salvarNoDrive=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Faça login antes'); fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,filename:'checklist.json',content:data})}).then(r=>r.json()).then(resp=>{ if(resp.success) alert('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); }).catch(err=>alert('Erro ao salvar: '+err)); };
+
+const loginGoogle=()=>{
+  fetch(`${BACKEND_URL}/auth-url`)
+    .then(res=>res.json())
+    .then(d=>{
+      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
+      window.addEventListener('message', e=>{
+        if(e.data.googleToken){
+          localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+          alert('Login Google concluído!');
+          popup.close();
+        }
+      }, {once:true});
+    });
+};
+
+const salvarNoDrive=()=>{
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if(!token) return alert('Faça login antes');
+  fetch(`${BACKEND_URL}/save`, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body:JSON.stringify({ token, filename:'checklist.json', content:data })
+  })
+  .then(r=>r.json())
+  .then(resp=>{ if(resp.success) alert('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); })
+  .catch(err=>alert('Erro ao salvar: '+err));
+};
 
 // ================= Progresso/Badges =================
-const atualizarProgresso=()=>{ Object.keys(plano).forEach((semana,idx)=>{ const total=plano[semana].length; const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length; const perc=Math.round((checkeds/total)*100); document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído'; document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%'; }); const totalPerc = Math.round(Object.keys(plano).reduce((acc,semana,idx)=> acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length); document.getElementById('progressBar').style.width=totalPerc+'%'; document.getElementById('progressBar').textContent=totalPerc+'%'; };
-const badgesContainer=document.getElementById('badges-container');
-const atualizarBadges=()=>{ badgesContainer.innerHTML=''; Object.keys(plano).forEach((semana,idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){ const badge=document.createElement('div'); badge.className='badge'; badge.textContent=`${semana} ★`; badgesContainer.appendChild(badge); } }); };
+const atualizarProgresso=()=>{
+  Object.keys(plano).forEach((semana,idx)=>{
+    const total=plano[semana].length;
+    const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length;
+    const perc=Math.round((checkeds/total)*100);
+    document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído';
+    document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%';
+  });
+  const totalPerc = Math.round(Object.keys(plano).reduce((acc,semana,idx)=> acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length);
+  document.getElementById('progressBar').style.width=totalPerc+'%';
+  document.getElementById('progressBar').textContent=totalPerc+'%';
+};
 
+const badgesContainer=document.getElementById('badges-container');
+const atualizarBadges=()=>{
+  badgesContainer.innerHTML='';
+  Object.keys(plano).forEach((semana,idx)=>{
+    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){
+      const badge=document.createElement('div');
+      badge.className='badge';
+      badge.textContent=`${semana} ★`;
+      badgesContainer.appendChild(badge);
+    }
+  });
+};
 </script>
 </body>
 </html>
