@@ -2,60 +2,86 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist de Estudo - JavaScript Avançado v4.2</title>
+<title>Checklist de Estudo - JavaScript Avançado v4.6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Inter', Arial, sans-serif; margin:10px; transition: background 0.3s, color 0.3s; }
+body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:70px; transition: background 0.3s, color 0.3s; }
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
 h2 { margin-top:0; cursor:pointer; }
 .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; }
 .semana.modo-revisao { background: #fff3cd !important; }
 .semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
-.botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s; }
-.botao-semana:hover { background:#45a049; }
+.botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s, transform 0.15s, box-shadow 0.15s; }
 .tarefas { display:flex; flex-direction:column; gap:5px; margin-top:5px; }
 .tarefas div { display:flex; align-items:center; gap:10px; }
 .tarefas input { width:18px; height:18px; }
 .nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
-.top-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
 .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
 .progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:white; line-height:20px; transition: width 0.3s; }
 .semana-progress { font-size:0.9em; margin-top:5px; color:#666; }
 .dark-mode .semana-progress { color:#ccc; }
 .semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; }
 .semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
-.hidden { display:none; }
-button { cursor:pointer; border:none; border-radius:5px; padding:5px 10px; background-color:#4caf50; color:white; transition: background 0.2s; }
-button:hover { background-color:#45a049; }
-input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
-.importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
 .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
-.toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.85); color:white; padding:10px 15px; border-radius:5px; opacity:0; transition: opacity 0.3s; z-index:10000; }
-.dark-mode label { color:#f4f4f9; }
-@media (max-width:600px){ .top-bar{flex-direction:column;} .botao-semana{width:100%;} }
+button, .dropbtn, .botao-semana { cursor:pointer; border:none; border-radius:5px; padding:5px 10px; background-color:#4caf50; color:white; transition: background 0.2s, transform 0.15s, box-shadow 0.15s; }
+button:hover, .dropbtn:hover, .botao-semana:hover { background-color:#45a049; transform:scale(1.05); box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+button:active, .dropbtn:active, .botao-semana:active { transform:scale(0.98); box-shadow:0 2px 5px rgba(0,0,0,0.2); }
+input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
+.top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:20px; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; }
+.dark-mode .top-bar { background:#2b2b2b; }
+.top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.dropdown { position:relative; display:inline-block; }
+.dropbtn { background:#4caf50; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; transition:0.2s; }
+.dropdown-content { display:none; position:absolute; background:#f9f9f9; min-width:150px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:5px; z-index:1; flex-direction:column; }
+.dropdown-content button { width:100%; text-align:left; padding:8px 12px; background:none; border:none; cursor:pointer; transition:0.2s; }
+.dropdown-content button:hover { background:#e0e0e0; }
+.dropdown:hover .dropdown-content { display:flex; flex-direction:column; }
+.busca-group input { width:200px; padding:5px; border-radius:5px; border:1px solid #ccc; }
+#toast-container { position:fixed; top:20px; right:20px; z-index:10000; }
+.toast { background:#333; color:white; padding:10px 15px; border-radius:5px; margin-bottom:10px; min-width:200px; box-shadow:0 2px 6px rgba(0,0,0,0.2); opacity:0; transform:translateX(100%); transition:opacity 0.3s, transform 0.3s; }
+.toast.show { opacity:1; transform:translateX(0); }
+@media (max-width:600px){ .top-bar { flex-direction:column; align-items:flex-start; } .top-bar-group { width:100%; justify-content:flex-start; } .busca-group input { width:100%; } }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">  
-  <button onclick="exportar()">Exportar JSON</button>
-  <button onclick="exportarAvancado()">Exportar Avançado</button>
-  <button onclick="importar()">Importar JSON</button>
-  <button onclick="limpar()">Limpar Tudo</button>  
-  <button onclick="gerarPDF()">Exportar PDF</button>
-  <button onclick="ativarModoRevisao()">Modo Revisão</button>
-  <button onclick="exportarParaCalendario()">Exportar Calendário</button>
-  <button onclick="loginGoogle()">Login Google</button>
-  <button onclick="salvarNoDrive()">Salvar no Drive</button>
-  <button onclick="logoutGoogle()">Logout Google</button>
-  <button onclick="toggleTheme()">🌙/☀️ Tema</button>
-  <div id="usuario-logado" style="margin-left:auto; display:flex; align-items:center; gap:8px; font-weight:bold;">
-    <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
-    <span id="usuario-email">Nenhuma conta conectada</span>
+  <div class="top-bar-group">
+    <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+    <button onclick="ativarModoRevisao()">📝 Modo Revisão</button>
+  </div>
+
+  <div class="top-bar-group dropdown">
+    <button class="dropbtn">📤 Exportar</button>
+    <div class="dropdown-content">
+      <button onclick="exportar()">JSON</button>
+      <button onclick="exportarAvancado()">Avançado</button>
+      <button onclick="gerarPDF()">PDF</button>
+      <button onclick="exportarParaCalendario()">Calendário</button>
+    </div>
+  </div>
+
+  <div class="top-bar-group">
+    <button onclick="importar()">📥 Importar JSON</button>
+  </div>
+
+  <div class="top-bar-group dropdown">
+    <button class="dropbtn">🔑 Google</button>
+    <div class="dropdown-content">
+      <button onclick="loginGoogle()">Login</button>
+      <button onclick="logoutGoogle()">Logout</button>
+    </div>
+    <div id="usuario-logado" style="display:flex; align-items:center; gap:5px;">
+      <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
+      <span id="usuario-email">Nenhuma conta conectada</span>
+    </div>
+  </div>
+
+  <div class="top-bar-group busca-group">
+    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
   </div>
 </div>
 
@@ -63,209 +89,168 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
 <div id="conteudo"></div>
 <canvas id="confete-canvas" class="confete"></canvas>
-<div id="toast" class="toast"></div>
+<div id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-// ================= PLANO DE ESTUDOS =================
-const coresSemana = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
-const plano = {
-  "Semana 1 – Fundamentos": ["O que é JS, onde roda, configurar ambiente.", "Variáveis e tipos de dados.", "Operadores matemáticos e lógicos.", "Exercícios práticos."],
-  "Semana 2 – Controle de Fluxo": ["if, else if, else.", "Operador ternário e switch.", "Estruturas de repetição: for, while, do...while.", "Exercícios práticos."],
-  "Semana 3 – Funções e Escopo": ["Declaração de funções.", "Arrow functions.", "Escopo global, local e de bloco.", "setTimeout e setInterval."],
-  "Semana 4 – Arrays e Objetos": ["Criar arrays e usar .push(), .pop().", ".map(), .filter(), .reduce().", "Objetos e iteração.", "Exercícios práticos."],
-  "Semana 5 – DOM": ["Selecionar elementos e alterar conteúdo.", "Alterar estilos e criar/remover elementos.", "Eventos: onclick, addEventListener.", "Exercícios práticos."],
-  "Semana 6 – Projeto To-Do List": ["Estrutura HTML e input para tarefas.", "Adicionar itens à lista.", "Marcar como concluído.", "Excluir tarefas.", "Salvar no localStorage."],
-  "Semana 7 – JS Moderno": ["Template literals, desestruturação.", "Spread/rest, módulos.", "fetch e Promises.", "async/await."],
-  "Semana 8 – Projeto Final": ["Planejar projeto.", "Estruturar HTML/CSS.", "Criar funções principais.", "Consumir API.", "Finalizar e melhorias extras."]
+// ====================== Dados ======================
+const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const plano={
+  "Semana 1 – Fundamentos": ["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
+  "Semana 2 – Controle de Fluxo": ["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
+  "Semana 3 – Funções e Escopo": ["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos": ["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
+  "Semana 5 – DOM": ["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
+  "Semana 6 – Projeto To-Do List": ["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
+  "Semana 7 – JS Moderno": ["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
+  "Semana 8 – Projeto Final": ["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
 };
-
-// ================= DATA =================
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
-let modoRevisaoAtivo = false;
-
-// ================= Toast =================
-const showToast = (msg,dur=2000)=>{
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.opacity=1;
-  setTimeout(()=>t.style.opacity=0,dur);
-};
-
-// ================= FUNÇÕES PRINCIPAIS =================
-const salvar = () => { localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); showToast('Alterações salvas'); };
-
-const criarTarefa=(semana, idx, t, i)=>{
-  const chk = document.createElement('input');
-  chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
-  chk.onchange = ()=>{ data.check[chk.id]=chk.checked; salvar(); checarConfete(idx); if(modoRevisaoAtivo) ativarModoRevisao(); };
-  const label = document.createElement('label'); label.htmlFor=chk.id; label.textContent=t;
-  const div = document.createElement('div'); div.appendChild(chk); div.appendChild(label); return div;
-};
-
-const gerarSemana=(semana,tarefas,idx)=>{
-  const div=document.createElement('div'); 
-  div.className='semana'; 
-  div.style.background=coresSemana[idx%coresSemana.length];
-  const header=document.createElement('div'); header.className='semana-header';
-  header.innerHTML=`<h2 onclick="toggleCollapse(${idx})">${semana}</h2>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;">
-      <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
-      <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
-    </div>`;
-  div.appendChild(header);
-  const progresso = document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-  const progressBar = document.createElement('div'); progressBar.className='semana-progress-bar';
-  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
-  div.appendChild(progressBar);
-  const tarefasDiv = document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`;
-  tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i)));
-  div.appendChild(tarefasDiv);
-  return div;
-};
-
-const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); };
-const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvar(); };
-const checarConfete=(idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) confete.start(); };
-const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); el.style.display=(el.style.display==='none')?'flex':'none'; };
-const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); };
-const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
-
-// ================= Export/Import/Calendário =================
-const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); showToast('JSON exportado'); };
-const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); showToast('JSON avançado exportado'); };
-const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); gerar(); salvar(); showToast('JSON importado'); }; reader.readAsText(file); }; input.click(); };
-const limpar=()=>{ if(confirm("Deseja realmente limpar tudo?")){ data.check={}; data.notes={}; gerar(); salvar(); showToast('Checklist limpo'); } };
-const gerarPDF=()=>{ html2pdf().from(document.getElementById("conteudo")).save("checklist.pdf"); showToast('PDF gerado'); };
-const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); showToast('Calendário exportado'); };
-
-// ================= Theme =================
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode'); salvar(); };
-
-// ================= Login Google / Drive =================
+let modoRevisaoAtivo=false;
 const BACKEND_URL='https://cursojs-8012.onrender.com';
 
-  // ================= Inicialização =================
-window.addEventListener('load', () => {
-  gerar();
-  mostrarUsuario();
-  const tokenParam = new URLSearchParams(window.location.search).get('token');
-  if(tokenParam) {
-    try {
-      localStorage.setItem('googleToken', decodeURIComponent(tokenParam));
-      mostrarToast('Login Google concluído!', 'success');
-      mostrarUsuario();
-      history.replaceState(null, '', window.location.pathname); // limpa ?token
-    } catch(e) {
-      console.error(e);
-      mostrarToast('Erro no login via token', 'error');
-    }
-  }
-});
-
-// ================= Login Google =================
-const loginGoogle = () => {
-  fetch(`${BACKEND_URL}/auth-url`)
-    .then(res => res.json())
-    .then(d => {
-      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
-      const listener = async (e) => {
-        if (e.data.googleToken) {
-          try {
-            localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
-            mostrarToast('Login Google concluído!', 'success');
-            popup.close();
-            await mostrarUsuario();
-          } catch(err) {
-            mostrarToast('Erro ao salvar token', 'error');
-          }
-        }
-      };
-      window.addEventListener('message', listener, { once: true });
-    })
-    .catch(err => mostrarToast('Erro ao iniciar login Google', 'error'));
+// ====================== Toast ======================
+const showToast=(msg,duration=3000)=>{
+  const container=document.getElementById('toast-container');
+  const toast=document.createElement('div'); toast.className='toast'; toast.textContent=msg;
+  container.appendChild(toast);
+  setTimeout(()=>toast.classList.add('show'),50);
+  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast),300); },duration);
 };
 
-
-const salvarNoDrive=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Faça login antes'); fetch(`${BACKEND_URL}/save`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token,filename:'checklist.json',content:data}) }).then(r=>r.json()).then(resp=>{ if(resp.success) showToast('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); }).catch(err=>alert('Erro ao salvar: '+err)); };
-
-// ================= Logout Google =================
-const logoutGoogle = () => {
-  localStorage.removeItem('googleToken');
-  mostrarToast('Logout realizado.', 'success');
-  mostrarUsuario();
-};
-
-// ================= Mostrar usuário =================
-const mostrarUsuario = async () => {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  const emailSpan = document.getElementById('usuario-email');
-  const avatarImg = document.getElementById('usuario-avatar');
-
-  if (!token) {
-    emailSpan.textContent = "Nenhuma conta conectada";
-    avatarImg.style.display = "none";
-    return;
-  }
-
-  try {
-    const resp = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
-      headers: { Authorization: `Bearer ${token.access_token}` }
-    });
-
-    if (!resp.ok) throw new Error('Token inválido ou expirado');
-
-    const perfil = await resp.json();
-    emailSpan.textContent = perfil.email;
-    if (perfil.picture) {
-      avatarImg.src = perfil.picture;
-      avatarImg.style.display = "inline-block";
-    } else {
-      avatarImg.style.display = "none";
-    }
-  } catch (err) {
-    console.error("Erro ao buscar perfil do usuário:", err);
-    emailSpan.textContent = "Nenhuma conta conectada";
-    avatarImg.style.display = "none";
-    localStorage.removeItem('googleToken');
-    mostrarToast('Token expirado. Faça login novamente.', 'error');
-  }
-};
-
-// ================= Progresso/Badges =================
-const atualizarProgresso=()=>{
-  Object.keys(plano).forEach((semana,idx)=>{
-    const total=plano[semana].length;
-    const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length;
-    const perc=Math.round((checkeds/total)*100);
-    document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído';
-    document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%';
-  });
-  const totalPerc = Math.round(Object.keys(plano).reduce((acc,semana,idx)=> acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length);
-  document.getElementById('progressBar').style.width=totalPerc+'%';
-  document.getElementById('progressBar').textContent=totalPerc+'%';
-};
-
-const badgesContainer=document.getElementById('badges-container');
-const atualizarBadges=()=>{
-  badgesContainer.innerHTML='';
-  Object.keys(plano).forEach((semana,idx)=>{
-    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){
-      const badge=document.createElement('div');
-      badge.className='badge';
-      badge.textContent=`${semana} ★`;
-      badgesContainer.appendChild(badge);
-    }
-  });
-};
-
-// ================= Confete =================
+// ====================== Confete estilo fogos ======================
 const confeteCanvas=document.getElementById('confete-canvas');
-confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight;
-const confete={particles:[],start:()=>{ for(let i=0;i<100;i++){ confete.particles.push({x:Math.random()*confeteCanvas.width,y:Math.random()*confeteCanvas.height,dx:(Math.random()-0.5)*5,dy:(Math.random()-0.5)*5,r:Math.random()*6+2,color:`hsl(${Math.random()*360},100%,50%)`}); } requestAnimationFrame(confete.animar); }, animar:()=>{ const ctx=confeteCanvas.getContext('2d'); ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); confete.particles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; if(p.x>confeteCanvas.width)p.x=0; if(p.y>confeteCanvas.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fillStyle=p.color; ctx.fill(); }); if(confete.particles.length>0) requestAnimationFrame(confete.animar); }};
+confeteCanvas.width=window.innerWidth;
+confeteCanvas.height=window.innerHeight;
+const confete={
+  particles: [],
+  start(){
+    for(let i=0;i<100;i++){
+      const angle=Math.random()*2*Math.PI;
+      const speed=Math.random()*6+4;
+      this.particles.push({
+        x: confeteCanvas.width/2,
+        y: confeteCanvas.height/3,
+        dx: Math.cos(angle)*speed,
+        dy: Math.sin(angle)*speed,
+        size: Math.random()*6+2,
+        color:`hsl(${Math.random()*360},100%,50%)`,
+        life:100
+      });
+    }
+    this.animate();
+    // Para confete após 10s
+    setTimeout(()=>this.particles=[],10000);
+  },
+  animate(){
+    const ctx=confeteCanvas.getContext('2d');
+    ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
+    this.particles.forEach(p=>{
+      p.x+=p.dx; p.y+=p.dy; p.dy+=0.05; p.size*=0.95; p.life-=2;
+      ctx.fillStyle=p.color;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.size,0,2*Math.PI);
+      ctx.fill();
+    });
+    this.particles=this.particles.filter(p=>p.life>0);
+    if(this.particles.length>0) requestAnimationFrame(()=>this.animate());
+  }
+};
 
-// ================= Inicial =================
-document.body.classList.toggle('dark-mode',data.dark);
+// ====================== Funções do checklist ======================
+const gerar=()=>{
+  const container=document.getElementById('conteudo');
+  container.innerHTML='';
+  let i=0;
+  for(const semana in plano){
+    const s=document.createElement('div');
+    s.className='semana';
+    s.style.background=coresSemana[i%coresSemana.length];
+    const header=document.createElement('div'); header.className='semana-header';
+    const titulo=document.createElement('h2'); titulo.textContent=semana; titulo.onclick=()=>s.classList.toggle('modo-revisao');
+    header.appendChild(titulo);
+    const btn=document.createElement('button'); btn.className='botao-semana'; btn.textContent='Marcar todos'; btn.onclick=()=>marcarSemana(semana);
+    header.appendChild(btn);
+    s.appendChild(header);
+    const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas';
+    plano[semana].forEach((t,i)=>{
+      const d=document.createElement('div');
+      const inp=document.createElement('input'); inp.type='checkbox'; inp.checked=data.check[semana]?.[i]||false;
+      inp.onchange=()=>{ 
+        if(!data.check[semana]) data.check[semana]=[];
+        data.check[semana][i]=inp.checked; 
+        salvarDados(); atualizarProgresso(); 
+        if(inp.checked) confete.start(); 
+      };
+      d.appendChild(inp);
+      const span=document.createElement('span'); span.textContent=t;
+      d.appendChild(span);
+      tarefasDiv.appendChild(d);
+    });
+    s.appendChild(tarefasDiv);
+    container.appendChild(s);
+    i++;
+  }
+  atualizarProgresso();
+};
+
+const marcarSemana=(semana)=>{
+  if(!data.check[semana]) data.check[semana]=[];
+  plano[semana].forEach((t,i)=>data.check[semana][i]=true);
+  salvarDados(); gerar(); confete.start();
+  showToast(`${semana} marcada!`);
+};
+
+const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); };
+
+const atualizarProgresso=()=>{
+  let total=0, feitos=0;
+  for(const s in plano){ plano[s].forEach((t,i)=>{ total++; if(data.check[s]?.[i]) feitos++; }); }
+  const pct=Math.round((feitos/total)*100);
+  document.getElementById('progressBar').style.width=`${pct}%`;
+  document.getElementById('progressBar').textContent=`${pct}%`;
+};
+
+// ====================== Filtros, Tema e Revisão ======================
+const filtrar=()=>{
+  const termo=document.getElementById('busca').value.toLowerCase();
+  document.querySelectorAll('.semana').forEach(s=>{
+    const text=s.textContent.toLowerCase();
+    s.style.display=text.includes(termo)?'flex':'none';
+  });
+};
+const toggleTheme=()=>{ document.body.classList.toggle('dark-mode'); data.dark=!data.dark; salvarDados(); };
+const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(s=>modoRevisaoAtivo?s.classList.add('modo-revisao'):s.classList.remove('modo-revisao')); };
+
+// ====================== Exportação ======================
+const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); showToast('Exportado JSON'); };
+const exportarAvancado=()=>{ showToast('Exportar Avançado ainda não implementado'); };
+const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save(); showToast('PDF gerado'); };
+const exportarParaCalendario=()=>{ showToast('Exportar Calendário ainda não implementado'); };
+const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }; reader.readAsText(file); }; inp.click(); };
+
+// ====================== Login Google ======================
+const loginGoogle=async()=>{ showToast('Login Google não implementado neste demo'); };
+const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); mostrarUsuario(); showToast('Logout realizado'); };
+const mostrarUsuario=async()=>{
+  const token=JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan=document.getElementById('usuario-email');
+  const avatarImg=document.getElementById('usuario-avatar');
+  if(!token){ emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none"; return; }
+  try{
+    const resp=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{headers:{Authorization:`Bearer ${token.access_token}`}});
+    if(resp.status!==200) throw new Error("Token inválido ou expirado");
+    const perfil=await resp.json();
+    emailSpan.textContent=perfil.email;
+    if(perfil.picture){ avatarImg.src=perfil.picture; avatarImg.style.display="inline-block"; } else avatarImg.style.display="none";
+  }catch(err){ console.error(err); emailSpan.textContent="Erro ao obter usuário"; avatarImg.style.display="none"; }
+};
+
+// ====================== Load ======================
+window.addEventListener('load',()=>{ 
+  if(data.dark) document.body.classList.add('dark-mode');
+  gerar(); mostrarUsuario(); 
+});
 </script>
 </body>
 </html>
