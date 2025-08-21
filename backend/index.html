@@ -260,9 +260,19 @@ const toggleTheme=()=>{
 
 // ================= Google ======================
 let oAuthWindow;
-const loginGoogle=()=>{ 
-  window.open(`${BACKEND_URL}/auth-url`,'_blank','width=500,height=600'); 
-  window.addEventListener('message',e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } },{once:true});
+const loginGoogle = () => { 
+  oAuthWindow = window.open(`${BACKEND_URL}/auth-url`, 'Login Google', 'width=500,height=600');
+  window.addEventListener('message', handleGoogleMessage);
+};
+
+const handleGoogleMessage = (e) => {
+  if(e.data.googleToken){
+    localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+    atualizarUsuarioLogado();
+    showToast('Login Google realizado!');
+    if(oAuthWindow) oAuthWindow.close();
+    window.removeEventListener('message', handleGoogleMessage); // evita múltiplos triggers
+  }
 };
 const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); };
 const atualizarUsuarioLogado=()=>{
