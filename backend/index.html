@@ -118,14 +118,17 @@ let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, d
 let modoRevisaoAtivo=false;
 
 // ================= Toast ======================
-const showToast=(msg,duration=3000)=>{
-  const container=document.getElementById('toast-container');
-  const toast=document.createElement('div'); 
-  toast.className='toast'; 
-  toast.textContent=msg;
+const showToast = (msg, duration=3000) => {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div'); 
+  toast.className = 'toast'; 
+  toast.innerHTML = msg; // <-- usar innerHTML para links
   container.appendChild(toast);
-  setTimeout(()=>toast.classList.add('show'),50);
-  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast),300); },duration);
+  setTimeout(()=>toast.classList.add('show'), 50);
+  setTimeout(()=>{
+    toast.classList.remove('show');
+    setTimeout(()=>container.removeChild(toast), 300);
+  }, duration);
 };
 
 // ================= Confete ======================
@@ -272,15 +275,35 @@ const atualizarUsuarioLogado=()=>{
   else{ avatar.style.display='none'; email.textContent='Nenhuma conta conectada'; }
 };
 
-const salvarNoDrive=async()=>{
-  const token=JSON.parse(localStorage.getItem('googleToken')); if(!token){ showToast('Você precisa fazer login primeiro'); return; }
-  const payload={ token, filename:'checklist.json', content:data };
-  try{
-    const resp=await fetch(`${BACKEND_URL}/save`,{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-    const result=await resp.json();
-    if(result.success) showToast(`Arquivo salvo no Google Drive com sucesso!`); //Salvo no Drive! File ID: ${result.fileId}
-    else{ showToast('Erro ao salvar no Drive'); console.error(result); }
-  }catch(err){ console.error(err); showToast('Erro ao salvar no Drive'); }
+const salvarNoDrive = async () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    showToast('Você precisa fazer login primeiro');
+    return;
+  }
+
+  const payload = { token, filename: 'checklist.json', content: data };
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await resp.json();
+
+    if (result.success) {
+      const link = `https://drive.google.com/file/d/${result.fileId}/view`;
+      showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`);
+    } else {
+      showToast('Erro ao salvar no Drive');
+      console.error(result);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar no Drive');
+  }
 };
 
 // ================= Export/Import ======================
