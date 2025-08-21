@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist de Estudo - JavaScript Avançado v4.1</title>
+<title>Checklist de Estudo - JavaScript Avançado v4.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 .importante { color:red; font-weight:bold; cursor:pointer; margin-left:5px; }
 .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
+.toast { position:fixed; bottom:20px; right:20px; background:rgba(0,0,0,0.85); color:white; padding:10px 15px; border-radius:5px; opacity:0; transition: opacity 0.3s; z-index:10000; }
 .dark-mode label { color:#f4f4f9; }
 @media (max-width:600px){ .top-bar{flex-direction:column;} .botao-semana{width:100%;} }
 </style>
@@ -53,15 +54,16 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
   <button onclick="logoutGoogle()">Logout Google</button>
   <button onclick="toggleTheme()">🌙/☀️ Tema</button>
   <div id="usuario-logado" style="margin-left:auto; display:flex; align-items:center; gap:8px; font-weight:bold;">
-  <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
-  <span id="usuario-email">Nenhuma conta conectada</span>
-</div>
+    <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
+    <span id="usuario-email">Nenhuma conta conectada</span>
+  </div>
 </div>
 
 <div id="badges-container"></div>
 <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
 <div id="conteudo"></div>
 <canvas id="confete-canvas" class="confete"></canvas>
+<div id="toast" class="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
@@ -82,23 +84,23 @@ const plano = {
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
 let modoRevisaoAtivo = false;
 
-// ================= FUNÇÕES =================
-const salvar = () => { localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
+// ================= Toast =================
+const showToast = (msg,dur=2000)=>{
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0,dur);
+};
+
+// ================= FUNÇÕES PRINCIPAIS =================
+const salvar = () => { localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); showToast('Alterações salvas'); };
 
 const criarTarefa=(semana, idx, t, i)=>{
   const chk = document.createElement('input');
   chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked = data.check[chk.id]||false;
-  chk.onchange = ()=>{
-    data.check[chk.id]=chk.checked; salvar(); checarConfete(idx); atualizarProgresso();
-    if(modoRevisaoAtivo) ativarModoRevisao();
-  };
-  const label = document.createElement('label'); 
-  label.htmlFor=chk.id; 
-  label.textContent=t;
-  const div = document.createElement('div'); 
-  div.appendChild(chk); 
-  div.appendChild(label); 
-  return div;
+  chk.onchange = ()=>{ data.check[chk.id]=chk.checked; salvar(); checarConfete(idx); if(modoRevisaoAtivo) ativarModoRevisao(); };
+  const label = document.createElement('label'); label.htmlFor=chk.id; label.textContent=t;
+  const div = document.createElement('div'); div.appendChild(chk); div.appendChild(label); return div;
 };
 
 const gerarSemana=(semana,tarefas,idx)=>{
@@ -106,8 +108,7 @@ const gerarSemana=(semana,tarefas,idx)=>{
   div.className='semana'; 
   div.style.background=coresSemana[idx%coresSemana.length];
   const header=document.createElement('div'); header.className='semana-header';
-  header.innerHTML=`
-    <h2 onclick="toggleCollapse(${idx})">${semana}</h2>
+  header.innerHTML=`<h2 onclick="toggleCollapse(${idx})">${semana}</h2>
     <div style="display:flex;gap:5px;flex-wrap:wrap;">
       <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
       <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
@@ -123,137 +124,35 @@ const gerarSemana=(semana,tarefas,idx)=>{
   return div;
 };
 
-const gerar=()=>{
-  const container=document.getElementById('conteudo'); container.innerHTML='';
-  Object.entries(plano).forEach(([semana,tarefas],idx)=> container.appendChild(gerarSemana(semana,tarefas,idx)));
-  atualizarProgresso();
-  if(modoRevisaoAtivo) ativarModoRevisao();
-};
-
-const marcarSemana=(idx,marcar)=>{
-  document.querySelectorAll(`#tarefas-${idx} input[type=checkbox]`).forEach(chk=>{
-    chk.checked=marcar; data.check[chk.id]=marcar;
-  });
-  salvar();
-};
-
-const checarConfete=(idx)=>{
-  if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){
-    confete.start();
-  }
-};
-
-const logoutGoogle = () => {
-  localStorage.removeItem('googleToken');
-  alert('Logout realizado. Faça login com outra conta.');
-  mostrarUsuario();
-};
-
-  const mostrarUsuario = async () => {
-   const token = JSON.parse(localStorage.getItem('googleToken'));
-  const emailSpan = document.getElementById('usuario-email');
-  const avatarImg = document.getElementById('usuario-avatar');
-
-  if (!token) {
-    emailSpan.textContent = "Nenhuma conta conectada";
-    avatarImg.style.display = "none";
-    return;
-  }
-
-  try {
-    const resp = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
-      headers: { Authorization: `Bearer ${token.access_token}` }
-    });
-    const perfil = await resp.json();
-    emailSpan.textContent = perfil.email;
-    if (perfil.picture) {
-      avatarImg.src = perfil.picture;
-      avatarImg.style.display = "inline-block";
-    } else {
-      avatarImg.style.display = "none";
-    }
-  } catch (err) {
-    console.error("Erro ao buscar perfil do usuário:", err);
-    emailSpan.textContent = "Erro ao obter usuário";
-    avatarImg.style.display = "none";
-  }
-};
-
-// ================= Confete Canvas =================
-const confeteCanvas = document.getElementById('confete-canvas');
-confeteCanvas.width = window.innerWidth; confeteCanvas.height = window.innerHeight;
-const confete = {
-  particles: [],
-  start(){
-    for(let i=0;i<100;i++){
-      this.particles.push({x:Math.random()*confeteCanvas.width,y:Math.random()*confeteCanvas.height,dx:(Math.random()-0.5)*5,dy:Math.random()*-5-2, size:Math.random()*8+2,color:`hsl(${Math.random()*360},100%,50%)`});
-    }
-    this.animate();
-  },
-  animate(){
-    const ctx=confeteCanvas.getContext('2d');
-    ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
-    this.particles.forEach(p=>{
-      p.x+=p.dx; p.y+=p.dy+2;
-      p.dy+=0.1; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,2*Math.PI); ctx.fill();
-    });
-    this.particles=this.particles.filter(p=>p.y<confeteCanvas.height);
-    if(this.particles.length>0) requestAnimationFrame(()=>this.animate());
-  }
-};
-
-// ================= Funções utilitárias =================
-const toggleCollapse = idx => {
-  const el = document.getElementById(`tarefas-${idx}`);
-  el.style.display = (el.style.display === 'none') ? 'flex' : 'none';
-};
-
+const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); };
+const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvar(); };
+const checarConfete=(idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) confete.start(); };
+const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); el.style.display=(el.style.display==='none')?'flex':'none'; };
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'block':'none'; }); };
 const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
 
 // ================= Export/Import/Calendário =================
-const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
-const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); };
-const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); gerar(); salvar(); }; reader.readAsText(file); }; input.click(); };
-const limpar=()=>{ if(confirm("Deseja realmente limpar tudo?")){ data.check={}; data.notes={}; gerar(); salvar(); } };
-const gerarPDF=()=>html2pdf().from(document.getElementById("conteudo")).save("checklist.pdf");
-const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); };
+const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); showToast('JSON exportado'); };
+const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); showToast('JSON avançado exportado'); };
+const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); gerar(); salvar(); showToast('JSON importado'); }; reader.readAsText(file); }; input.click(); };
+const limpar=()=>{ if(confirm("Deseja realmente limpar tudo?")){ data.check={}; data.notes={}; gerar(); salvar(); showToast('Checklist limpo'); } };
+const gerarPDF=()=>{ html2pdf().from(document.getElementById("conteudo")).save("checklist.pdf"); showToast('PDF gerado'); };
+const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); showToast('Calendário exportado'); };
 
 // ================= Theme =================
 const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode'); salvar(); };
 
-// ================= Login Google / Salvar Drive =================
-const BACKEND_URL = 'https://cursojs-8012.onrender.com'; // ou process.env.BASE_URL se quiser flexibilizar
-window.addEventListener('load',()=>{ gerar(); mostrarUsuario(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); alert('Login Google concluído!'); }catch(e){console.error(e);} }});
+// ================= Login Google / Drive =================
+const BACKEND_URL='https://cursojs-8012.onrender.com';
+window.addEventListener('load',()=>{ gerar(); mostrarUsuario(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); showToast('Login Google concluído!'); }catch(e){console.error(e);} }});
 
-const loginGoogle=()=>{
-  fetch(`${BACKEND_URL}/auth-url`)
-    .then(res=>res.json())
-    .then(d=>{
-      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
-      window.addEventListener('message', e=>{
-        if(e.data.googleToken){
-          localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
-          alert('Login Google concluído!');
-          popup.close();
-          mostrarUsuario();
-        }
-      }, {once:true});
-    });
-};
+const loginGoogle=()=>{ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(d=>{ const popup=window.open(d.url,"loginGoogle","width=500,height=600"); window.addEventListener('message', e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); showToast('Login Google concluído!'); popup.close(); mostrarUsuario(); }}, {once:true}); }); };
 
-const salvarNoDrive=()=>{
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if(!token) return alert('Faça login antes');
-  fetch(`${BACKEND_URL}/save`, {
-    method:'POST',
-    headers:{ 'Content-Type':'application/json' },
-    body:JSON.stringify({ token, filename:'checklist.json', content:data })
-  })
-  .then(r=>r.json())
-  .then(resp=>{ if(resp.success) alert('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); })
-  .catch(err=>alert('Erro ao salvar: '+err));
-};
+const salvarNoDrive=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Faça login antes'); fetch(`${BACKEND_URL}/save`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token,filename:'checklist.json',content:data}) }).then(r=>r.json()).then(resp=>{ if(resp.success) showToast('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); }).catch(err=>alert('Erro ao salvar: '+err)); };
+
+const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); showToast('Logout realizado'); mostrarUsuario(); };
+
+const mostrarUsuario=async()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); const emailSpan=document.getElementById('usuario-email'); const avatarImg=document.getElementById('usuario-avatar'); if(!token){ emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none"; return; } try{ const resp=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{ headers:{ Authorization:`Bearer ${token.access_token}`} }); const perfil=await resp.json(); emailSpan.textContent=perfil.email; if(perfil.picture){ avatarImg.src=perfil.picture; avatarImg.style.display="inline-block"; } else avatarImg.style.display="none"; }catch(err){ console.error(err); emailSpan.textContent="Erro ao obter usuário"; avatarImg.style.display="none"; } };
 
 // ================= Progresso/Badges =================
 const atualizarProgresso=()=>{
@@ -281,6 +180,14 @@ const atualizarBadges=()=>{
     }
   });
 };
+
+// ================= Confete =================
+const confeteCanvas=document.getElementById('confete-canvas');
+confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight;
+const confete={particles:[],start:()=>{ for(let i=0;i<100;i++){ confete.particles.push({x:Math.random()*confeteCanvas.width,y:Math.random()*confeteCanvas.height,dx:(Math.random()-0.5)*5,dy:(Math.random()-0.5)*5,r:Math.random()*6+2,color:`hsl(${Math.random()*360},100%,50%)`}); } requestAnimationFrame(confete.animar); }, animar:()=>{ const ctx=confeteCanvas.getContext('2d'); ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); confete.particles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; if(p.x>confeteCanvas.width)p.x=0; if(p.y>confeteCanvas.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fillStyle=p.color; ctx.fill(); }); if(confete.particles.length>0) requestAnimationFrame(confete.animar); }};
+
+// ================= Inicial =================
+document.body.classList.toggle('dark-mode',data.dark);
 </script>
 </body>
 </html>
