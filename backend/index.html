@@ -185,7 +185,10 @@ const gerarSemana=(semana,tarefas,idx)=>{ const div=document.createElement('div'
 const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); };
 const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
 const checarConfete=(idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) confete.start(); };
-const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); el.style.display=el.style.display==='none'?'flex':'flex'; };
+const toggleCollapse = idx => {
+  const el = document.getElementById(`tarefas-${idx}`);
+  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+};
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
 const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
 
