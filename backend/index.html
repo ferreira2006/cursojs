@@ -144,15 +144,93 @@ const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('da
 
 // ================= Login Google / Drive =================
 const BACKEND_URL='https://cursojs-8012.onrender.com';
-window.addEventListener('load',()=>{ gerar(); mostrarUsuario(); if(new URLSearchParams(window.location.search).get('token')){ try{ localStorage.setItem('googleToken',window.decodeURIComponent(new URLSearchParams(window.location.search).get('token'))); showToast('Login Google concluído!'); }catch(e){console.error(e);} }});
 
-const loginGoogle=()=>{ fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(d=>{ const popup=window.open(d.url,"loginGoogle","width=500,height=600"); window.addEventListener('message', e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); showToast('Login Google concluído!'); popup.close(); mostrarUsuario(); }}, {once:true}); }); };
+  // ================= Inicialização =================
+window.addEventListener('load', () => {
+  gerar();
+  mostrarUsuario();
+  const tokenParam = new URLSearchParams(window.location.search).get('token');
+  if(tokenParam) {
+    try {
+      localStorage.setItem('googleToken', decodeURIComponent(tokenParam));
+      mostrarToast('Login Google concluído!', 'success');
+      mostrarUsuario();
+      history.replaceState(null, '', window.location.pathname); // limpa ?token
+    } catch(e) {
+      console.error(e);
+      mostrarToast('Erro no login via token', 'error');
+    }
+  }
+});
+
+// ================= Login Google =================
+const loginGoogle = () => {
+  fetch(`${BACKEND_URL}/auth-url`)
+    .then(res => res.json())
+    .then(d => {
+      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
+      const listener = async (e) => {
+        if (e.data.googleToken) {
+          try {
+            localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+            mostrarToast('Login Google concluído!', 'success');
+            popup.close();
+            await mostrarUsuario();
+          } catch(err) {
+            mostrarToast('Erro ao salvar token', 'error');
+          }
+        }
+      };
+      window.addEventListener('message', listener, { once: true });
+    })
+    .catch(err => mostrarToast('Erro ao iniciar login Google', 'error'));
+};
+
 
 const salvarNoDrive=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token) return alert('Faça login antes'); fetch(`${BACKEND_URL}/save`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token,filename:'checklist.json',content:data}) }).then(r=>r.json()).then(resp=>{ if(resp.success) showToast('Checklist salvo no Drive!'); else alert('Erro ao salvar: '+(resp.error||'desconhecido')); }).catch(err=>alert('Erro ao salvar: '+err)); };
 
-const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); showToast('Logout realizado'); mostrarUsuario(); };
+// ================= Logout Google =================
+const logoutGoogle = () => {
+  localStorage.removeItem('googleToken');
+  mostrarToast('Logout realizado.', 'success');
+  mostrarUsuario();
+};
 
-const mostrarUsuario=async()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); const emailSpan=document.getElementById('usuario-email'); const avatarImg=document.getElementById('usuario-avatar'); if(!token){ emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none"; return; } try{ const resp=await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json',{ headers:{ Authorization:`Bearer ${token.access_token}`} }); const perfil=await resp.json(); emailSpan.textContent=perfil.email; if(perfil.picture){ avatarImg.src=perfil.picture; avatarImg.style.display="inline-block"; } else avatarImg.style.display="none"; }catch(err){ console.error(err); emailSpan.textContent="Erro ao obter usuário"; avatarImg.style.display="none"; } };
+// ================= Mostrar usuário =================
+const mostrarUsuario = async () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan = document.getElementById('usuario-email');
+  const avatarImg = document.getElementById('usuario-avatar');
+
+  if (!token) {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+    return;
+  }
+
+  try {
+    const resp = await fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json', {
+      headers: { Authorization: `Bearer ${token.access_token}` }
+    });
+
+    if (!resp.ok) throw new Error('Token inválido ou expirado');
+
+    const perfil = await resp.json();
+    emailSpan.textContent = perfil.email;
+    if (perfil.picture) {
+      avatarImg.src = perfil.picture;
+      avatarImg.style.display = "inline-block";
+    } else {
+      avatarImg.style.display = "none";
+    }
+  } catch (err) {
+    console.error("Erro ao buscar perfil do usuário:", err);
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+    localStorage.removeItem('googleToken');
+    mostrarToast('Token expirado. Faça login novamente.', 'error');
+  }
+};
 
 // ================= Progresso/Badges =================
 const atualizarProgresso=()=>{
