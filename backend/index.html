@@ -40,17 +40,18 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 <body>
 
 <div class="top-bar">
-  <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+  <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">  
   <button onclick="exportar()">Exportar JSON</button>
   <button onclick="exportarAvancado()">Exportar Avançado</button>
   <button onclick="importar()">Importar JSON</button>
-  <button onclick="limpar()">Limpar Tudo</button>
-  <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+  <button onclick="limpar()">Limpar Tudo</button>  
   <button onclick="gerarPDF()">Exportar PDF</button>
   <button onclick="ativarModoRevisao()">Modo Revisão</button>
   <button onclick="exportarParaCalendario()">Exportar Calendário</button>
   <button onclick="loginGoogle()">Login Google</button>
   <button onclick="salvarNoDrive()">Salvar no Drive</button>
+  <button onclick="logoutGoogle()">Logout Google</button>
+  <button onclick="toggleTheme()">🌙/☀️ Tema</button>
 </div>
 
 <div id="badges-container"></div>
@@ -136,6 +137,11 @@ const checarConfete=(idx)=>{
   if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){
     confete.start();
   }
+};
+
+const logoutGoogle = () => {
+  localStorage.removeItem('googleToken');
+  alert('Logout realizado. Faça login com outra conta.');
 };
 
 // ================= Confete Canvas =================
