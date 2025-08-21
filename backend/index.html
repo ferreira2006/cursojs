@@ -120,14 +120,58 @@ const showToast=(msg,duration=3000)=>{
   setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast),300); },duration);
 };
 
-// ================= Confete ======================
-const confeteCanvas=document.getElementById('confete-canvas');
-confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight;
-const confete={
+// ================= Confete Avançado ======================
+const confeteCanvas = document.getElementById('confete-canvas');
+const ctx = confeteCanvas.getContext('2d');
+confeteCanvas.width = window.innerWidth;
+confeteCanvas.height = window.innerHeight;
+
+const confete = {
   particles: [],
-  start(){ for(let i=0;i<100;i++){ const angle=Math.random()*2*Math.PI; const speed=Math.random()*6+4; this.particles.push({ x:confeteCanvas.width/2, y:confeteCanvas.height/3, dx:Math.cos(angle)*speed, dy:Math.sin(angle)*speed, size:Math.random()*6+2, color:`hsl(${Math.random()*360},100%,50%)`, life:100 }); } this.animate(); setTimeout(()=>this.particles=[],10000); },
-  animate(){ const ctx=confeteCanvas.getContext('2d'); ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); this.particles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; p.dy+=0.05; p.size*=0.95; p.life-=2; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,2*Math.PI); ctx.fill(); }); this.particles=this.particles.filter(p=>p.life>0); if(this.particles.length>0) requestAnimationFrame(()=>this.animate()); }
+  cores: ['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'],
+  start(count = 150) {
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x: Math.random() * confeteCanvas.width,
+        y: Math.random() * confeteCanvas.height - confeteCanvas.height,
+        dx: (Math.random() - 0.5) * 6,
+        dy: Math.random() * 6 + 2,
+        size: Math.random() * 8 + 4,
+        color: this.cores[Math.floor(Math.random() * this.cores.length)],
+        angle: Math.random() * 360,
+        spin: Math.random() * 0.2 - 0.1,
+        life: Math.random() * 80 + 80
+      });
+    }
+    this.animate();
+    setTimeout(() => { this.particles = []; ctx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height); }, 6000);
+  },
+  animate() {
+    ctx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
+    this.particles.forEach(p => {
+      p.x += p.dx;
+      p.y += p.dy;
+      p.angle += p.spin;
+      p.life -= 2;
+      const rad = p.angle * Math.PI / 180;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(rad);
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+      ctx.restore();
+      p.size *= 0.98;
+    });
+    this.particles = this.particles.filter(p => p.life > 0);
+    if (this.particles.length > 0) requestAnimationFrame(() => this.animate());
+  }
 };
+
+window.addEventListener('resize', () => {
+  confeteCanvas.width = window.innerWidth;
+  confeteCanvas.height = window.innerHeight;
+});
 
 // ================= Funções ======================
 const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
