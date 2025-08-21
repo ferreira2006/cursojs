@@ -209,23 +209,36 @@ const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getIte
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const exportarAvancado=()=>{ const exportData = { check:data.check, notes:data.notes, plano:plano }; const blob = new Blob([JSON.stringify(exportData,null,2)], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'checklist_avancado.json'; a.click(); showToast('Exportação avançada concluída!'); };
 const gerarPDF = () => {
-  // Clonar o conteúdo para não mexer na tela
-  const conteudo = document.getElementById('conteudo').cloneNode(true);
+  // Cria um container temporário para o PDF
+  const conteudo = document.getElementById('conteudo');
+  const pdfContainer = document.createElement('div');
 
-  // Criar cabeçalho
+  // Adiciona cabeçalho bonito
   const cabecalho = document.createElement('div');
   cabecalho.style.textAlign = 'center';
   cabecalho.style.marginBottom = '20px';
   cabecalho.innerHTML = `
-    <h1>Checklist de Estudo - JavaScript Avançado v5.0</h1>
-    <p>${new Date().toLocaleString()}</p>
+    <h1 style="font-family:'Inter', Arial, sans-serif; color:#4caf50;">Checklist de Estudo - JavaScript Avançado</h1>
+    <p style="font-family:'Inter', Arial, sans-serif; color:#333;">Relatório gerado em ${new Date().toLocaleDateString()}</p>
+    <hr style="border:1px solid #4caf50;">
   `;
+  pdfContainer.appendChild(cabecalho);
 
-  // Inserir cabeçalho antes do conteúdo
-  conteudo.insertBefore(cabecalho, conteudo.firstChild);
+  // Clona o conteúdo atual
+  const clone = conteudo.cloneNode(true);
+  clone.querySelectorAll('canvas, #toast-container').forEach(el => el.remove()); // remove confete e toasts
+  pdfContainer.appendChild(clone);
 
-  // Gerar PDF com html2pdf
-  html2pdf().from(conteudo).save('checklist.pdf');
+  // Gera PDF usando html2pdf
+  html2pdf()
+    .set({
+      margin: 10,
+      filename: 'checklist.pdf',
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    })
+    .from(pdfContainer)
+    .save();
 };
 const exportarParaCalendario=()=>{
   let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
