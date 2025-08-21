@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <title>Login Concluído</title>
-</head>
-<body>
-<h2>Login Google concluído!</h2>
 <script>
-  // Pega token da URL
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
+window.onload = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
   if (token && window.opener) {
     window.opener.postMessage({ googleToken: JSON.parse(decodeURIComponent(token)) }, "*");
     window.close();
+  } else {
+    document.body.innerHTML = "<h2>Erro ao obter token do Google.</h2>";
   }
+};
 </script>
+</head>
+<body>
+<h2>Processando login...</h2>
 </body>
 </html>
