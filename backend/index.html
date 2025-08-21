@@ -45,6 +45,8 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
 .expand-icon { transition: transform 0.3s; display:inline-block; }
 .expand-icon.collapsed { transform: rotate(-90deg); }
+.google-group { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.google-group .dropbtn { flex-shrink:0; }
 @media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} }
 </style>
 </head>
@@ -71,18 +73,18 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
     <button onclick="importar()">📥 Importar JSON</button>
   </div>
 
-  <div class="top-bar-group dropdown">
-    <button class="dropbtn">🔑 Google</button>
-    <div class="dropdown-content">
-      <button onclick="loginGoogle()">Login</button>
-      <button onclick="logoutGoogle()">Logout</button>
-      <button onclick="salvarNoDrive()">Salvar no Drive</button>
-    </div>
-    <div id="usuario-logado" style="display:flex; align-items:center; gap:5px;">
-      <img id="usuario-avatar" src="" alt="" style="width:24px; height:24px; border-radius:50%; display:none;">
-      <span id="usuario-email">Nenhuma conta conectada</span>
-    </div>
+<div class="top-bar-group google-group">
+  <button class="dropbtn">🔑 Google</button>
+  <div class="dropdown-content">
+    <button onclick="loginGoogle()">Login</button>
+    <button onclick="logoutGoogle()">Logout</button>
+    <button onclick="salvarNoDrive()">Salvar no Drive</button>
   </div>
+  <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;">
+    <img id="usuario-avatar" src="" alt="Avatar" style="width:24px; height:24px; border-radius:50%; display:none;">
+    <span id="usuario-email">Nenhuma conta conectada</span>
+  </div>
+</div>
 
   <div class="top-bar-group busca-group">
     <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
@@ -267,9 +269,73 @@ const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('da
 const limpar=()=>{ if(confirm('Deseja limpar tudo?')){ data={check:{},notes:{},dark:data.dark,historico:[],pontos:0,badges:[]}; salvarDados(); gerar(); showToast('Tudo limpo'); }};
 
 // ================= Login Google ======================
-const mostrarUsuario=usuario=>{ if(usuario){ document.getElementById('usuario-avatar').src=usuario.avatar; document.getElementById('usuario-avatar').style.display='block'; document.getElementById('usuario-email').textContent=usuario.email; } else { document.getElementById('usuario-avatar').style.display='none'; document.getElementById('usuario-email').textContent='Nenhuma conta conectada'; } };
-const loginGoogle=()=>{ fetch(`${BACKEND_URL}/login`).then(r=>r.json()).then(d=>mostrarUsuario(d)).catch(()=>showToast('Erro login')); };
-const logoutGoogle=()=>{ fetch(`${BACKEND_URL}/logout`).then(()=>mostrarUsuario(null)).catch(()=>showToast('Erro logout')); };
+async function mostrarUsuario() {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan = document.getElementById('usuario-email');
+  const avatarImg = document.getElementById('usuario-avatar');
+
+  if (!token) {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+
+    if (!resp.ok) throw new Error("Erro ao obter usuário");
+
+    const perfil = await resp.json();
+    emailSpan.textContent = perfil.email || "Usuário sem email";
+    if (perfil.picture) {
+      avatarImg.src = perfil.picture;
+      avatarImg.style.display = "inline-block";
+    } else {
+      avatarImg.style.display = "none";
+    }
+  } catch (e) {
+    console.error(e);
+    emailSpan.textContent = "Erro ao obter usuário";
+    avatarImg.style.display = "none";
+  }
+}
+
+// Login Google
+function loginGoogle() {
+  fetch(`${BACKEND_URL}/auth-url`)
+    .then(res => res.json())
+    .then(d => {
+      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
+      if (!popup) return showToast("Não foi possível abrir popup");
+
+      // Listener de mensagem
+      const handleMessage = async (e) => {
+        if (e.data.googleToken) {
+          localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+          await mostrarUsuario();
+          showToast('Login concluído');
+          popup.close();
+        }
+      };
+
+      window.addEventListener('message', handleMessage, { once: true });
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Erro ao obter URL de login");
+    });
+}
+
+// Logout Google
+function logoutGoogle() {
+  localStorage.removeItem('googleToken'); // remove token local
+  mostrarUsuario();                        // atualiza interface
+  showToast('Logout realizado');
+}
 const salvarNoDrive=()=>{ fetch(`${BACKEND_URL}/save`,{method:'POST',body:JSON.stringify(data)}).then(()=>showToast('Salvo no Drive')).catch(()=>showToast('Erro ao salvar')); };
 
 // ================= Inicialização ======================
