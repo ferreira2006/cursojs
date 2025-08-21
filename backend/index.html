@@ -9,7 +9,7 @@
 <style>
 body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; transition: background 0.3s, color 0.3s; }
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
-h2 { margin-top:0; cursor:pointer; }
+h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; }
 .semana.modo-revisao { background: #fff3cd !important; }
 .semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
@@ -43,6 +43,8 @@ h2 { margin-top:0; cursor:pointer; }
 .semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
 .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
 .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
+.expand-icon { transition: transform 0.3s; display:inline-block; }
+.expand-icon.collapsed { transform: rotate(-90deg); }
 @media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} }
 </style>
 </head>
@@ -119,191 +121,160 @@ const showToast=(msg,duration=3000)=>{
   toast.textContent=msg;
   container.appendChild(toast);
   setTimeout(()=>toast.classList.add('show'),50);
-  setTimeout(()=>{
-    toast.classList.remove('show'); 
-    setTimeout(()=>container.removeChild(toast),300);
-  },duration);
+  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast),300); },duration);
 };
 
-// ================= Confete Avançado ======================
+// ================= Confete ======================
 const confeteCanvas = document.getElementById('confete-canvas');
 const ctx = confeteCanvas.getContext('2d');
 confeteCanvas.width = window.innerWidth;
 confeteCanvas.height = window.innerHeight;
-
 const confete = {
   particles: [],
   cores: ['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'],
-  start(count = 150) {
-    for (let i = 0; i < count; i++) {
+  start(count = 150){
+    for(let i=0;i<count;i++){
       this.particles.push({
-        x: Math.random() * confeteCanvas.width,
-        y: Math.random() * confeteCanvas.height - confeteCanvas.height,
-        dx: (Math.random() - 0.5) * 6,
-        dy: Math.random() * 6 + 2,
-        size: Math.random() * 8 + 4,
-        color: this.cores[Math.floor(Math.random() * this.cores.length)],
-        angle: Math.random() * 360,
-        spin: Math.random() * 0.2 - 0.1,
-        life: Math.random() * 80 + 80
+        x:Math.random()*confeteCanvas.width,
+        y:Math.random()*confeteCanvas.height-confeteCanvas.height,
+        dx:(Math.random()-0.5)*6,
+        dy:Math.random()*6+2,
+        size:Math.random()*8+4,
+        color:this.cores[Math.floor(Math.random()*this.cores.length)],
+        angle:Math.random()*360,
+        spin:Math.random()*0.2-0.1,
+        life:Math.random()*80+80
       });
     }
     this.animate();
-    setTimeout(() => { this.particles = []; ctx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height); }, 6000);
+    setTimeout(()=>{ this.particles=[]; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },6000);
   },
-  animate() {
-    ctx.clearRect(0, 0, confeteCanvas.width, confeteCanvas.height);
-    this.particles.forEach(p => {
-      p.x += p.dx;
-      p.y += p.dy;
-      p.angle += p.spin;
-      p.life -= 2;
-      const rad = p.angle * Math.PI / 180;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(rad);
-      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+  animate(){
+    ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
+    this.particles.forEach(p=>{
+      p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2;
+      const rad=p.angle*Math.PI/180;
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(rad);
+      ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
       ctx.restore();
-      p.size *= 0.98;
+      p.size*=0.98;
     });
-    this.particles = this.particles.filter(p => p.life > 0);
-    if (this.particles.length > 0) requestAnimationFrame(() => this.animate());
+    this.particles=this.particles.filter(p=>p.life>0);
+    if(this.particles.length>0) requestAnimationFrame(()=>this.animate());
   }
 };
-
-window.addEventListener('resize', () => {
-  confeteCanvas.width = window.innerWidth;
-  confeteCanvas.height = window.innerHeight;
-});
+window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
 
 // ================= Funções ======================
 const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
-const criarTarefa=(semana, idx, t, i)=>{ const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`; chk.checked=data.check[chk.id]||false; chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvarDados(); checarConfete(idx); if(modoRevisaoAtivo) ativarModoRevisao(); }; const label=document.createElement('span'); label.textContent=t; const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label); return div; };
-const gerarSemana=(semana,tarefas,idx)=>{ const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length]; const header=document.createElement('div'); header.className='semana-header'; header.innerHTML=`<h2 onclick="toggleCollapse(${idx})">${semana}</h2><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button><button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button></div>`; div.appendChild(header); const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso); const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar); const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`; tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i))); div.appendChild(tarefasDiv); return div; };
-const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); };
-const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
-const checarConfete=(idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) confete.start(); };
-const toggleCollapse = idx => {
-  const el = document.getElementById(`tarefas-${idx}`);
-  el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+
+const criarTarefa=(semana,idx,t,i)=>{
+  const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
+  chk.checked=data.check[chk.id]||false;
+  chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvarDados(); checarConfete(idx); if(modoRevisaoAtivo) ativarModoRevisao(); };
+  const label=document.createElement('span'); label.textContent=t;
+  const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label);
+  return div;
 };
+
+const gerarSemana=(semana,tarefas,idx)=>{
+  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+  const header=document.createElement('div'); header.className='semana-header';
+  header.innerHTML=`<h2 onclick="toggleCollapse(${idx})"><span class="expand-icon collapsed">▶</span>${semana}</h2><div style="display:flex;gap:5px;flex-wrap:wrap;"><button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button><button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button></div>`;
+  div.appendChild(header);
+  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar';
+  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+  const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`;
+  const fragment=document.createDocumentFragment(); tarefas.forEach((t,i)=>fragment.appendChild(criarTarefa(semana,idx,t,i)));
+  tarefasDiv.appendChild(fragment); div.appendChild(tarefasDiv);
+  return div;
+};
+
+const gerar=()=>{
+  const container=document.getElementById('conteudo'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx)));
+  atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao();
+};
+
+const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
+
+const checarConfete=(idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) confete.start(); };
+
+const toggleCollapse=idx=>{
+  const el=document.getElementById(`tarefas-${idx}`);
+  const icon=document.querySelectorAll('.expand-icon')[idx];
+  if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } 
+  else { el.style.display='none'; icon.classList.add('collapsed'); }
+};
+
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
-const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
+
+const ativarModoRevisao=()=>{
+  modoRevisaoAtivo=!modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(div=>{
+    if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao');
+    else div.classList.remove('modo-revisao');
+  });
+};
 
 // ================= Export/Import ======================
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); showToast('Exportado JSON'); };
-const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); showToast('Exportação Avançada'); };
-const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); gerar(); salvarDados(); showToast('Importado com sucesso'); }; reader.readAsText(file); }; input.click(); };
-const limpar=()=>{ if(confirm("Deseja realmente limpar tudo?")){ data.check={}; data.notes={}; gerar(); salvarDados(); showToast('Tudo limpo'); } };
-const gerarPDF=()=>{ html2pdf().from(document.body).save(); showToast('PDF gerado'); };
-const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); showToast('Calendário exportado'); };
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode'); salvarDados(); };
+const exportarAvancado=()=>{ const blob=new Blob([JSON.stringify({data,exportadoEm:new Date().toISOString()})],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click(); showToast('Exportado JSON Avançado'); };
+const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado JSON'); }; reader.readAsText(file); }; input.click(); };
+const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); showToast('PDF gerado'); };
 
-<!-- ================= Login Google / Salvar Drive Otimizado ================= -->
-
-// Mostra usuário logado
-async function mostrarUsuario() {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  const emailSpan = document.getElementById('usuario-email');
-  const avatarImg = document.getElementById('usuario-avatar');
-
-  if (!token) {
-    emailSpan.textContent = "Nenhuma conta conectada";
-    avatarImg.style.display = "none";
-    return;
+const exportarParaCalendario=()=>{
+  let icsContent='BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
+  const startDate=new Date();
+  let semanaCount=0;
+  for(const semana in plano){
+    semanaCount++;
+    const dt=new Date(startDate.getTime()+7*(semanaCount-1)*24*60*60*1000);
+    icsContent+=`BEGIN:VEVENT\nUID=${semanaCount}@checklist.com\nDTSTAMP:${dt.toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nDTSTART:${dt.toISOString().replace(/[-:]/g,'').split('.')[0]}Z\nSUMMARY:${semana}\nEND:VEVENT\n`;
   }
+  icsContent+='END:VCALENDAR';
+  const blob=new Blob([icsContent],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click(); showToast('Calendário exportado');
+};
 
-  try {
-    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    });
-
-    if (!resp.ok) {
-      const error = await resp.json();
-      throw new Error(error.error || 'Erro ao obter usuário');
-    }
-
-    const perfil = await resp.json();
-    emailSpan.textContent = perfil.email || "Usuário sem email";
-    if (perfil.picture) {
-      avatarImg.src = perfil.picture;
-      avatarImg.style.display = "inline-block";
-    } else {
-      avatarImg.style.display = "none";
-    }
-  } catch (e) {
-    console.error(e);
-    emailSpan.textContent = "Erro ao obter usuário";
-    avatarImg.style.display = "none";
-  }
-}
-
-// Função de login Google
-function loginGoogle() {
-  fetch(`${BACKEND_URL}/auth-url`)
-    .then(res => res.json())
-    .then(d => {
-      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
-      if (!popup) return showToast("Não foi possível abrir popup");
-
-      // Listener de mensagem reutilizável
-      const handleMessage = async (e) => {
-        if (e.data.googleToken) {
-          localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
-          await mostrarUsuario();
-          showToast('Login concluído');
-          popup.close();
-        }
-      };
-
-      window.addEventListener('message', handleMessage, { once: true });
-    })
-    .catch(err => {
-      console.error(err);
-      showToast("Erro ao obter URL de login");
-    });
-}
-
-// Logout Google
-function logoutGoogle() {
-  localStorage.removeItem('googleToken');
-  mostrarUsuario();
-  showToast('Logout realizado');
-}
-
-// Salvar checklist no Drive
-function salvarNoDrive() {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) return showToast('Faça login antes');
-
-  fetch(`${BACKEND_URL}/save`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, filename: 'checklist.json', content: data })
-  })
-  .then(async r => {
-    const resp = await r.json();
-    if (resp.success) showToast('Checklist salvo no Drive');
-    else showToast(`Erro ao salvar: ${resp.error || 'Desconhecido'}`);
-  })
-  .catch(e => {
-    console.error(e);
-    showToast('Erro ao salvar no Drive');
+// ================= Progress/Badges ======================
+const atualizarProgresso=()=>{
+  const total=document.querySelectorAll('.tarefas input').length;
+  const marcados=document.querySelectorAll('.tarefas input:checked').length;
+  const percent=Math.round((marcados/total)*100);
+  document.getElementById('progressBar').style.width=percent+'%'; document.getElementById('progressBar').textContent=percent+'%';
+  Object.keys(plano).forEach((s,idx)=>{
+    const inputs=document.querySelectorAll(`#tarefas-${idx} input`);
+    const marcadosSemana=[...inputs].filter(i=>i.checked).length;
+    const fill=document.getElementById(`semana-progress-fill-${idx}`);
+    fill.style.width=(marcadosSemana/inputs.length*100)+'%';
   });
-}
+};
 
-// ================= Progresso / Badges ======================
-const atualizarProgresso=()=>{ Object.keys(plano).forEach((semana,idx)=>{ const total=plano[semana].length; const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length; const perc=Math.round((checkeds/total)*100); document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído'; document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%'; }); const totalPerc=Math.round(Object.keys(plano).reduce((acc,semana,idx)=>acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length); document.getElementById('progressBar').style.width=totalPerc+'%'; document.getElementById('progressBar').textContent=totalPerc+'%'; };
-const badgesContainer=document.getElementById('badges-container');
-const atualizarBadges=()=>{ badgesContainer.innerHTML=''; Object.keys(plano).forEach((semana,idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)){ const badge=document.createElement('div'); badge.className='badge'; badge.textContent=`${semana} ★`; badgesContainer.appendChild(badge); } }); };
+const atualizarBadges=()=>{
+  const container=document.getElementById('badges-container'); container.innerHTML='';
+  let badges=[];
+  Object.keys(plano).forEach((s,idx)=>{ if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) badges.push(s); });
+  data.badges=badges;
+  badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent='⭐ '+b; container.appendChild(span); });
+};
 
-// ================= Load ======================
-window.addEventListener('load',()=>{ gerar(); mostrarUsuario(); if(data.dark) document.body.classList.add('dark-mode'); });
+// ================= Tema ======================
+const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
+
+// ================= Limpar ======================
+const limpar=()=>{ if(confirm('Deseja limpar tudo?')){ data={check:{},notes:{},dark:data.dark,historico:[],pontos:0,badges:[]}; salvarDados(); gerar(); showToast('Tudo limpo'); }};
+
+// ================= Login Google ======================
+const mostrarUsuario=usuario=>{ if(usuario){ document.getElementById('usuario-avatar').src=usuario.avatar; document.getElementById('usuario-avatar').style.display='block'; document.getElementById('usuario-email').textContent=usuario.email; } else { document.getElementById('usuario-avatar').style.display='none'; document.getElementById('usuario-email').textContent='Nenhuma conta conectada'; } };
+const loginGoogle=()=>{ fetch(`${BACKEND_URL}/login`).then(r=>r.json()).then(d=>mostrarUsuario(d)).catch(()=>showToast('Erro login')); };
+const logoutGoogle=()=>{ fetch(`${BACKEND_URL}/logout`).then(()=>mostrarUsuario(null)).catch(()=>showToast('Erro logout')); };
+const salvarNoDrive=()=>{ fetch(`${BACKEND_URL}/save`,{method:'POST',body:JSON.stringify(data)}).then(()=>showToast('Salvo no Drive')).catch(()=>showToast('Erro ao salvar')); };
+
+// ================= Inicialização ======================
+document.body.classList.toggle('dark-mode',data.dark);
+gerar();
 </script>
-
 </body>
 </html>
