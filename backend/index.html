@@ -192,8 +192,35 @@ const gerar=()=>{ const container=document.getElementById('conteudo'); container
 const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
 const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); const icon=document.querySelectorAll('.expand-icon')[idx]; if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } else { el.style.display='none'; icon.classList.add('collapsed'); } };
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
-const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); };
-const atualizarProgresso=()=>{ const total=Object.keys(data.check).length; const marcados=Object.values(data.check).filter(v=>v).length; const perc=Math.round(total?marcados/total*100:0); document.getElementById('progressBar').style.width=perc+'%'; document.getElementById('progressBar').textContent=perc+'%'; Object.keys(plano).forEach((s,i)=>{ const inputs=document.querySelectorAll(`#tarefas-${i} input`); const totalS=inputs.length; const marcadosS=[...inputs].filter(i=>i.checked).length; const fill=document.getElementById(`semana-progress-fill-${i}`); if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%'; const texto=document.getElementById(`semana-progress-${i}`); if(texto) texto.textContent=`${marcadosS}/${totalS} tarefas`; }); };
+
+  const ativarModoRevisao = () => {
+  modoRevisaoAtivo = !modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(div => {
+    const tarefas = div.querySelectorAll('.tarefas div');
+    if(modoRevisaoAtivo){
+      // Mostrar apenas tarefas não concluídas
+      let temPendentes = false;
+      tarefas.forEach(tarefa => {
+        const chk = tarefa.querySelector('input');
+        if(chk.checked){
+          tarefa.style.display = 'none';
+        } else {
+          tarefa.style.display = 'flex';
+          temPendentes = true;
+        }
+      });
+      // Destacar semanas com pendentes
+      if(temPendentes) div.classList.add('modo-revisao');
+      else div.classList.remove('modo-revisao');
+    } else {
+      // Volta ao modo normal
+      tarefas.forEach(tarefa => tarefa.style.display = 'flex');
+      div.classList.remove('modo-revisao');
+    }
+  });
+};
+
+  const atualizarProgresso=()=>{ const total=Object.keys(data.check).length; const marcados=Object.values(data.check).filter(v=>v).length; const perc=Math.round(total?marcados/total*100:0); document.getElementById('progressBar').style.width=perc+'%'; document.getElementById('progressBar').textContent=perc+'%'; Object.keys(plano).forEach((s,i)=>{ const inputs=document.querySelectorAll(`#tarefas-${i} input`); const totalS=inputs.length; const marcadosS=[...inputs].filter(i=>i.checked).length; const fill=document.getElementById(`semana-progress-fill-${i}`); if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%'; const texto=document.getElementById(`semana-progress-${i}`); if(texto) texto.textContent=`${marcadosS}/${totalS} tarefas`; }); };
 const atualizarBadges=()=>{ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); };
 const limpar=()=>{ if(confirm('Deseja realmente limpar tudo?')){ data={check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; salvarDados(); gerar(); } };
 const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
