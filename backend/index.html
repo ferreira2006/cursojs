@@ -18,7 +18,25 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 .tarefas { display:flex; flex-direction:column; gap:5px; margin-top:5px; }
 .tarefas div { display:flex; align-items:center; gap:10px; }
 .tarefas input { width:18px; height:18px; }
-.nota { width:100%; min-height:50px; margin-top:10px; padding:8px; }
+.nota {
+  width: 100%;             /* ocupa toda a largura do card */
+  max-width: 100%;         /* nunca ultrapassa o container */
+  min-height: 60px;        /* altura inicial */
+  padding: 8px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  resize: vertical;        /* só permite redimensionar verticalmente */
+  box-sizing: border-box;  /* inclui padding na largura */
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9em;
+  transition: background 0.3s, color 0.3s;
+}
+.dark-mode .nota {
+  background: #2b2b2b;
+  color: #f4f4f9;
+  border-color: #555;
+}
 .top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; }
 .dark-mode .top-bar { background:#2b2b2b; }
 .top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
@@ -215,12 +233,18 @@ const gerarSemana=(semana,tarefas,idx)=>{
   div.appendChild(tarefasDiv);
 
   // ======= NOVO: Textarea para notas da semana =======
-  const nota=document.createElement('textarea');
-  nota.className='nota';
-  nota.placeholder='Anotações...';
-  nota.value = data.notes[`s${idx}`] || '';
-  nota.oninput = () => { data.notes[`s${idx}`] = nota.value; salvarDados(); };
-  div.appendChild(nota);
+  const nota = document.createElement('textarea');
+nota.className = 'nota';
+nota.placeholder = 'Anotações...';
+nota.value = data.notes[`s${idx}`] || '';
+nota.style.width = '100%';        // largura total do card
+nota.style.maxWidth = '100%';     // nunca ultrapassa o container
+nota.style.boxSizing = 'border-box'; // inclui padding na largura
+nota.oninput = () => { 
+    data.notes[`s${idx}`] = nota.value; 
+    salvarDados(); 
+};
+div.appendChild(nota);
 
   return div;
 };
