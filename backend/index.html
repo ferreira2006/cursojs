@@ -198,72 +198,102 @@ const gerarPDF=()=>{ html2pdf().from(document.body).save(); showToast('PDF gerad
 const exportarParaCalendario=()=>{ let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((semana,idx)=>{ ics+=`BEGIN:VEVENT\nSUMMARY:${semana}\nDESCRIPTION:${plano[semana].join(', ')}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`; }); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:"text/calendar"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click(); showToast('Calendário exportado'); };
 const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode'); salvarDados(); };
 
-// ================= Login Google / Salvar Drive ======================
-const mostrarUsuario=async()=>{
-  const token=JSON.parse(localStorage.getItem('googleToken'));
-  const emailSpan=document.getElementById('usuario-email');
-  const avatarImg=document.getElementById('usuario-avatar');
-  if(!token){
-    emailSpan.textContent="Nenhuma conta conectada";
-    avatarImg.style.display="none";
+<!-- ================= Login Google / Salvar Drive Otimizado ================= -->
+<script>
+const BACKEND_URL='https://cursojs-8012.onrender.com';
+
+// Mostra usuário logado
+async function mostrarUsuario() {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  const emailSpan = document.getElementById('usuario-email');
+  const avatarImg = document.getElementById('usuario-avatar');
+
+  if (!token) {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
     return;
   }
-  try{
+
+  try {
     const resp = await fetch(`${BACKEND_URL}/userinfo`, {
       method: 'POST',
-      headers:{ 'Content-Type':'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
     });
-    if(resp.status!==200) throw new Error("Token inválido");
-    const perfil = await resp.json();
-    emailSpan.textContent = perfil.email;
-    if(perfil.picture){
-      avatarImg.src = perfil.picture;
-      avatarImg.style.display="inline-block";
-    } else avatarImg.style.display="none";
-  } catch(e){
-    emailSpan.textContent="Erro ao obter usuário";
-    avatarImg.style.display="none";
-  }
-};
 
-const loginGoogle=()=>{
+    if (!resp.ok) {
+      const error = await resp.json();
+      throw new Error(error.error || 'Erro ao obter usuário');
+    }
+
+    const perfil = await resp.json();
+    emailSpan.textContent = perfil.email || "Usuário sem email";
+    if (perfil.picture) {
+      avatarImg.src = perfil.picture;
+      avatarImg.style.display = "inline-block";
+    } else {
+      avatarImg.style.display = "none";
+    }
+  } catch (e) {
+    console.error(e);
+    emailSpan.textContent = "Erro ao obter usuário";
+    avatarImg.style.display = "none";
+  }
+}
+
+// Função de login Google
+function loginGoogle() {
   fetch(`${BACKEND_URL}/auth-url`)
-    .then(res=>res.json())
-    .then(d=>{
-      const popup = window.open(d.url,"loginGoogle","width=500,height=600");
-      window.addEventListener('message',e=>{
-        if(e.data.googleToken){
-          localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken));
-          mostrarUsuario();
+    .then(res => res.json())
+    .then(d => {
+      const popup = window.open(d.url, "loginGoogle", "width=500,height=600");
+      if (!popup) return showToast("Não foi possível abrir popup");
+
+      // Listener de mensagem reutilizável
+      const handleMessage = async (e) => {
+        if (e.data.googleToken) {
+          localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+          await mostrarUsuario();
           showToast('Login concluído');
           popup.close();
         }
-      },{once:true});
-    });
-};
+      };
 
-const logoutGoogle=()=>{
+      window.addEventListener('message', handleMessage, { once: true });
+    })
+    .catch(err => {
+      console.error(err);
+      showToast("Erro ao obter URL de login");
+    });
+}
+
+// Logout Google
+function logoutGoogle() {
   localStorage.removeItem('googleToken');
   mostrarUsuario();
   showToast('Logout realizado');
-};
+}
 
-const salvarNoDrive=()=>{
-  const token=JSON.parse(localStorage.getItem('googleToken'));
-  if(!token) return showToast('Faça login antes');
-  fetch(`${BACKEND_URL}/save`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({token,filename:'checklist.json',content:data})
+// Salvar checklist no Drive
+function salvarNoDrive() {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) return showToast('Faça login antes');
+
+  fetch(`${BACKEND_URL}/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, filename: 'checklist.json', content: data })
   })
-  .then(r=>r.json())
-  .then(resp=>{
-    if(resp.success) showToast('Checklist salvo no Drive');
-    else showToast('Erro ao salvar');
+  .then(async r => {
+    const resp = await r.json();
+    if (resp.success) showToast('Checklist salvo no Drive');
+    else showToast(`Erro ao salvar: ${resp.error || 'Desconhecido'}`);
   })
-  .catch(e=>showToast('Erro ao salvar'));
-};
+  .catch(e => {
+    console.error(e);
+    showToast('Erro ao salvar no Drive');
+  });
+}
 
 // ================= Progresso / Badges ======================
 const atualizarProgresso=()=>{ Object.keys(plano).forEach((semana,idx)=>{ const total=plano[semana].length; const checkeds=[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length; const perc=Math.round((checkeds/total)*100); document.getElementById(`semana-progress-${idx}`).textContent=perc+'% concluído'; document.getElementById(`semana-progress-fill-${idx}`).style.width=perc+'%'; }); const totalPerc=Math.round(Object.keys(plano).reduce((acc,semana,idx)=>acc+[...document.querySelectorAll(`#tarefas-${idx} input`)].filter(c=>c.checked).length/plano[semana].length*100,0)/Object.keys(plano).length); document.getElementById('progressBar').style.width=totalPerc+'%'; document.getElementById('progressBar').textContent=totalPerc+'%'; };
