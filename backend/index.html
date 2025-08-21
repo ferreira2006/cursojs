@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Checklist v3 Industrial - JavaScript Avançado</title>
+<title>Checklist Híbrido - JS Avançado</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
@@ -60,22 +60,24 @@ input[type=text] { padding:5px; border-radius:5px; border:1px solid #ccc; }
 const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 
 // ================= CHECKLIST =================
-let data = {};
+const CORES_SEMANA = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const NUM_SEMANAS = 8;
 
-// Estrutura inicial: semanas e tarefas
-const SEMANAS = 12;
+let data = JSON.parse(localStorage.getItem('checklistData')) || {};
+let modoRevisaoAtivo = false;
+
+// Inicializa estrutura de semanas
 function initData(){
-  for(let i=1;i<=SEMANAS;i++){
-    if(!data[i]) data[i]={nota:"", tarefas:[], importante:false};
+  for(let i=1;i<=NUM_SEMANAS;i++){
+    if(!data[i]) data[i]={nota:"",tarefas:[],importante:false,historico:[],progresso:0};
   }
 }
 
 const conteudo=document.getElementById('conteudo');
 const badgesContainer=document.getElementById('badges-container');
 
+// ================= FUNÇÕES =================
 function carregar(){
-  const salvo=localStorage.getItem('checklistData');
-  if(salvo) data=JSON.parse(salvo);
   initData();
   gerarSemanas();
   atualizarProgresso();
@@ -84,46 +86,100 @@ function carregar(){
 
 function gerarSemanas(){
   conteudo.innerHTML="";
-  for(let i=1;i<=SEMANAS;i++){
-    const semana=document.createElement('div');
-    semana.className="semana";
-    const tarefasHTML=(data[i].tarefas||[]).map((t,j)=>`
-      <div>
+  for(let i=1;i<=NUM_SEMANAS;i++){
+    const semanaDiv = document.createElement('div');
+    semanaDiv.className='semana';
+    semanaDiv.style.background=CORES_SEMANA[i-1];
+
+    const tarefasHTML=(data[i].tarefas||[]).map((t,j)=>
+      `<div>
         <input type="checkbox" ${t.concluido?"checked":""} onchange="marcarTarefa(${i},${j},this.checked)">
         <span>${t.titulo}</span>
-      </div>
-    `).join("");
-    semana.innerHTML=`
+      </div>`).join("");
+
+    semanaDiv.innerHTML = `
       <div class="semana-header">
         <h2 onclick="toggleSemana(this)">Semana ${i}</h2>
         <span class="importante" onclick="marcarImportante(${i})">★</span>
+        <button onclick="marcarSemana(${i},true)">Marcar todos</button>
+        <button onclick="marcarSemana(${i},false)">Resetar</button>
       </div>
-      <div>${tarefasHTML}</div>
+      <div id="tarefas-${i}">${tarefasHTML}</div>
       <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i},this.value)">${data[i].nota}</textarea>
-      <div class="semana-progress">${data[i].progresso||0}% concluído</div>
-      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${data[i].progresso||0}%"></div></div>
+      <div class="semana-progress" id="semana-progress-${i}">${data[i].progresso||0}% concluído</div>
+      <div class="semana-progress-bar"><div class="semana-progress-fill" id="semana-progress-fill-${i}" style="width:${data[i].progresso||0}%"></div></div>
     `;
-    conteudo.appendChild(semana);
+    conteudo.appendChild(semanaDiv);
   }
 }
 
 function salvarNota(semana,texto){
-  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
   data[semana].nota=texto;
   salvar();
 }
 
 function marcarImportante(semana){
-  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
   data[semana].importante=!data[semana].importante;
   salvar();
 }
 
 function marcarTarefa(semana,idx,concluido){
-  if(!data[semana]) data[semana]={nota:"",tarefas:[],importante:false};
-  if(!data[semana].tarefas[idx]) data[semana].tarefas[idx]={titulo:"",concluido:0};
-  data[semana].tarefas[idx].concluido=concluido?1:0;
+  if(!data[semana].tarefas[idx]) data[semana].tarefas[idx]={titulo:"",concluido:false};
+  data[semana].tarefas[idx].concluido=concluido;
+  // Histórico
+  data[semana].historico.push({tarefa:idx,status:concluido,timestamp:new Date().toISOString()});
+  if(data[semana].historico.length>100) data[semana].historico.shift();
   salvar();
+  // Confete se todas concluídas
+  if(data[semana].tarefas.every(t=>t.concluido)) mostrarConfete();
+}
+
+function mostrarConfete(){
+  const confete=document.getElementById('confete-container');
+  confete.innerHTML='🎉'.repeat(20);
+  setTimeout(()=>confete.innerHTML='',1500);
+}
+
+function marcarSemana(semana,marcar){
+  data[semana].tarefas.forEach((t,i)=>marcarTarefa(semana,i,marcar));
+  salvar();
+}
+
+function toggleSemana(el){
+  const nota = el.parentElement.parentElement.querySelector('.nota');
+  nota.classList.toggle('hidden');
+}
+
+function atualizarProgresso(){
+  let totalConcluido=0;
+  for(let i=1;i<=NUM_SEMANAS;i++){
+    const semana=data[i];
+    const concluidos=(semana.tarefas||[]).filter(t=>t.concluido).length;
+    const total=(semana.tarefas||[]).length;
+    semana.progresso = total?Math.round(concluidos/total*100):0;
+    totalConcluido += semana.progresso;
+    // Atualiza DOM
+    const fill=document.getElementById(`semana-progress-fill-${i}`);
+    const txt=document.getElementById(`semana-progress-${i}`);
+    if(fill) fill.style.width=semana.progresso+'%';
+    if(txt) txt.textContent=semana.progresso+'% concluído';
+  }
+  // Progresso total
+  const perc = Math.round(totalConcluido/NUM_SEMANAS);
+  document.getElementById('progressBar').style.width=perc+'%';
+  document.getElementById('progressBar').textContent=perc+'%';
+}
+
+function atualizarBadges(){
+  badgesContainer.innerHTML="";
+  for(let i=1;i<=NUM_SEMANAS;i++){
+    if(data[i].importante){
+      const badge=document.createElement('div');
+      badge.className='badge';
+      badge.textContent=`Semana ${i} ★`;
+      badgesContainer.appendChild(badge);
+    }
+  }
 }
 
 function salvar(){
@@ -132,64 +188,18 @@ function salvar(){
   atualizarBadges();
 }
 
-function toggleSemana(el){
-  el.parentElement.parentElement.querySelector('.nota').classList.toggle('hidden');
-}
-
-function atualizarProgresso(){
-  for(let i=1;i<=SEMANAS;i++){
-    const semana=data[i];
-    const concluidos=(semana.tarefas||[]).filter(t=>t.concluido).length;
-    const total=(semana.tarefas||[]).length;
-    semana.progresso=total?Math.round(concluidos/total*100):0;
-  }
-  const totalSemanas=SEMANAS;
-  const totalConcluidos=Object.values(data).reduce((acc,s)=>acc+(s.progresso||0),0);
-  const perc=Math.round(totalConcluidos/totalSemanas);
-  document.getElementById('progressBar').style.width=perc+"%";
-  document.getElementById('progressBar').textContent=perc+"%";
-
-  // Atualiza barras por semana
-  document.querySelectorAll('.semana').forEach((s,i)=>{
-    const fill=s.querySelector('.semana-progress-fill');
-    fill.style.width=(data[i+1].progresso||0)+"%";
-    s.querySelector('.semana-progress').textContent=(data[i+1].progresso||0)+"% concluído";
-  });
-}
-
-function atualizarBadges(){
-  badgesContainer.innerHTML="";
-  for(let i=1;i<=SEMANAS;i++){
-    if(data[i].importante){
-      const badge=document.createElement('div');
-      badge.className="badge";
-      badge.textContent="Semana "+i+" ★";
-      badgesContainer.appendChild(badge);
-    }
-  }
-}
-
 // ================= EXPORT/IMPORT =================
 function exportar(){
   const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download="checklist.json";
-  a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.json"; a.click();
 }
-
 function exportarAvancado(){
   const avancado={data,exportadoEm:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download="checklist-avancado.json";
-  a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click();
 }
-
 function importar(){
-  const input=document.createElement('input');
-  input.type="file"; input.accept=".json";
+  const input=document.createElement('input'); input.type='file'; input.accept=".json";
   input.onchange=e=>{
     const file=e.target.files[0];
     const reader=new FileReader();
@@ -203,7 +213,6 @@ function importar(){
   };
   input.click();
 }
-
 function limpar(){
   if(confirm("Deseja realmente limpar tudo?")){
     localStorage.removeItem('checklistData');
@@ -218,8 +227,7 @@ function limpar(){
 function filtrar(){
   const termo=document.getElementById('busca').value.toLowerCase();
   document.querySelectorAll('.semana').forEach(s=>{
-    const texto=s.innerText.toLowerCase();
-    s.style.display=texto.includes(termo)?"block":"none";
+    s.style.display=s.innerText.toLowerCase().includes(termo)?'block':'none';
   });
 }
 
@@ -228,26 +236,33 @@ function gerarPDF(){
 }
 
 function ativarModoRevisao(){
-  document.querySelectorAll('.semana').forEach(s=>s.classList.toggle('modo-revisao'));
+  modoRevisaoAtivo = !modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(s=>{
+    const incompletas = [...s.querySelectorAll('input[type=checkbox]')].some(chk=>!chk.checked);
+    if(modoRevisaoAtivo && incompletas) s.classList.add('modo-revisao');
+    else s.classList.remove('modo-revisao');
+  });
 }
 
+// ================= Calendário =================
 function exportarParaCalendario(){
   let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
-  for(let i=1;i<=SEMANAS;i++){
-    if(data[i].nota){
-      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
-    }
+  for(let i=1;i<=NUM_SEMANAS;i++){
+    data[i].tarefas.forEach((t,j)=>{
+      if(t.concluido){
+        const dt = new Date();
+        let dtStr = dt.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+        ics+=`BEGIN:VEVENT\nSUMMARY:${t.titulo}\nDTSTART:${dtStr}\nEND:VEVENT\n`;
+      }
+    });
   }
   ics+="END:VCALENDAR";
   const blob=new Blob([ics],{type:"text/calendar"});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download="checklist.ics";
-  a.click();
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click();
 }
 
 // ================= THEME =================
-function toggleTheme(){document.body.classList.toggle('dark-mode');}
+function toggleTheme(){document.body.classList.toggle('dark-mode'); data.dark=document.body.classList.contains('dark-mode'); salvar();}
 
 // ================= LOGIN GOOGLE =================
 window.addEventListener('load',()=>{
@@ -296,7 +311,9 @@ function salvarNoDrive(){
   .catch(err=>alert('Erro ao salvar no Google Drive: '+err));
 }
 
+// ================= INICIALIZAÇÃO =================
 window.onload=carregar;
 </script>
+
 </body>
 </html>
