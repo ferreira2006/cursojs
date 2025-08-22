@@ -190,7 +190,7 @@ const animateConfete = ()=>{
     ctx.restore();
     p.size*=0.98;
   });
-  confeteParticles.filter(p=>p.life>0);
+  confeteParticles = confeteParticles.filter(p => p.life > 0);
   if(confeteParticles.length>0) requestAnimationFrame(animateConfete);
 };
 
@@ -374,16 +374,28 @@ const importar=()=>{ const inp=document.createElement('input'); inp.type='file';
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
 const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); };
 function exportarParaCalendario(){
-  let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
-  for(let i=1;i<=SEMANAS;i++){
-    if(data[i].nota){
-      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
-    }
-  }
-  ics+="END:VCALENDAR";
-  const blob=new Blob([ics],{type:"text/calendar"});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click();
+  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
+  
+  Object.entries(data.notes).forEach(([key, nota]) => {
+    const idx = parseInt(key.replace('s','')) + 1; // transforma 's0' em 1, 's1' em 2
+    ics += `BEGIN:VEVENT
+SUMMARY:Semana ${idx}
+DESCRIPTION:${nota}
+DTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z
+END:VEVENT
+`;
+  });
+
+  ics += "END:VCALENDAR";
+  const blob = new Blob([ics], { type: "text/calendar" });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "checklist.ics";
+  a.click();
+  
+  showToast("Calendário exportado com sucesso!");
 }
+
 
 
 // ================= Inicialização ======================
