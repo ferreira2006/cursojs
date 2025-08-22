@@ -11,7 +11,7 @@ body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; tran
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
 h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; }
-.semana.modo-revisao { background: #fff3cd !important; }
+.semana.modo-pendencias { background: #fff3cd !important; }
 .semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
 .botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s, transform 0.15s, box-shadow 0.15s; }
 .botao-semana:hover { background:#45a049; }
@@ -164,7 +164,11 @@ const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atual
 const criarTarefa=(semana,idx,t,i)=>{
   const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
   chk.checked=data.check[chk.id]||false;
-  chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvarDados(); if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfeteComSom(); if(modoPendenciasAtivo) ativarPendencias(); };
+  chk.onchange=()=>{
+    data.check[chk.id]=chk.checked; salvarDados();
+    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfeteComSom();
+    if(modoPendenciasAtivo) ativarPendencias();
+  };
   const label=document.createElement('span'); label.textContent=t;
   const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label);
   return div;
@@ -196,11 +200,13 @@ const gerarSemana=(semana,tarefas,idx)=>{
 };
 
 const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoPendenciasAtivo) ativarPendencias(); };
+
 const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
+
 const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); const icon=document.querySelectorAll('.expand-icon')[idx]; if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } else { el.style.display='none'; icon.classList.add('collapsed'); } };
+
 const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
 
-// ================= Pendências ======================
 const ativarPendencias = () => {
   modoPendenciasAtivo = !modoPendenciasAtivo;
   document.querySelectorAll('.semana').forEach(div => {
@@ -209,80 +215,60 @@ const ativarPendencias = () => {
       let temPendentes = false;
       tarefas.forEach(tarefa => {
         const chk = tarefa.querySelector('input');
-        if(chk.checked){
-          tarefa.style.display = 'none';
-        } else {
-          tarefa.style.display = 'flex';
-          temPendentes = true;
-        }
+        if(chk.checked) tarefa.style.display = 'none';
+        else { tarefa.style.display = 'flex'; temPendentes = true; }
       });
-      if(!temPendentes) div.style.display = 'none';
+      if(temPendentes) div.classList.add('modo-pendencias');
+      else div.classList.remove('modo-pendencias');
     } else {
-      tarefas.forEach(tarefa => tarefa.style.display = 'flex');
-      div.style.display='flex';
+      tarefas.forEach(tarefa => tarefa.style.display='flex');
+      div.classList.remove('modo-pendencias');
     }
   });
 };
 
-// ================= Progresso ======================
+const limpar=()=>{ if(confirm('Limpar todos os dados?')){ data={ check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[] }; salvarDados(); gerar(); } };
+
 const atualizarProgresso=()=>{
-  let total=0, concluido=0;
-  Object.keys(plano).forEach((s,idx)=>{
-    const inputs = document.querySelectorAll(`#tarefas-${idx} input`);
-    const chkCount = inputs.length;
-    const chkDone = [...inputs].filter(i=>i.checked).length;
-    const fill = document.getElementById(`semana-progress-fill-${idx}`);
-    fill.style.width = ((chkDone/chkCount)*100)+'%';
-    document.getElementById(`semana-progress-${idx}`).textContent = `Progresso: ${chkDone}/${chkCount}`;
-    total += chkCount; concluido += chkDone;
+  let total=0, concluidas=0;
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
+    let count=0; tarefas.forEach((t,i)=>{ if(data.check[`s${idx}d${i}`]) count++; });
+    const fill = document.getElementById(`semana-progress-fill-${idx}`); fill.style.width=`${(count/tarefas.length)*100}%`;
+    const semText = document.getElementById(`semana-progress-${idx}`); semText.textContent=`${count}/${tarefas.length} tarefas concluídas`;
+    total+=tarefas.length; concluidas+=count;
   });
-  const progressBar = document.getElementById('progressBar');
-  const perc = Math.round((concluido/total)*100);
-  progressBar.style.width = perc+'%';
-  progressBar.textContent = perc+'%';
+  const prog = document.getElementById('progressBar'); prog.style.width=`${(concluidas/total)*100}%`; prog.textContent=`${Math.round((concluidas/total)*100)}%`;
 };
 
-// ================= Badges ======================
 const atualizarBadges=()=>{
-  const container=document.getElementById('badges-container'); 
-  container.innerHTML='';
-
-  // Badge automática: 100% semana
-  Object.keys(plano).forEach((s,idx)=>{
-    const inputs = document.querySelectorAll(`#tarefas-${idx} input`);
-    if([...inputs].every(i=>i.checked)){
-      if(!data.badges.includes(`Semana ${idx+1}`)){
-        data.badges.push(`Semana ${idx+1}`);
-        showToast(`🎉 Parabéns! Concluiu a ${s}`);
-      }
-    }
+  const container = document.getElementById('badges-container'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>{
+    if(tarefas.every((t,i)=>data.check[`s${idx}d${i}`])) data.badges[idx] = semana;
   });
-
-  // Badge de Progresso Total
-  const todasConcluidas = Object.keys(plano).every((s,idx)=>{
-    const inputs = document.querySelectorAll(`#tarefas-${idx} input`);
-    return [...inputs].every(i=>i.checked);
-  });
-  if(todasConcluidas && !data.badges.includes('Progresso Total 100%')){
-    data.badges.push('Progresso Total 100%');
-    showToast('🏆 Parabéns! Concluiu 100% do plano!');
-  }
-
-  // Renderizar badges
-  data.badges.forEach(badge=>{
-    const span=document.createElement('span'); 
-    span.className='badge'; 
-    span.textContent=badge;
-    container.appendChild(span);
-  });
+  data.badges.forEach(badge => { if(badge){ const span=document.createElement('span'); span.className='badge'; span.textContent=badge; container.appendChild(span); } });
 };
 
-// ================= Tema ======================
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
+const toggleTheme=()=>{
+  data.dark = !data.dark;
+  document.body.classList.toggle('dark-mode', data.dark);
+  salvarDados();
+};
 
-// ================= Inicial ======================
-gerar();
-document.body.classList.toggle('dark-mode',data.dark);
+// ================= Export / Import ======================
+const exportar=()=>{ const blob=new Blob([JSON.stringify(data)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='dados.json'; a.click(); showToast('Exportado JSON!'); };
+const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=()=>{ const file=inp.files[0]; const reader=new FileReader(); reader.onload=e=>{ data=JSON.parse(e.target.result); salvarDados(); gerar(); showToast('Importado JSON!'); }; reader.readAsText(file); }; inp.click(); };
+const exportarAvancado=()=>{ showToast('Exportação Avançada simulada!'); };
+const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save(); showToast('PDF gerado!'); };
+const exportarParaCalendario=()=>{ showToast('Exportado para calendário (simulação)!'); };
+
+// ================= Google Drive ======================
+const loginGoogle=()=>{ showToast('Login Google simulado'); document.getElementById('usuario-email').textContent='usuario@exemplo.com'; document.getElementById('usuario-avatar').style.display='inline'; document.getElementById('usuario-avatar').src='https://i.pravatar.cc/24'; };
+const logoutGoogle=()=>{ showToast('Logout Google'); document.getElementById('usuario-email').textContent='Nenhuma conta conectada'; document.getElementById('usuario-avatar').style.display='none'; };
+const salvarNoDrive=()=>{ showToast('Dados salvos no Google Drive (simulado)'); };
+
+// ================= Inicialização ======================
+document.addEventListener('DOMContentLoaded',()=>{ gerar(); toggleTheme(); atualizarBadges(); });
+
 </script>
 </body>
 </html>
