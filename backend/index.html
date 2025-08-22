@@ -5,297 +5,148 @@
 <title>Checklist de Estudo - JavaScript Avançado v5.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 <style>
-body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; transition: background 0.3s, color 0.3s; }
-.dark-mode { background:#1e1e1e; color:#f4f4f9; }
-h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
-.semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; }
-.semana.modo-revisao { background: #fff3cd !important; }
-.semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
-.botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s, transform 0.15s, box-shadow 0.15s; }
-.botao-semana:hover { background:#45a049; }
-.tarefas { display:flex; flex-direction:column; gap:5px; margin-top:5px; }
-.tarefas div { display:flex; align-items:center; gap:10px; }
-.tarefas input { width:18px; height:18px; }
-.nota { width:100%; max-width:100%; min-height:60px; padding:8px; margin-top:10px; border:1px solid #ccc; border-radius:5px; resize:vertical; box-sizing:border-box; font-family:'Inter', Arial, sans-serif; font-size:0.9em; transition: background 0.3s, color 0.3s; }
-.dark-mode .nota { background:#2b2b2b; color:#f4f4f9; border-color:#555; }
-.top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; }
-.dark-mode .top-bar { background:#2b2b2b; }
-.top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
-.top-bar button { background-color:#4caf50; color:#333333; border:none; border-radius:5px; padding:5px 10px; cursor:pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.15s; }
-.top-bar button:hover { background-color:#45a049; transform: scale(1.05); box-shadow:0 4px 10px rgba(0,0,0,0.2); }
-.top-bar button:active { transform: scale(0.98); box-shadow:0 2px 5px rgba(0,0,0,0.2); }
-.dropdown { position:relative; display:inline-block; }
-.dropbtn { background:#4caf50; color:#333333; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; transition:0.2s; }
-.dropdown-content { display:none; position:absolute; background:#f9f9f9; min-width:150px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:5px; z-index:1; flex-direction:column; }
-.dropdown-content button { width:100%; text-align:left; padding:8px 12px; background:none; border:none; cursor:pointer; transition:0.2s; }
-.dropdown-content button:hover { background:#e0e0e0; }
-.dropdown:hover .dropdown-content { display:flex; flex-direction:column; }
-.busca-group input { width:200px; padding:5px; border-radius:5px; border:1px solid #ccc; }
-#toast-container { position:fixed; top:20px; right:20px; z-index:10000; }
-.toast { background:#333; color:white; padding:10px 15px; border-radius:5px; margin-bottom:10px; min-width:200px; box-shadow:0 2px 6px rgba(0,0,0,0.2); opacity:0; transform:translateX(100%); transition:opacity 0.3s, transform 0.3s; }
-.toast.show { opacity:1; transform:translateX(0); }
-.progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
-.progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:#333333; line-height:20px; transition: width 0.3s; }
-.semana-progress { font-size:0.9em; margin-top:5px; color:#666; }
-.dark-mode .semana-progress { color:#ccc; }
-.semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; }
-.semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
-.confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
-.badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
-.expand-icon { display: inline-block; margin-left: 5px; transition: transform 0.2s; }
-.expand-icon.collapsed { transform: rotate(-90deg); }
-.google-group { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
-.google-group .dropbtn { flex-shrink:0; }
-@media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} }
+  body {font-family:'Roboto',sans-serif;margin:0;padding:0;background:#f4f4f9;color:#333;transition:background .3s,color .3s}
+  body.dark{background:#1e1e1e;color:#f4f4f9}
+  .top-bar{position:sticky;top:0;z-index:1000;background:#6200ea;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:10px 20px}
+  .top-bar button,.top-bar input{margin-left:10px;padding:6px 12px;border:none;border-radius:4px;cursor:pointer}
+  .container{max-width:1000px;margin:20px auto;padding:20px}
+  .semana{background:#fff;margin-bottom:15px;padding:15px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.1);transition:.3s}
+  body.dark .semana{background:#2c2c2c}
+  .semana h3{margin-top:0}
+  .tarefas{list-style:none;padding:0}
+  .tarefas li{margin:8px 0;display:flex;align-items:center;justify-content:space-between}
+  .tarefas li.pendente{background:yellow}
+  .progress{height:10px;background:#ddd;border-radius:5px;overflow:hidden;margin:10px 0}
+  .progress-bar{height:10px;background:#6200ea;width:0;transition:width .3s}
+  body.dark .progress{background:#444}
+  body.dark .progress-bar{background:#bb86fc}
+  .stats{display:flex;justify-content:space-around;margin:15px 0}
+  .badge{display:inline-block;background:#ff9800;color:#fff;padding:5px 10px;border-radius:12px;margin:5px 0}
+  #confete-canvas{position:fixed;top:0;left:0;pointer-events:none;z-index:2000}
+  .toast{position:fixed;bottom:20px;right:20px;background:#333;color:#fff;padding:10px 15px;border-radius:5px;opacity:0;transition:.5s}
+  .toast.show{opacity:1}
 </style>
 </head>
 <body>
-
+<canvas id="confete-canvas"></canvas>
 <div class="top-bar">
-  <div class="top-bar-group">
-    <button onclick="toggleTheme()">🌙/☀️ Tema</button>
-    <button onclick="ativarModoRevisao()">📝 Modo Revisão</button>
-    <button onclick="limpar()">🗑️ Limpar Tudo</button>
-  </div>
-
-  <div class="top-bar-group dropdown">
-    <button class="dropbtn">📤 Exportar</button>
-    <div class="dropdown-content">
-      <button onclick="exportar()">JSON</button>
-      <button onclick="exportarAvancado()">Avançado</button>
-      <button onclick="gerarPDF()">PDF Avançado</button>
-      <button onclick="exportarParaCalendario()">Calendário</button>
-    </div>
-  </div>
-
-  <div class="top-bar-group">
-    <button onclick="importar()">📥 Importar JSON</button>
-  </div>
-
-  <div class="top-bar-group google-group">
-    <div class="dropdown">
-      <button class="dropbtn">🔑 Google</button>
-      <div class="dropdown-content">
-        <button onclick="loginGoogle()">Login</button>
-        <button onclick="logoutGoogle()">Logout</button>
-        <button onclick="salvarNoDrive()">Salvar no Drive</button>
-      </div>
-    </div>
-    <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;">
-      <img id="usuario-avatar" src="" alt="Avatar" style="width:24px; height:24px; border-radius:50%; display:none;">
-      <span id="usuario-email">Nenhuma conta conectada</span>
-    </div>
-  </div>
-
-  <div class="top-bar-group busca-group">
-    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+  <div><strong>Checklist de Estudo - JavaScript Avançado v5.2</strong></div>
+  <div>
+    <input type="text" id="busca" placeholder="Buscar semana...">
+    <button onclick="toggleDarkMode()">🌙</button>
+    <button onclick="toggleRevisao()">Revisão</button>
+    <button onclick="exportarDados()">Exportar</button>
+    <button onclick="importarDados()">Importar</button>
+    <button onclick="exportarICS()">.ics</button>
+    <button onclick="exportarPDF()">PDF</button>
+    <button onclick="loginGoogle()" id="loginBtn">Login Google</button>
+    <button onclick="logoutGoogle()" id="logoutBtn" style="display:none">Logout</button>
+    <span id="userInfo"></span>
   </div>
 </div>
-
-<div id="badges-container"></div>
-<div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
-<div id="conteudo"></div>
-<canvas id="confete-canvas" class="confete"></canvas>
-<div id="toast-container"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<div class="container">
+  <div class="stats">
+    <div>Total: <span id="totalProgresso">0%</span></div>
+    <div id="badges"></div>
+  </div>
+  <div id="semanas"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
 <script>
-// ================= Dados ======================
-const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
-const plano={
-  "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
-  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
-  "Semana 3 – Funções e Escopo":["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
-  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
-  "Semana 5 – DOM":["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
-  "Semana 6 – Projeto To-Do List":["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
-  "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
-  "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
-};
-const BACKEND_URL='https://cursojs-8012.onrender.com';
-let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
-let modoRevisaoAtivo=false;
+const plano=[{semana:"Semana 1",tarefas:["Introdução","Configuração","Sintaxe Básica"]},
+{semana:"Semana 2",tarefas:["Funções","Escopo","Closures"]},
+{semana:"Semana 3",tarefas:["Arrays","Objetos","Métodos Avançados"]}];
 
-// ================= Toast ======================
-const showToast = (msg, duration=3000) => {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div'); 
-  toast.className = 'toast'; 
-  toast.innerHTML = msg;
-  container.appendChild(toast);
-  setTimeout(()=>toast.classList.add('show'), 50);
-  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast), 300); }, duration);
-};
+let data={checks:{},notas:{},dark:false,revisao:false,badges:[]};
+if(localStorage.getItem("checklist"))data=JSON.parse(localStorage.getItem("checklist"));
 
-// ================= Confete ======================
-const confeteCanvas=document.getElementById('confete-canvas');
-const ctx=confeteCanvas.getContext('2d');
-confeteCanvas.width=window.innerWidth;
-confeteCanvas.height=window.innerHeight;
-const confeteParticles = [];
-const confeteCores=['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
-const startConfete = (count=200)=>{
-  for(let i=0;i<count;i++){
-    confeteParticles.push({ x:Math.random()*confeteCanvas.width, y:-10, dx:(Math.random()-0.5)*8, dy:Math.random()*7+3, size:Math.random()*10+5, color: confeteCores[Math.floor(Math.random()*confeteCores.length)], angle:Math.random()*360, spin:Math.random()*0.2-0.1, life:Math.random()*120+80 });
-  }
-  animateConfete();
-  setTimeout(()=>{ confeteParticles.length=0; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },7000);
-};
-const animateConfete = ()=>{
-  ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
-  confeteParticles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2; const rad=p.angle*Math.PI/180; ctx.fillStyle=p.color; ctx.beginPath(); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(rad); ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*2); ctx.restore(); p.size*=0.98; });
-  confeteParticles.filter(p=>p.life>0);
-  if(confeteParticles.length>0) requestAnimationFrame(animateConfete);
-};
-window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
+function salvar(){localStorage.setItem("checklist",JSON.stringify(data))}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000)}
 
-const startConfeteComSom = (count=200) => {
-  startConfete(count);
-  const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg');
-  audio.volume = 0.3;
-  audio.play();
-};
-
-// ================= Funções ======================
-const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
-const atualizarProgresso=()=>{ 
-  const total=Object.keys(data.check).length||1; 
-  const marcados=Object.values(data.check).filter(v=>v).length; 
-  const perc=Math.round(marcados/total*100); 
-  document.getElementById('progressBar').style.width=perc+'%'; 
-  document.getElementById('progressBar').textContent=perc+'%'; 
-  Object.keys(plano).forEach((s,i)=>{
-    const inputs=document.querySelectorAll(`#tarefas-${i} input`);
-    const totalS=inputs.length;
-    const marcadosS=[...inputs].filter(i=>i.checked).length;
-    const fill=document.getElementById(`semana-progress-fill-${i}`);
-    if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%';
-    const texto=document.getElementById(`semana-progress-${i}`);
-    if(texto) texto.textContent=`${marcadosS}/${totalS} tarefas`;
-  });
-};
-
-const criarTarefa=(semana,idx,t,i)=>{
-  const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
-  chk.checked=data.check[chk.id]||false;
-  chk.onchange=()=>{ 
-    data.check[chk.id]=chk.checked; 
-    salvarDados(); 
-    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfeteComSom(); 
-    if(modoRevisaoAtivo) ativarModoRevisao(); 
-  };
-  const label=document.createElement('span'); label.textContent=t;
-  const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label);
-  return div;
-};
-
-const gerarSemana=(semana,tarefas,idx)=>{
-  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
-  const header=document.createElement('div'); header.className='semana-header';
-  header.innerHTML=`<h2 onclick="toggleCollapse(${idx})">${semana} <span class="expand-icon collapsed">▼</span></h2>
-  <div style="display:flex;gap:5px;flex-wrap:wrap;">
-    <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
-    <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
-  </div>`;
-  div.appendChild(header);
-
-  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
-  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
-
-  const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.style.display='none';
-  tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i)));
-  div.appendChild(tarefasDiv);
-
-  const nota=document.createElement('textarea'); nota.className='nota'; nota.placeholder='Anotações...'; nota.value=data.notes[`s${idx}`]||'';
-  nota.oninput=()=>{ data.notes[`s${idx}`]=nota.value; salvarDados(); };
-  div.appendChild(nota);
-
-  return div;
-};
-
-const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); };
-const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
-const toggleCollapse=idx=>{ const el=document.getElementById(`tarefas-${idx}`); const icon=document.querySelectorAll('.expand-icon')[idx]; if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } else { el.style.display='none'; icon.classList.add('collapsed'); } };
-const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
-
-const ativarModoRevisao=()=>{ 
-  modoRevisaoAtivo=!modoRevisaoAtivo;
-  document.querySelectorAll('.semana').forEach(div=>{
-    const tarefas=div.querySelectorAll('.tarefas div');
-    if(modoRevisaoAtivo){
-      let temPendentes=false;
-      tarefas.forEach(tarefa=>{
-        const chk=tarefa.querySelector('input');
-        if(chk.checked) tarefa.style.display='none';
-        else { tarefa.style.display='flex'; temPendentes=true; }
-      });
-      if(temPendentes) div.classList.add('modo-revisao');
-      else div.classList.remove('modo-revisao');
-    } else {
-      tarefas.forEach(tarefa=>tarefa.style.display='flex');
-      div.classList.remove('modo-revisao');
-    }
-  });
-};
-
-const limpar=()=>{ if(confirm('Deseja realmente limpar tudo?')){ data={check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; salvarDados(); gerar(); } };
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
-
-// ================= Google ======================
-let oAuthWindow;
-const loginGoogle=async()=>{ try{ const resp=await fetch(`${BACKEND_URL}/auth-url`); const dataResp=await resp.json(); if(!dataResp.url){ showToast('Erro ao obter URL de login'); console.error(dataResp); return; } const popup=window.open(dataResp.url,'_blank','width=500,height=600'); window.addEventListener('message', e=>{ if(e.data.googleToken){ localStorage.setItem('googleToken',JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } }, {once:true}); } catch(err){ console.error(err); showToast('Erro ao iniciar login Google'); } };
-const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); };
-const atualizarUsuarioLogado=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); const avatar=document.getElementById('usuario-avatar'); const email=document.getElementById('usuario-email'); if(token){ fetch(`${BACKEND_URL}/userinfo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}).then(r=>r.json()).then(u=>{ avatar.src=u.picture; avatar.style.display='block'; email.textContent=u.email; }).catch(()=>{ avatar.style.display='none'; email.textContent='Erro ao carregar usuário'; }); } else { avatar.style.display='none'; email.textContent='Nenhuma conta conectada'; } };
-const salvarNoDrive=async()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); if(!token){ showToast('Você precisa fazer login primeiro'); return; } const payload={token, filename:'checklist.json', content:data}; try{ const resp=await fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const result=await resp.json(); if(result.success){ const link=`https://drive.google.com/file/d/${result.fileId}/view`; showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`); } else { showToast('Erro ao salvar no Drive'); console.error(result); } } catch(err){ console.error(err); showToast('Erro ao salvar no Drive'); } };
-
-// ================= Export/Import ======================
-const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
-const exportarAvancado=()=>{ const exportData={ check:data.check, notes:data.notes, plano:plano }; const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist_avancado.json'; a.click(); showToast('Exportação avançada concluída!'); };
-const gerarPDF=()=>{
-  const conteudo=document.createElement('div');
-  conteudo.style.fontFamily="'Inter', Arial, sans-serif"; conteudo.style.padding="15px";
-  const cabecalho=document.createElement('div');
-  cabecalho.style.textAlign='center'; cabecalho.style.marginBottom='20px';
-  cabecalho.innerHTML=`<h1 style="color:#4caf50; margin-bottom:5px;">Checklist de Estudo - JavaScript Avançado</h1><hr>`;
-  conteudo.appendChild(cabecalho);
-  Object.entries(plano).forEach(([sem,tarefas],idx)=>{
-    const s=document.createElement('h2'); s.textContent=sem; conteudo.appendChild(s);
-    const ul=document.createElement('ul');
-    tarefas.forEach((t,i)=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); });
-    conteudo.appendChild(ul);
-    if(data.notes[`s${idx}`]){ const p=document.createElement('p'); p.textContent='Notas: '+data.notes[`s${idx}`]; p.style.fontStyle='italic'; conteudo.appendChild(p); }
-  });
-  html2pdf().from(conteudo).save('checklist_avancado.pdf');
-};const exportarParaCalendario=()=>{
-  let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
-  Object.entries(plano).forEach(([semana,tarefas],i)=>{
-    tarefas.forEach((t,j)=>{
-      if(data.check[`s${i}d${j}`]){
-        const start = new Date(); start.setDate(start.getDate()+i); start.setHours(9+j,0,0);
-        const end = new Date(start); end.setHours(start.getHours()+1);
-        const fmt = d=>d.toISOString().replace(/-|:|\.\d+/g,'');
-        icsContent += `BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${fmt(start)}\nDTEND:${fmt(end)}\nEND:VEVENT\n`;
-      }
+function gerar(){
+  const c=document.getElementById("semanas");c.innerHTML="";
+  plano.forEach((sem,sidx)=>{
+    const div=document.createElement("div");div.className="semana";
+    let html=`<h3>${sem.semana}</h3><div class="progress"><div class="progress-bar" id="pb${sidx}"></div></div><ul class="tarefas">`;
+    sem.tarefas.forEach((t,idx)=>{
+      const id=`${sidx}-${idx}`,checked=data.checks[id]?"checked":"";
+      html+=`<li class="${data.revisao&&!data.checks[id]?"pendente":""}">
+        <label><input type="checkbox" onchange="toggleCheck('${id}',${sidx})" ${checked}> ${t}</label>
+        <input type="text" placeholder="Nota" value="${data.notas[id]||""}" onchange="data.notas['${id}']=this.value;salvar();">
+      </li>`;
     });
+    html+="</ul><button onclick='marcarTodos("+sidx+")'>Marcar Todos</button> <button onclick='resetar("+sidx+")'>Resetar</button>";
+    div.innerHTML=html;c.appendChild(div);
   });
-  icsContent += 'END:VCALENDAR';
-  const blob = new Blob([icsContent], { type:'text/calendar' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'checklist.ics'; a.click();
-  showToast('Calendário exportado!');
-};
+  atualizarProgresso();renderBadges();
+}
 
-const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); data.check=obj.check||{}; data.notes=obj.notes||{}; salvarDados(); gerar(); showToast('Importação concluída!'); } catch(err){ showToast('Erro ao importar JSON'); } }; reader.readAsText(file); }; input.click(); };
+function toggleCheck(id,sidx){
+  data.checks[id]=!data.checks[id];salvar();atualizarProgresso();gerar();
+  if(verificaSemanaConcluida(sidx))confete();
+}
+function marcarTodos(sidx){plano[sidx].tarefas.forEach((_,i)=>data.checks[`${sidx}-${i}`]=true);salvar();gerar()}
+function resetar(sidx){plano[sidx].tarefas.forEach((_,i)=>{delete data.checks[`${sidx}-${i}`];delete data.notas[`${sidx}-${i}`]});salvar();gerar()}
 
-// ================= Badges ======================
-const atualizarBadges=()=>{ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); };
+function atualizarProgresso(){
+  let totalT=0,feitas=0;
+  plano.forEach((sem,sidx)=>{
+    let f=0;
+    sem.tarefas.forEach((_,i)=>{totalT++;if(data.checks[`${sidx}-${i}`])f++;});
+    feitas+=f;document.getElementById("pb"+sidx).style.width=(f/sem.tarefas.length*100)+"%";
+  });
+  const perc=Math.round(feitas/totalT*100);document.getElementById("totalProgresso").innerText=perc+"%";
+  verificarBadges(perc);
+}
 
-// ================= Inicialização ======================
+function verificaSemanaConcluida(sidx){return plano[sidx].tarefas.every((_,i)=>data.checks[`${sidx}-${i}`])}
+
+function toggleDarkMode(){data.dark=!data.dark;document.body.classList.toggle("dark",data.dark);salvar()}
+document.body.classList.toggle("dark",data.dark);
+
+function toggleRevisao(){data.revisao=!data.revisao;salvar();gerar()}
+
+function exportarDados(){const blob=new Blob([JSON.stringify(data)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="checklist.json";a.click()}
+function importarDados(){const i=document.createElement("input");i.type="file";i.accept="application/json";i.onchange=e=>{const f=e.target.files[0];const r=new FileReader();r.onload=ev=>{data=JSON.parse(ev.target.result);salvar();gerar()};r.readAsText(f)};i.click()}
+function exportarICS(){let cal="BEGIN:VCALENDAR\nVERSION:2.0\n";plano.forEach((sem,i)=>{const start=new Date();start.setDate(start.getDate()+i);cal+=`BEGIN:VEVENT\nSUMMARY:${sem.semana}\nDTSTART:${start.toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`});cal+="END:VCALENDAR";const blob=new Blob([cal],{type:"text/calendar"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="checklist.ics";a.click()}
+function exportarPDF(){html2pdf().from(document.body).save()}
+
+function loginGoogle(){toast("Login Google simulado");document.getElementById("loginBtn").style.display="none";document.getElementById("logoutBtn").style.display="inline-block";document.getElementById("userInfo").innerText="Usuário Teste"}
+function logoutGoogle(){toast("Logout Google simulado");document.getElementById("loginBtn").style.display="inline-block";document.getElementById("logoutBtn").style.display="none";document.getElementById("userInfo").innerText=""}
+
+document.getElementById("busca").addEventListener("input",e=>{
+  document.querySelectorAll(".semana").forEach(div=>{div.style.display=div.innerText.toLowerCase().includes(e.target.value.toLowerCase())?"block":"none"})
+});
+
+// Confete
+const canvas=document.getElementById("confete-canvas"),ctx=canvas.getContext("2d");
+let confeteParticles=[];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+window.addEventListener("resize",resizeCanvas);resizeCanvas();
+function confete(){for(let i=0;i<150;i++){confeteParticles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height-Math.random()*20,s:Math.random()*8+2,vy:Math.random()*3+2,color:`hsl(${Math.random()*360},100%,50%)`,life:200})}animateConfete();new Audio("https://www.soundjay.com/buttons/sounds/button-4.mp3").play()}
+function animateConfete(){ctx.clearRect(0,0,canvas.width,canvas.height);confeteParticles.forEach(p=>{ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.s,p.s);p.y+=p.vy;p.life--});confeteParticles=confeteParticles.filter(p=>p.life>0);if(confeteParticles.length>0)requestAnimationFrame(animateConfete)}
+
+// Badges automáticos
+function verificarBadges(perc){
+  const conquistas=[
+    {id:"primeiro",cond:()=>Object.keys(data.checks).length>0,txt:"Primeira tarefa concluída"},
+    {id:"semana1",cond:()=>verificaSemanaConcluida(0),txt:"Semana 1 concluída"},
+    {id:"semana2",cond:()=>verificaSemanaConcluida(1),txt:"Semana 2 concluída"},
+    {id:"semana3",cond:()=>verificaSemanaConcluida(2),txt:"Semana 3 concluída"},
+    {id:"curso100",cond:()=>perc===100,txt:"Curso concluído 100%"},
+    {id:"notas",cond:()=>Object.keys(data.notas).length>=3,txt:"Primeiras notas registradas"}
+  ];
+  conquistas.forEach(b=>{
+    if(b.cond()&&!data.badges.includes(b.txt)){data.badges.push(b.txt);toast("🏅 "+b.txt);salvar()}
+  });
+  renderBadges();
+}
+function renderBadges(){document.getElementById("badges").innerHTML=data.badges.map(b=>`<span class="badge">${b}</span>`).join(" ")}
+
 gerar();
-document.body.classList.toggle('dark-mode',data.dark);
-atualizarUsuarioLogado();
-
 </script>
 </body>
 </html>
