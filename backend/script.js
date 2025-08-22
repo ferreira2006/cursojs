@@ -1,4 +1,3 @@
-<script>
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
   "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
@@ -426,5 +425,3 @@ document.body.classList.toggle('dark-mode', data.dark);
 gerar();
 atualizarProgresso(); // garante que progresso e badges sejam consistentes ao abrir
 atualizarUsuarioLogado();
-  
-</script>
