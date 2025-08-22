@@ -350,7 +350,64 @@ const salvarNoDrive = async () => {
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
-const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); };
+const gerarPDFRelatorio = () => {
+  // Cria container temporário para o PDF
+  const container = document.createElement('div');
+  container.style.fontFamily = "'Inter', Arial, sans-serif";
+  container.style.padding = '20px';
+  container.style.color = data.dark ? '#f4f4f9' : '#000';
+
+  // Cabeçalho
+  const cabecalho = document.createElement('div');
+  cabecalho.style.textAlign = 'center';
+  cabecalho.style.marginBottom = '20px';
+  cabecalho.innerHTML = `
+    <h1>Checklist de Estudo - JavaScript Avançado</h1>
+    <p>${new Date().toLocaleDateString()}</p>
+    <hr>
+  `;
+  container.appendChild(cabecalho);
+
+  // Copia cada semana do plano
+  Object.keys(plano).forEach((semana, i) => {
+    const divSemana = document.createElement('div');
+    divSemana.style.marginBottom = '15px';
+
+    const titulo = document.createElement('h2');
+    titulo.textContent = semana;
+    divSemana.appendChild(titulo);
+
+    // Tarefas
+    const ul = document.createElement('ul');
+    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
+    const textos = [...inputs].map((chk, idx) => {
+      const marcado = chk.checked ? '✅' : '❌';
+      return `<li>${marcado} ${plano[semana][idx]}</li>`;
+    }).join('');
+    ul.innerHTML = textos;
+    divSemana.appendChild(ul);
+
+    // Nota
+    const nota = data.notes[`s${i}`] || '';
+    if(nota){
+      const pNota = document.createElement('p');
+      pNota.innerHTML = `<strong>Anotações:</strong> ${nota}`;
+      divSemana.appendChild(pNota);
+    }
+
+    container.appendChild(divSemana);
+  });
+
+  // Configurações html2pdf
+  html2pdf().set({
+    margin:       10,
+    filename:     'checklist-relatorio.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(container).save();
+};
+
 function exportarParaCalendario(){
   let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
   Object.keys(data.notes).forEach((key,i)=>{
