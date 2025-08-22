@@ -434,19 +434,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
       doc.text(titulo, marginLeft, y);
       y += lineHeight;
 
-      // =================== Nota ===================
-      const notaTextarea = semanaDiv.querySelector('.nota');
-      if (notaTextarea && notaTextarea.value.trim()) {
-        y = checkPageBreak(y);
-        doc.setFontSize(11);
-        doc.setFont("helvetica","normal");
-        doc.setTextColor(0,0,0);
-        const linhasNota = doc.splitTextToSize('Nota: ' + limparTexto(notaTextarea.value), contentWidth);
-        linhasNota.forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
-        y += 2; // espaçamento extra após a nota
-      }
-
-      // =================== Tarefas ===================
+       // =================== Tarefas ===================
       semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
         y = checkPageBreak(y);
 
@@ -460,6 +448,18 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
            .forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
       });
 
+      // =================== Nota ===================
+      const notaTextarea = semanaDiv.querySelector('.nota');
+      if (notaTextarea && notaTextarea.value.trim()) {
+        y = checkPageBreak(y);
+        doc.setFontSize(11);
+        doc.setFont("helvetica","normal");
+        doc.setTextColor(0,0,0);
+        const linhasNota = doc.splitTextToSize('Anotações: ' + limparTexto(notaTextarea.value), contentWidth);
+        linhasNota.forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
+        y += 2; // espaçamento extra após a nota
+      }
+
       y += 5;
     });
   }
@@ -468,7 +468,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont("helvetica","italic");
     doc.setTextColor(100);
     doc.text(`Página ${i} de ${pageCount}`, pageWidth/2, pageHeight-10, {align:"center"});
