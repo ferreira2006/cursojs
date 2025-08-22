@@ -327,15 +327,17 @@ const atualizarBadgesSemana = () => {
     // Adiciona badge se todas as tarefas estiverem marcadas e ainda não tiver
     if (todasMarcadas && !data.badges.includes(badgeName)) {
       data.badges.push(badgeName);
-      showToast(`🏅 ${badgeName} conquistada!`);
+      if (!suprimirToasts) showToast(`🏅 ${badgeName} conquistada!`);
     }
 
     // Remove badge se alguma tarefa foi desmarcada
     if (!todasMarcadas && data.badges.includes(badgeName)) {
       data.badges = data.badges.filter(b => b !== badgeName);
+      // NÃO mostramos toast ao remover badge
     }
   });
-  atualizarBadges(); // Atualiza a interface
+
+  atualizarBadges(); // Atualiza interface
 };
   
 const atualizarBadges=()=>{
