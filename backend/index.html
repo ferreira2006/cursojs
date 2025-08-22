@@ -484,24 +484,6 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   doc.save("relatorio.pdf");
 }
 
-
-  
-  
-  // ================== Rodapé ==================
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(100);
-    doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: "center" });
-  }
-
-  doc.save("relatorio.pdf");
-}
-
-  
-
 function exportarParaCalendario(){
   let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
   Object.keys(data.notes).forEach((key,i)=>{
