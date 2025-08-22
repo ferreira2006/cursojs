@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-/* ====== Estilos ====== */
 body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; transition: background 0.3s, color 0.3s; }
 .dark-mode { background:#1e1e1e; color:#f4f4f9; }
 h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
@@ -103,158 +102,132 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-// ====== Dados ======
+// ================= Dados ======================
+const BACKEND_URL='https://cursojs-8012.onrender.com';
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
   "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
-  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
-  "Semana 3 – Funções e Escopo":["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
-  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
-  "Semana 5 – DOM":["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
-  "Semana 6 – Projeto To-Do List":["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
-  "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
-  "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
+  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while.","Exercícios práticos."],
+  "Semana 3 – Funções e Objetos":["Declaração de funções.","Funções anônimas e arrow.","Objetos e propriedades.","Exercícios práticos."],
+  "Semana 4 – Arrays e Métodos":["Criação e iteração de arrays.","Métodos map, filter, reduce.","Manipulação do DOM.","Exercícios práticos."],
+  "Semana 5 – Eventos e DOM":["Eventos de clique, submit.","Event listeners.","Manipulação avançada do DOM.","Exercícios práticos."],
+  "Semana 6 – ES6+":["Let/const, template strings.","Destructuring e spread.","Modules e import/export.","Exercícios práticos."],
+  "Semana 7 – Assíncrono":["Promises, async/await.","Fetch API.","Tratamento de erros.","Exercícios práticos."],
+  "Semana 8 – Projeto Final":["Planejamento do projeto.","Implementação.","Testes e depuração.","Entrega final."]
 };
-const BACKEND_URL='https://cursojs-8012.onrender.com';
-let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
-let modoRevisaoAtivo=false;
+let data={};
+const SEMANAS=8;
 
-// ====== Toast ======
-const showToast = (msg, duration=3000) => {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div'); 
-  toast.className = 'toast'; 
-  toast.innerHTML = msg;
-  container.appendChild(toast);
-  setTimeout(()=>toast.classList.add('show'), 50);
-  setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast), 300); }, duration);
-};
-
-// ====== Confete ======
-const confeteCanvas=document.getElementById('confete-canvas');
-const ctx=confeteCanvas.getContext('2d');
-confeteCanvas.width=window.innerWidth;
-confeteCanvas.height=window.innerHeight;
-const confeteParticles = [];
-const confeteCores=['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
-const startConfete = (count=200)=>{
-  for(let i=0;i<count;i++){
-    confeteParticles.push({ x:Math.random()*confeteCanvas.width, y:-10, dx:(Math.random()-0.5)*8, dy:Math.random()*7+3, size:Math.random()*10+5, color: confeteCores[Math.floor(Math.random()*confeteCores.length)], angle:Math.random()*360, spin:Math.random()*0.2-0.1, life:Math.random()*120+80 });
+// ================= Inicialização =================
+function initData(){
+  for(let i=1;i<=SEMANAS;i++){
+    if(!data[i]) data[i]={nota:"",tarefas:plano[`Semana ${i} – ${Object.keys(plano)[i-1].split('– ')[1]}`] || [], concluido:false, importante:false, progresso:0};
+    else if(!data[i].tarefas) data[i].tarefas=[];
   }
-  animateConfete();
-  setTimeout(()=>{ confeteParticles.length=0; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },7000);
-};
-const animateConfete = ()=>{
-  ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
-  confeteParticles.forEach(p=>{ 
-    p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2; 
-    const rad=p.angle*Math.PI/180; 
-    ctx.fillStyle=p.color; 
-    ctx.beginPath(); 
-    ctx.save(); 
-    ctx.translate(p.x,p.y); 
-    ctx.rotate(rad); 
-    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*2); 
-    ctx.restore(); 
-    p.size*=0.98; 
+}
+
+const conteudo=document.getElementById('conteudo');
+const badgesContainer=document.getElementById('badges-container');
+
+function carregar(){
+  const salvo=localStorage.getItem('checklistData');
+  if(salvo) data=JSON.parse(salvo);
+  initData();
+  gerarSemanas();
+  atualizarProgresso();
+  atualizarBadges();
+}
+
+// ================= Semanas =================
+function gerarSemanas(){
+  conteudo.innerHTML="";
+  for(let i=1;i<=SEMANAS;i++){
+    const semana=document.createElement('div');
+    semana.className="semana";
+    const tarefasHTML=(data[i].tarefas||[]).map((t,j)=>`
+      <div>
+        <input type="checkbox" ${t.concluido?"checked":""} onchange="marcarTarefa(${i},${j},this.checked)">
+        <span>${t.titulo || t}</span>
+      </div>
+    `).join("");
+    semana.innerHTML=`
+      <div class="semana-header">
+        <h2 onclick="toggleSemana(this)">Semana ${i} <span class="expand-icon collapsed">▶</span></h2>
+        <span class="importante" onclick="marcarImportante(${i})">★</span>
+      </div>
+      <div class="tarefas">${tarefasHTML}</div>
+      <textarea class="nota" placeholder="Anotações..." oninput="salvarNota(${i},this.value)">${data[i].nota}</textarea>
+      <div class="semana-progress">${data[i].progresso||0}% concluído</div>
+      <div class="semana-progress-bar"><div class="semana-progress-fill" style="width:${data[i].progresso||0}%"></div></div>
+    `;
+    conteudo.appendChild(semana);
+  }
+}
+
+// ================= Funções =================
+function salvarNota(semana,texto){ data[semana].nota=texto; salvar(); }
+function marcarImportante(semana){ data[semana].importante=!data[semana].importante; salvar(); }
+function marcarTarefa(semana,idx,concluido){ data[semana].tarefas[idx].concluido=concluido?1:0; salvar(); }
+function salvar(){ localStorage.setItem('checklistData',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); }
+function toggleSemana(el){ el.parentElement.parentElement.querySelector('.nota').classList.toggle('hidden'); el.querySelector('.expand-icon').classList.toggle('collapsed'); }
+function filtrar(){ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(s=>s.style.display=s.innerText.toLowerCase().includes(termo)?"flex":"none"); }
+function ativarModoRevisao(){ document.querySelectorAll('.semana').forEach(s=>s.classList.toggle('modo-revisao')); }
+
+// ================= Progresso =================
+function atualizarProgresso(){
+  for(let i=1;i<=SEMANAS;i++){
+    const semana=data[i];
+    const concluidos=(semana.tarefas||[]).filter(t=>t.concluido).length;
+    const total=(semana.tarefas||[]).length;
+    semana.progresso=total?Math.round(concluidos/total*100):0;
+  }
+  const totalSemanas=SEMANAS;
+  const totalConcluidos=Object.values(data).reduce((acc,s)=>acc+(s.progresso||0),0);
+  const perc=Math.round(totalConcluidos/totalSemanas);
+  document.getElementById('progressBar').style.width=perc+"%";
+  document.getElementById('progressBar').textContent=perc+"%";
+  document.querySelectorAll('.semana').forEach((s,i)=>{
+    const fill=s.querySelector('.semana-progress-fill');
+    fill.style.width=(data[i+1].progresso||0)+"%";
+    s.querySelector('.semana-progress').textContent=(data[i+1].progresso||0)+"% concluído";
   });
-  confeteParticles.filter(p=>p.life>0);
-  if(confeteParticles.length>0) requestAnimationFrame(animateConfete);
-};
-window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
-const startConfeteComSom = (count=200) => { startConfete(count); const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'); audio.volume = 0.3; audio.play(); };
+}
 
-// ====== Funções ======
-const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
+// ================= Badges =================
+function atualizarBadges(){
+  badgesContainer.innerHTML="";
+  for(let i=1;i<=SEMANAS;i++){
+    if(data[i].importante){
+      const badge=document.createElement('div');
+      badge.className="badge";
+      badge.textContent="Semana "+i+" ★";
+      badgesContainer.appendChild(badge);
+    }
+  }
+}
 
-const atualizarProgresso = () => { 
-  let total = 0; let marcados = 0;
-  Object.entries(plano).forEach(([semana, tarefas], idx) => { total += tarefas.length; tarefas.forEach((t, i) => { if (data.check[`s${idx}d${i}`]) marcados++; }); });
-  const perc = Math.round((marcados/total)*100);
-  document.getElementById('progressBar').style.width = perc+'%';
-  document.getElementById('progressBar').textContent = perc+'%';
-  Object.keys(plano).forEach((s,i)=>{
-    const tarefasSemana = plano[s];
-    const marcadosS = tarefasSemana.filter((t, j) => data.check[`s${i}d${j}`]).length;
-    const totalS = tarefasSemana.length;
-    const fill = document.getElementById(`semana-progress-fill-${i}`);
-    if(fill) fill.style.width = Math.round(marcadosS/totalS*100)+'%';
-    const texto = document.getElementById(`semana-progress-${i}`);
-    if(texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
-  });
-};
+// ================= Export/Import =================
+function exportar(){ const blob=new Blob([JSON.stringify(data)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.json"; a.click(); }
+function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
+function importar(){ const input=document.createElement('input'); input.type="file"; input.accept=".json"; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ data=JSON.parse(reader.result); initData(); salvar(); gerarSemanas(); }; reader.readAsText(file); }; input.click(); }
+function limpar(){ if(confirm("Deseja realmente limpar tudo?")){ localStorage.removeItem('checklistData'); data={}; initData(); gerarSemanas(); atualizarProgresso(); atualizarBadges(); } }
+function gerarPDF(){ html2pdf().from(document.body).save("checklist.pdf"); }
+function exportarParaCalendario(){
+  let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
+  for(let i=1;i<=SEMANAS;i++){
+    if(data[i].nota){
+      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
+    }
+  }
+  ics+="END:VCALENDAR";
+  const blob=new Blob([ics],{type:"text/calendar"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click();
+}
 
-const gerarSemana = (semana, tarefas, idx) => {
-  const div = document.createElement('div');
-  div.className = 'semana';
-  div.style.background = coresSemana[idx % coresSemana.length];
-  const header = document.createElement('div');
-  header.className = 'semana-header';
-  header.innerHTML = `<h2 onclick="toggleCollapse(${idx})">${semana} <span class="expand-icon collapsed">▼</span></h2>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;">
-      <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
-      <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
-    </div>`;
-  div.appendChild(header);
-  const progresso = document.createElement('div');
-  progresso.className = 'semana-progress';
-  progresso.id = `semana-progress-${idx}`;
-  div.appendChild(progresso);
-  const progressBar = document.createElement('div');
-  progressBar.className = 'semana-progress-bar';
-  progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
-  div.appendChild(progressBar);
-  const tarefasDiv = document.createElement('div');
-  tarefasDiv.className = 'tarefas';
-  tarefasDiv.id = `tarefas-${idx}`;
-  tarefasDiv.style.display = 'none';
-  tarefas.forEach((t, i) => {
-    const checkboxId = `s${idx}d${i}`;
-    if (!(checkboxId in data.check)) data.check[checkboxId] = false;
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.id = checkboxId;
-    chk.checked = data.check[checkboxId];
-    chk.onchange = () => { data.check[chk.id] = chk.checked; salvarDados(); if (modoRevisaoAtivo) ativarModoRevisao(); };
-    const label = document.createElement('span');
-    label.textContent = t;
-    const divTarefa = document.createElement('div');
-    divTarefa.appendChild(chk);
-    divTarefa.appendChild(label);
-    tarefasDiv.appendChild(divTarefa);
-  });
-  div.appendChild(tarefasDiv);
-  const nota = document.createElement('textarea');
-  nota.className = 'nota';
-  nota.placeholder = 'Anotações...';
-  nota.value = data.notes[`s${idx}`] || '';
-  nota.oninput = () => { data.notes[`s${idx}`] = nota.value; salvarDados(); };
-  div.appendChild(nota);
-  return div;
-};
+// ================= Tema =================
+function toggleTheme(){document.body.classList.toggle('dark-mode');}
 
-const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],i)=>{ container.appendChild(gerarSemana(semana,tarefas,i)); }); atualizarProgresso(); atualizarBadges(); };
-const toggleCollapse=(idx)=>{ const tarefas=document.getElementById(`tarefas-${idx}`); const icon=document.querySelectorAll('.expand-icon')[idx]; if(tarefas.style.display==='none'){ tarefas.style.display='flex'; icon.classList.remove('collapsed'); } else { tarefas.style.display='none'; icon.classList.add('collapsed'); } };
-const marcarSemana=(idx,valor)=>{ plano[Object.keys(plano)[idx]].forEach((t,i)=>data.check[`s${idx}d${i}`]=valor); salvarDados(); };
-const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; Object.values(document.getElementsByClassName('semana')).forEach(div=>modoRevisaoAtivo?div.classList.add('modo-revisao'):div.classList.remove('modo-revisao')); showToast(modoRevisaoAtivo?'Modo Revisão Ativo':'Modo Revisão Desativado'); };
-
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
-
-// ====== Busca ======
-const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); Object.entries(plano).forEach(([semana,tarefas],i)=>{ const div=document.getElementById(`tarefas-${i}`); const children=[...div.children]; children.forEach(c=>{ const txt=c.innerText.toLowerCase(); c.style.display=txt.includes(termo)?'flex':'none'; }); }); };
-
-// ====== Badges ======
-const atualizarBadges=()=>{ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); };
-
-// ====== Import/Export ======
-const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
-const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); }; reader.readAsText(file); }; input.click(); };
-const exportarAvancado=()=>{ alert('Exportação Avançada acionada!'); };
-const gerarPDF=()=>{ const element=document.getElementById('conteudo'); html2pdf().from(element).save('checklist.pdf'); };
-const exportarParaCalendario=()=>{ alert('Exportar para calendário!'); };
-
-// ====== Google OAuth (simples) ======
-// ================= LOGIN GOOGLE =================
+// ================= Login Google =================
 window.addEventListener('load',()=>{
   const params=new URLSearchParams(window.location.search);
   const tokenStr=params.get('token');
@@ -264,50 +237,53 @@ window.addEventListener('load',()=>{
       localStorage.setItem('googleToken',JSON.stringify(token));
       console.log('Token do Google salvo localmente');
       window.history.replaceState({},document.title,window.location.pathname);
+      mostrarUsuario(token);
       alert('Login Google concluído! Token salvo localmente.');
     }catch(e){console.error("Erro ao processar token do Google:",e);}
   }
 });
 
 function loginGoogle(){
-  fetch(`${BACKEND_URL}/auth-url`)
-    .then(res=>res.json())
-    .then(data=>{
-      const popup=window.open(data.url,"loginGoogle","width=500,height=600");
-      window.addEventListener("message",function(event){
-        if(event.data.googleToken){
-          localStorage.setItem('googleToken',JSON.stringify(event.data.googleToken));
-          alert('Login Google concluído! Token salvo localmente.');
-          popup.close();
-        }
-      },{once:true});
-    });
+  fetch(`${BACKEND_URL}/auth-url`).then(res=>res.json()).then(data=>{
+    const popup=window.open(data.url,"loginGoogle","width=500,height=600");
+    window.addEventListener("message",function(event){
+      if(event.data.googleToken){
+        localStorage.setItem('googleToken',JSON.stringify(event.data.googleToken));
+        mostrarUsuario(event.data.googleToken);
+        alert('Login Google concluído! Token salvo localmente.');
+        popup.close();
+      }
+    },{once:true});
+  });
 }
 
+function logoutGoogle(){
+  localStorage.removeItem('googleToken');
+  document.getElementById('usuario-email').textContent='Nenhuma conta conectada';
+  document.getElementById('usuario-avatar').style.display='none';
+  alert('Logout realizado com sucesso!');
+}
+
+function mostrarUsuario(token){
+  document.getElementById('usuario-email').textContent=token.email||'Conta conectada';
+  if(token.picture){ const img=document.getElementById('usuario-avatar'); img.src=token.picture; img.style.display='block'; }
+}
+
+// ================= Salvar no Drive =================
 function salvarNoDrive(){
   const token=JSON.parse(localStorage.getItem('googleToken'));
   if(!token) return alert('Você precisa fazer login no Google antes.');
-
   fetch(`${BACKEND_URL}/save`,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({token,filename:'checklist.json',content:data})
-  })
-  .then(res=>res.json())
-  .then(resp=>{
+  }).then(res=>res.json()).then(resp=>{
     if(resp.success) alert('Checklist salvo com sucesso no Google Drive!');
     else alert('Erro ao salvar: '+(resp.error||'desconhecido'));
-  })
-  .catch(err=>alert('Erro ao salvar no Google Drive: '+err));
+  }).catch(err=>alert('Erro ao salvar no Google Drive: '+err));
 }
 
-// ====== Limpar tudo ======
-const limpar=()=>{ if(confirm('Tem certeza que deseja resetar tudo?')){ data={ check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[] }; salvarDados(); gerar(); } };
-
-// ====== Inicialização ======
-document.body.classList.toggle('dark-mode',data.dark);
-gerar();
+window.onload=carregar;
 </script>
-
 </body>
 </html>
