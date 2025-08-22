@@ -449,16 +449,36 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
       });
 
       // =================== Nota ===================
-      const notaTextarea = semanaDiv.querySelector('.nota');
-      if (notaTextarea && notaTextarea.value.trim()) {
-        y = checkPageBreak(y);
-        doc.setFontSize(11);
-        doc.setFont("helvetica","normal");
-        doc.setTextColor(0,0,0);
-        const linhasNota = doc.splitTextToSize('Anotações: ' + limparTexto(notaTextarea.value), contentWidth);
-        linhasNota.forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
-        y += 2; // espaçamento extra após a nota
-      }
+const notaTextarea = semanaDiv.querySelector('.nota');
+if (notaTextarea && notaTextarea.value.trim()) {
+  y = checkPageBreak(y);
+
+  const offsetX = marginLeft + 5;
+  const prefixo = "Anotações: ";
+  const notaTexto = limparTexto(notaTextarea.value);
+
+  // Divide a nota em linhas considerando o espaço restante depois do prefixo
+  const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
+
+  // Primeira linha: prefixo em negrito
+  doc.setFont("helvetica", "bold");
+  doc.text(prefixo, offsetX, y);
+
+  doc.setFont("helvetica", "normal");
+  if (linhasNota.length > 0) {
+    doc.text(linhasNota[0], offsetX + doc.getTextWidth(prefixo), y);
+  }
+  y += lineHeight;
+
+  // Linhas seguintes
+  for (let i = 1; i < linhasNota.length; i++) {
+    y = checkPageBreak(y);
+    doc.text(linhasNota[i], offsetX, y);
+    y += lineHeight;
+  }
+
+  y += 2; // espaçamento extra após a nota
+}
 
       y += 5;
     });
