@@ -434,14 +434,14 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
       doc.text(titulo, marginLeft, y);
       y += lineHeight;
 
-       // =================== Tarefas ===================
+      // =================== Tarefas ===================
       semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
         y = checkPageBreak(y);
 
         let txt = limparTexto(tarefaSpan.innerText);
-        let cor = [0,0,0];
-        if (txt.includes('✅')) cor = [0,150,0];
-        else if (txt.includes('❌')) cor = [200,0,0];
+        let cor = [0, 0, 0];
+        if (txt.includes('✅')) cor = [0, 150, 0];
+        else if (txt.includes('❌')) cor = [200, 0, 0];
         doc.setTextColor(...cor);
 
         doc.splitTextToSize('• ' + txt, contentWidth)
@@ -449,36 +449,35 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
       });
 
       // =================== Nota ===================
-const notaTextarea = semanaDiv.querySelector('.nota');
-if (notaTextarea && notaTextarea.value.trim()) {
-  y = checkPageBreak(y);
+      const notaTextarea = semanaDiv.querySelector('.nota');
+      if (notaTextarea && notaTextarea.value.trim()) {
+        y = checkPageBreak(y);
 
-  const offsetX = marginLeft + 5;
-  const prefixo = "Anotações: ";
-  const notaTexto = limparTexto(notaTextarea.value);
+        const offsetX = marginLeft + 5;
+        const prefixo = "Anotações: ";
+        const notaTexto = limparTexto(notaTextarea.value);
 
-  // Divide a nota em linhas considerando o espaço restante depois do prefixo
-  const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
+        const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
 
-  // Primeira linha: prefixo em negrito
-  doc.setFont("helvetica", "bold");
-  doc.text(prefixo, offsetX, y);
+        // Primeira linha: prefixo em negrito
+        doc.setFont("helvetica", "bold");
+        doc.text(prefixo, offsetX, y);
 
-  doc.setFont("helvetica", "normal");
-  if (linhasNota.length > 0) {
-    doc.text(linhasNota[0], offsetX + doc.getTextWidth(prefixo), y);
-  }
-  y += lineHeight;
+        doc.setFont("helvetica", "normal");
+        if (linhasNota.length > 0) {
+          doc.text(linhasNota[0], offsetX + doc.getTextWidth(prefixo), y);
+        }
+        y += lineHeight;
 
-  // Linhas seguintes
-  for (let i = 1; i < linhasNota.length; i++) {
-    y = checkPageBreak(y);
-    doc.text(linhasNota[i], offsetX, y);
-    y += lineHeight;
-  }
+        // Linhas seguintes
+        for (let i = 1; i < linhasNota.length; i++) {
+          y = checkPageBreak(y);
+          doc.text(linhasNota[i], offsetX, y);
+          y += lineHeight;
+        }
 
-  y += 2; // espaçamento extra após a nota
-}
+        y += 2; // espaçamento extra após a nota
+      }
 
       y += 5;
     });
@@ -489,14 +488,15 @@ if (notaTextarea && notaTextarea.value.trim()) {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
-    doc.setFont("helvetica","italic");
+    doc.setFont("helvetica", "italic");
     doc.setTextColor(100);
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth/2, pageHeight-10, {align:"center"});
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
   }
 
   doc.save('relatorio.pdf');
   showToast('PDF gerado');
 };
+
 
 
 function exportarParaCalendario(){
