@@ -386,100 +386,103 @@ const salvarNoDrive = async () => {
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
-const gerarPDFRelatorio = async () => {
+function gerarPDFRelatorio() {
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = pdf.internal.pageSize.getHeight();
-  const margem = 10;
-  let posY = 25;
-  let pagina = 1;
+  const doc = new jsPDF();
 
-  const desenharCabecalho = () => {
-    pdf.setFontSize(16);
-    pdf.setTextColor(data.dark ? 255 : 0);
-    pdf.text('Checklist de Estudo - JavaScript Avançado', pdfWidth / 2, 12, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.text(new Date().toLocaleDateString(), pdfWidth / 2, 18, { align: 'center' });
-    pdf.setLineWidth(0.5);
-    pdf.line(margem, 22, pdfWidth - margem, 22);
-  };
+  const marginLeft = 15;
+  const marginTop = 20;
+  const lineHeight = 7;
+  let y = marginTop;
 
-  const desenharRodape = () => {
-    pdf.setLineWidth(0.5);
-    pdf.line(margem, pdfHeight - 15, pdfWidth - margem, pdfHeight - 15);
-    pdf.setFontSize(10);
-    pdf.text(`Página ${pagina}`, pdfWidth / 2, pdfHeight - 8, { align: 'center' });
-  };
+  // Cabeçalho principal em azul
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 102, 204);
+  doc.text("Relatório - Curso JavaScript", marginLeft, y);
 
-  desenharCabecalho();
-  desenharRodape();
+  // Data de emissão em cinza
+  const hoje = new Date();
+  const dataFormatada = hoje.toLocaleDateString("pt-BR");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${dataFormatada}`, marginLeft, y + 7);
 
-  // Cria container temporário invisível no DOM
-  const containerTemp = document.createElement('div');
-  containerTemp.style.position = 'absolute';
-  containerTemp.style.left = '-9999px';
-  containerTemp.style.top = '-9999px';
-  containerTemp.style.width = '800px';
-  document.body.appendChild(containerTemp);
+  // Linha azul abaixo do cabeçalho
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y + 12, 195, y + 12);
 
-  for (let i = 0; i < Object.keys(plano).length; i++) {
-    const semana = Object.keys(plano)[i];
+  y += 22;
 
-    const divTemp = document.createElement('div');
-    divTemp.style.fontFamily = "'Inter', Arial, sans-serif";
-    divTemp.style.padding = '0px';
-    divTemp.style.color = data.dark ? '#f4f4f9' : '#000';
-    divTemp.style.background = data.dark ? '#1e1e1e' : '#fff';
+  // Pega todos os filhos do relatorio
+  const container = document.getElementById("relatorio");
+  const itens = container ? container.children : [];
 
-    const titulo = document.createElement('h2');
-    titulo.textContent = semana;
-    divTemp.appendChild(titulo);
+  for (let el of itens) {
+    let linha = el.innerText.trim();
+    if (!linha) continue;
 
-    const ul = document.createElement('ul');
-    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
-    const textos = [...inputs].map((chk, idx) => {
-      const marcado = chk.checked ? '✅' : '❌';
-      return `<li>${marcado} ${plano[semana][idx]}</li>`;
-    }).join('');
-    ul.innerHTML = textos;
-    divTemp.appendChild(ul);
+    const partes = linha.split("✅");
+    const titulo = partes.shift()?.trim();
 
-    const nota = data.notes[`s${i}`] || '';
-    if (nota) {
-      const pNota = document.createElement('p');
-      pNota.innerHTML = `<strong>Anotações:</strong> ${nota}`;
-      divTemp.appendChild(pNota);
+    if (y > 260) {
+      doc.addPage();
+      y = marginTop;
     }
 
-    // Adiciona ao DOM temporário
-    containerTemp.appendChild(divTemp);
+    // Título em azul
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text(titulo, marginLeft, y);
+    y += lineHeight;
 
-    const canvas = await html2canvas(divTemp, { scale: 2, backgroundColor: data.dark ? '#1e1e1e' : '#fff' });
-    const imgData = canvas.toDataURL('image/png');
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    // Conteúdo
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
 
-    if (posY + imgHeight > pdfHeight - 20) {
-      pdf.addPage();
-      pagina++;
-      desenharCabecalho();
-      desenharRodape();
-      posY = 25;
+    const linhas = el.innerHTML
+      .split("<br>")
+      .map(l => l.replace(/<[^>]+>/g, "").trim())
+      .filter(Boolean);
+
+    for (let txt of linhas) {
+      if (y > 270) {
+        doc.addPage();
+        y = marginTop;
+      }
+
+      if (txt.includes("✅")) {
+        doc.setTextColor(0, 150, 0); // verde
+        doc.text("• " + txt.replace("✅", "").trim(), marginLeft + 5, y);
+      } else if (txt.includes("❌")) {
+        doc.setTextColor(200, 0, 0); // vermelho
+        doc.text("• " + txt.replace("❌", "").trim(), marginLeft + 5, y);
+      } else {
+        doc.setTextColor(0, 0, 0); // preto
+        doc.text("• " + txt, marginLeft + 5, y);
+      }
+      y += lineHeight;
     }
 
-    pdf.addImage(imgData, 'PNG', margem, posY, pdfWidth - 2 * margem, imgHeight);
-    posY += imgHeight + 5;
-
-    // Remove divTemp do container para limpar memória
-    containerTemp.removeChild(divTemp);
+    y += 3;
   }
 
-  // Remove container temporário
-  document.body.removeChild(containerTemp);
+  // Rodapé com número da página
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: "center" });
+  }
 
-  pdf.save('checklist-relatorio.pdf');
-};
+  doc.save("relatorio.pdf");
+}
+
 
 
 
