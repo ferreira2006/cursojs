@@ -456,36 +456,40 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
            .forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
       });
 
-      // =================== Nota ===================
-      const notaTextarea = semanaDiv.querySelector('.nota');
-      if (notaTextarea && notaTextarea.value.trim()) {
-        y = checkPageBreak(y);
+     // =================== Nota ===================
+const notaTextarea = semanaDiv.querySelector('.nota');
+if (notaTextarea && notaTextarea.value.trim()) {
+  y = checkPageBreak(y);
 
-        const offsetX = marginLeft + 5;
-        const prefixo = "Anotações:  ";
-        const notaTexto = limparTexto(notaTextarea.value);
+  const offsetX = marginLeft + 5;
+  const prefixo = "Anotações: "; // já com espaço
+  const notaTexto = limparTexto(notaTextarea.value);
 
-        const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
+  // Medida do prefixo
+  const prefixWidth = doc.getTextWidth(prefixo);
 
-        // Primeira linha: prefixo em negrito
-        doc.setFont("helvetica", "bold");
-        doc.text(prefixo, offsetX, y);
+  // Quebra de texto considerando o espaço restante da linha
+  const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - prefixWidth);
 
-        doc.setFont("helvetica", "normal");
-        if (linhasNota.length > 0) {
-          doc.text(linhasNota[0], offsetX + doc.getTextWidth(prefixo), y);
-        }
-        y += lineHeight;
+  // Primeira linha: prefixo em negrito
+  doc.setFont("helvetica", "bold");
+  doc.text(prefixo, offsetX, y);
 
-        // Linhas seguintes
-        for (let i = 1; i < linhasNota.length; i++) {
-          y = checkPageBreak(y);
-          doc.text(linhasNota[i], offsetX, y);
-          y += lineHeight;
-        }
+  doc.setFont("helvetica", "normal");
+  if (linhasNota.length > 0) {
+    doc.text(linhasNota[0], offsetX + prefixWidth, y);
+  }
+  y += lineHeight;
 
-        y += 2; // espaçamento extra após a nota
-      }
+  // Linhas seguintes
+  for (let i = 1; i < linhasNota.length; i++) {
+    y = checkPageBreak(y);
+    doc.text(linhasNota[i], offsetX, y);
+    y += lineHeight;
+  }
+
+  y += 2; // espaçamento extra após a nota
+}
 
       y += 5;
     });
