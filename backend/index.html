@@ -179,7 +179,12 @@ const animateConfete = ()=>{
 window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
 
 // ================= Funções principais ======================
-const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
+const salvarDados=()=>{ 
+  localStorage.setItem('data',JSON.stringify(data)); 
+  atualizarProgresso(); 
+  atualizarBadgesSemana(); // agora as badges são automáticas
+};
+
 
 const criarTarefa=(semana,idx,t,i)=>{
   const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
@@ -275,6 +280,26 @@ const atualizarProgresso=()=>{
   });
 };
 
+  const atualizarBadgesSemana = () => {
+  Object.keys(plano).forEach((s, i) => {
+    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
+    const todasMarcadas = [...inputs].every(chk => chk.checked);
+    const badgeName = `Semana ${i+1} Concluída`;
+
+    // Adiciona badge se todas as tarefas estiverem marcadas e ainda não tiver
+    if(todasMarcadas && !data.badges.includes(badgeName)){
+      data.badges.push(badgeName);
+      showToast(`🏅 ${badgeName} conquistada!`);
+    }
+
+    // Remove badge se alguma tarefa foi desmarcada
+    if(!todasMarcadas && data.badges.includes(badgeName)){
+      data.badges = data.badges.filter(b => b !== badgeName);
+    }
+  });
+  atualizarBadges(); // Atualiza a interface
+};
+  
 const atualizarBadges=()=>{
   const container=document.getElementById('badges-container'); container.innerHTML='';
   data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); });
