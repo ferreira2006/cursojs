@@ -267,16 +267,28 @@ const ativarModoRevisao=()=>{
 };
 
 const atualizarProgresso=()=>{
-  const total=Object.keys(data.check).length;
-  const marcados=Object.values(data.check).filter(v=>v).length;
-  const perc=Math.round(total?marcados/total*100:0);
-  document.getElementById('progressBar').style.width=perc+'%';
-  document.getElementById('progressBar').textContent=perc+'%';
-  Object.keys(plano).forEach((s,i)=>{
-    const inputs=document.querySelectorAll(`#tarefas-${i} input`);
-    const totalS=inputs.length; const marcadosS=[...inputs].filter(i=>i.checked).length;
-    const fill=document.getElementById(`semana-progress-fill-${i}`); if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%';
-    const texto=document.getElementById(`semana-progress-${i}`); if(texto) texto.textContent=`${marcadosS}/${totalS} tarefas`;
+ // Todos os checkboxes do DOM
+  const todosCheckboxes = document.querySelectorAll('.tarefas input');
+  const total = todosCheckboxes.length;
+  const marcados = [...todosCheckboxes].filter(chk => chk.checked).length;
+  const perc = Math.round(total ? marcados / total * 100 : 0);
+
+  // Atualiza barra total
+  const progressBar = document.getElementById('progressBar');
+  progressBar.style.width = perc + '%';
+  progressBar.textContent = perc + '%';
+
+  // Atualiza progresso semanal
+  Object.keys(plano).forEach((s, i) => {
+    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
+    const totalS = inputs.length;
+    const marcadosS = [...inputs].filter(chk => chk.checked).length;
+
+    const fill = document.getElementById(`semana-progress-fill-${i}`);
+    if (fill) fill.style.width = Math.round(totalS ? marcadosS / totalS * 100 : 0) + '%';
+
+    const texto = document.getElementById(`semana-progress-${i}`);
+    if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
   });
 };
 
