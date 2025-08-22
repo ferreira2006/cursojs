@@ -17,17 +17,17 @@ let suprimirToasts = false;
 
 // ======================= DOM ELEMENTS =======================
 const dom = {
-  btnTema: document.querySelector('.top-bar-group button:nth-child(1)'),
-  btnRevisao: document.querySelector('.top-bar-group button:nth-child(2)'),
-  btnLimpar: document.querySelector('.top-bar-group button:nth-child(3)'),
-  btnExportJSON: document.querySelector('.dropdown-content button:nth-child(1)'),
-  btnExportAvancado: document.querySelector('.dropdown-content button:nth-child(2)'),
-  btnExportPDF: document.querySelector('.dropdown-content button:nth-child(3)'),
-  btnExportCalendar: document.querySelector('.dropdown-content button:nth-child(4)'),
-  btnImport: document.querySelector('.top-bar-group:nth-child(3) button'),
-  btnLoginGoogle: document.querySelector('.google-group .dropdown-content button:nth-child(1)'),
-  btnLogoutGoogle: document.querySelector('.google-group .dropdown-content button:nth-child(2)'),
-  btnSaveDrive: document.querySelector('.google-group .dropdown-content button:nth-child(3)'),
+  btnTema: document.getElementById('btn-toggle-theme'),
+  btnRevisao: document.getElementById('btn-modo-revisao'),
+  btnLimpar: document.getElementById('btn-limpar'),
+  btnExportJSON: document.getElementById('btn-exportar-json'),
+  btnExportAvancado: document.getElementById('btn-exportar-avancado'),
+  btnExportPDF: document.getElementById('btn-gerar-pdf'),
+  btnExportCalendar: document.getElementById('btn-exportar-calendario'),
+  btnImport: document.getElementById('btn-importar'),
+  btnLoginGoogle: document.getElementById('btn-login-google'),
+  btnLogoutGoogle: document.getElementById('btn-logout-google'),
+  btnSaveDrive: document.getElementById('btn-salvar-drive'),
   inputBusca: document.getElementById('busca'),
   confeteCanvas: document.getElementById('confete-canvas'),
   toastContainer: document.getElementById('toast-container'),
@@ -38,7 +38,7 @@ const dom = {
   usuarioEmail: document.getElementById('usuario-email')
 };
 
-// ======================= TOAST =======================
+// ======================= FUNÇÕES AUXILIARES =======================
 const showToast = (msg, duration = 3000) => {
   if (suprimirToasts) return;
   const toast = document.createElement('div'); 
@@ -50,6 +50,21 @@ const showToast = (msg, duration = 3000) => {
     toast.classList.remove('show');
     setTimeout(() => dom.toastContainer.removeChild(toast), 300);
   }, duration);
+};
+
+const salvarDados = () => { 
+  localStorage.setItem('data', JSON.stringify(data)); 
+  atualizarProgresso(); 
+  atualizarBadgesSemana();
+};
+
+const limparTexto = txt => txt.replace(/[\x00-\x1F\x7F]/g, '').trim();
+
+const filtrar = () => { 
+  const termo = dom.inputBusca.value.toLowerCase(); 
+  document.querySelectorAll('.semana').forEach(div => {
+    div.style.display = div.innerText.toLowerCase().includes(termo) ? 'flex' : 'none'; 
+  }); 
 };
 
 // ======================= CONFETE =======================
@@ -101,15 +116,6 @@ window.addEventListener('resize', () => {
   dom.confeteCanvas.height = window.innerHeight;
 });
 
-// ======================= FUNÇÕES AUXILIARES =======================
-const salvarDados = () => { 
-  localStorage.setItem('data', JSON.stringify(data)); 
-  atualizarProgresso(); 
-  atualizarBadgesSemana();
-};
-
-const limparTexto = txt => txt.replace(/[\x00-\x1F\x7F]/g, '').trim();
-
 // ======================= FUNÇÕES DE GERAÇÃO DE CONTEÚDO =======================
 const criarTarefa = (semana, idx, tarefa, i) => {
   const chk = document.createElement('input'); 
@@ -137,7 +143,6 @@ const gerarSemana = (semana, tarefas, idx) => {
   const header = document.createElement('div');
   header.className = 'semana-header';
 
-  // Cria título
   const h2 = document.createElement('h2');
   h2.textContent = semana;
   const expandIcon = document.createElement('span');
@@ -147,7 +152,6 @@ const gerarSemana = (semana, tarefas, idx) => {
   h2.addEventListener('click', () => toggleCollapse(idx));
   header.appendChild(h2);
 
-  // Botões Marcar Todos / Resetar
   const btnContainer = document.createElement('div');
   btnContainer.style.display = 'flex';
   btnContainer.style.gap = '5px';
@@ -163,13 +167,10 @@ const gerarSemana = (semana, tarefas, idx) => {
   btnResetar.textContent = 'Resetar';
   btnResetar.addEventListener('click', () => marcarSemana(idx, false));
 
-  btnContainer.appendChild(btnMarcar);
-  btnContainer.appendChild(btnResetar);
+  btnContainer.append(btnMarcar, btnResetar);
   header.appendChild(btnContainer);
-
   div.appendChild(header);
 
-  // Progresso semanal
   const progresso = document.createElement('div');
   progresso.className = 'semana-progress';
   progresso.id = `semana-progress-${idx}`;
@@ -180,7 +181,6 @@ const gerarSemana = (semana, tarefas, idx) => {
   progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
   div.appendChild(progressBar);
 
-  // Tarefas
   const tarefasDiv = document.createElement('div');
   tarefasDiv.className = 'tarefas';
   tarefasDiv.id = `tarefas-${idx}`;
@@ -188,7 +188,6 @@ const gerarSemana = (semana, tarefas, idx) => {
   tarefas.forEach((t, i) => tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
   div.appendChild(tarefasDiv);
 
-  // Nota
   const nota = document.createElement('textarea');
   nota.className = 'nota';
   nota.placeholder = 'Anotações...';
@@ -209,44 +208,31 @@ const gerar = () => {
   if (modoRevisaoAtivo) ativarModoRevisao();
 };
 
-const filtrar = () => { 
-  const termo = dom.inputBusca.value.toLowerCase(); 
-  document.querySelectorAll('.semana').forEach(div => {
-    div.style.display = div.innerText.toLowerCase().includes(termo) ? 'flex' : 'none'; 
-  }); 
-};
-
-// ======================= EVENTOS GERAIS =======================
-dom.conteudo.addEventListener('click', e => {
-  const target = e.target;
-  if (target.dataset.action === 'marcarTodos') marcarSemana(target.dataset.idx, true);
-  if (target.dataset.action === 'resetar') marcarSemana(target.dataset.idx, false);
-  if (target.tagName === 'H2') toggleCollapse([...dom.conteudo.querySelectorAll('h2')].indexOf(target));
-});
-
-// Busca dinâmica
-dom.inputBusca.addEventListener('input', filtrar);
-
 // ======================= INICIALIZAÇÃO =======================
 document.body.classList.toggle('dark-mode', data.dark);
 gerar();
 atualizarProgresso();
 atualizarUsuarioLogado();
 
-// ======================= LISTENERS =======================
-document.getElementById('btn-toggle-theme').addEventListener('click', toggleTheme);
-document.getElementById('btn-modo-revisao').addEventListener('click', ativarModoRevisao);
-document.getElementById('btn-limpar').addEventListener('click', limpar);
+// ======================= EVENT LISTENERS =======================
+// Top bar
+dom.btnTema.addEventListener('click', toggleTheme);
+dom.btnRevisao.addEventListener('click', ativarModoRevisao);
+dom.btnLimpar.addEventListener('click', limpar);
 
-document.getElementById('btn-exportar-json').addEventListener('click', exportar);
-document.getElementById('btn-exportar-avancado').addEventListener('click', exportarAvancado);
-document.getElementById('btn-gerar-pdf').addEventListener('click', gerarPDFRelatorio);
-document.getElementById('btn-exportar-calendario').addEventListener('click', exportarParaCalendario);
+// Export
+dom.btnExportJSON.addEventListener('click', exportar);
+dom.btnExportAvancado.addEventListener('click', exportarAvancado);
+dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
+dom.btnExportCalendar.addEventListener('click', exportarParaCalendario);
 
-document.getElementById('btn-importar').addEventListener('click', importar);
+// Import
+dom.btnImport.addEventListener('click', importar);
 
-document.getElementById('btn-login-google').addEventListener('click', loginGoogle);
-document.getElementById('btn-logout-google').addEventListener('click', logoutGoogle);
-document.getElementById('btn-salvar-drive').addEventListener('click', salvarNoDrive);
+// Google
+dom.btnLoginGoogle.addEventListener('click', loginGoogle);
+dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
+dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
 
-document.getElementById('busca').addEventListener('input', filtrar);
+// Busca
+dom.inputBusca.addEventListener('input', filtrar);
