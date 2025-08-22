@@ -462,7 +462,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
         y = checkPageBreak(y);
 
         const offsetX = marginLeft + 5;
-        const prefixo = "Anotações: ";
+        const prefixo = "Anotações:  ";
         const notaTexto = limparTexto(notaTextarea.value);
 
         const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
