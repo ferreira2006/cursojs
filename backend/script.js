@@ -331,3 +331,22 @@ document.body.classList.toggle('dark-mode', data.dark);
 gerar();
 atualizarProgresso();
 atualizarUsuarioLogado();
+
+// ================= Eventos Botões ======================
+document.getElementById('btn-toggle-theme').onclick = toggleTheme;
+document.getElementById('btn-modo-revisao').onclick = ativarModoRevisao;
+document.getElementById('btn-limpar').onclick = limpar;
+
+document.getElementById('btn-exportar-json').onclick = exportar;
+document.getElementById('btn-exportar-avancado').onclick = exportarAvancado;
+document.getElementById('btn-gerar-pdf').onclick = gerarPDFRelatorio;
+document.getElementById('btn-exportar-calendario').onclick = exportarParaCalendario;
+
+document.getElementById('btn-importar').onclick = importar;
+
+document.getElementById('btn-login-google').onclick = loginGoogle;
+document.getElementById('btn-logout-google').onclick = logoutGoogle;
+document.getElementById('btn-salvar-drive').onclick = salvarNoDrive;
+
+document.getElementById('busca').addEventListener('input', filtrar);
+
