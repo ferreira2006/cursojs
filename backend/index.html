@@ -386,7 +386,78 @@ const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'ap
 const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
 
- const gerarPDFRelatorio=()=>{ html2pdf().from(document.body).save(); showToast('PDF gerado'); };
+ const gerarPDFRelatorio = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const marginLeft = 15;
+  const marginTop = 25;
+  const lineHeight = 7;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - 2 * marginLeft;
+
+  // Cabeçalho simples
+  const yStart = 15;
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 102, 204);
+  doc.text("Relatório - Curso JavaScript", marginLeft, yStart);
+
+  const hoje = new Date();
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, yStart + 7);
+
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, yStart + 12, pageWidth - marginLeft, yStart + 12);
+
+  let y = yStart + 22;
+
+  // Corpo do relatório
+  const container = document.getElementById('conteudo');
+  if (container) {
+    const semanas = container.querySelectorAll('.semana');
+    semanas.forEach((semanaDiv, idx) => {
+      const titulo = semanaDiv.querySelector('h2')?.innerText || `Semana ${idx+1}`;
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 102, 204);
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+      doc.text(titulo, marginLeft, y);
+      y += lineHeight;
+
+      const tarefas = semanaDiv.querySelectorAll('.tarefas div span');
+      tarefas.forEach(tarefaSpan => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        let txt = tarefaSpan.innerText;
+        let cor = [0,0,0];
+        if (txt.includes('✅')) cor = [0,150,0];
+        else if (txt.includes('❌')) cor = [200,0,0];
+        doc.setTextColor(...cor);
+        doc.text('• ' + txt.replace(/✅|❌/g,''), marginLeft + 5, y);
+        y += lineHeight;
+      });
+      y += 5;
+    });
+  }
+
+  // Rodapé
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i=1; i<=pageCount; i++){
+    doc.setPage(i);
+    doc.setFontSize(9);
+    doc.setFont("helvetica","italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth/2, pageHeight-10, {align:"center"});
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
+
 
 
 
