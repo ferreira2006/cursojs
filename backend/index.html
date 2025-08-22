@@ -421,12 +421,17 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   if (container) {
     const semanas = container.querySelectorAll('.semana');
     semanas.forEach((semanaDiv, idx) => {
-      const titulo = semanaDiv.querySelector('h2')?.innerText || `Semana ${idx+1}`;
+      const h2 = semanaDiv.querySelector('h2');
+      
+      // Remove spans/ícones do h2 para não pegar setas ou símbolos
+      h2.querySelectorAll('span').forEach(el => el.remove());
+
+      const titulo = h2.innerText.trim();
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
       if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-      doc.text(titulo, marginLeft, y); // <-- mantém acentos
+      doc.text(titulo, marginLeft, y);
       y += lineHeight;
 
       const tarefas = semanaDiv.querySelectorAll('.tarefas div span');
@@ -439,7 +444,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
         else if (txt.includes('❌')) cor = [200,0,0];
         doc.setTextColor(...cor);
 
-        const linhasQuebradas = doc.splitTextToSize('• ' + txt.replace(/✅|❌/g,''), contentWidth);
+        const linhasQuebradas = doc.splitTextToSize('• ' + txt, contentWidth);
         linhasQuebradas.forEach(l => {
           if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
           doc.text(l, marginLeft + 5, y);
@@ -463,6 +468,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   doc.save('relatorio.pdf');
   showToast('PDF gerado');
 };
+
 
 
 function exportarParaCalendario(){
