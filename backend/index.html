@@ -388,7 +388,6 @@ const importar=()=>{ const inp=document.createElement('input'); inp.type='file';
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
 const gerarPDFRelatorio = async () => {
   const { jsPDF } = window.jspdf;
-
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -415,6 +414,14 @@ const gerarPDFRelatorio = async () => {
 
   desenharCabecalho();
   desenharRodape();
+
+  // Cria container temporário invisível no DOM
+  const containerTemp = document.createElement('div');
+  containerTemp.style.position = 'absolute';
+  containerTemp.style.left = '-9999px';
+  containerTemp.style.top = '-9999px';
+  containerTemp.style.width = '800px';
+  document.body.appendChild(containerTemp);
 
   for (let i = 0; i < Object.keys(plano).length; i++) {
     const semana = Object.keys(plano)[i];
@@ -445,6 +452,9 @@ const gerarPDFRelatorio = async () => {
       divTemp.appendChild(pNota);
     }
 
+    // Adiciona ao DOM temporário
+    containerTemp.appendChild(divTemp);
+
     const canvas = await html2canvas(divTemp, { scale: 2, backgroundColor: data.dark ? '#1e1e1e' : '#fff' });
     const imgData = canvas.toDataURL('image/png');
     const imgProps = pdf.getImageProperties(imgData);
@@ -460,10 +470,17 @@ const gerarPDFRelatorio = async () => {
 
     pdf.addImage(imgData, 'PNG', margem, posY, pdfWidth - 2 * margem, imgHeight);
     posY += imgHeight + 5;
+
+    // Remove divTemp do container para limpar memória
+    containerTemp.removeChild(divTemp);
   }
+
+  // Remove container temporário
+  document.body.removeChild(containerTemp);
 
   pdf.save('checklist-relatorio.pdf');
 };
+
 
 
 
