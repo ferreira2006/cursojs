@@ -117,17 +117,20 @@ const BACKEND_URL='https://cursojs-8012.onrender.com';
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
 let modoRevisaoAtivo=false;
 
+  let suprimirToasts = false; // flag global
+
 // ================= Toast ======================
 const showToast = (msg, duration=3000) => {
+  if(suprimirToasts) return; // não exibe toast se a flag estiver ativa
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div'); 
   toast.className = 'toast'; 
   toast.innerHTML = msg; 
   container.appendChild(toast);
-  setTimeout(()=>toast.classList.add('show'), 50);
-  setTimeout(()=>{
+  setTimeout(() => toast.classList.add('show'), 50);
+  setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(()=>container.removeChild(toast), 300);
+    setTimeout(() => container.removeChild(toast), 300);
   }, duration);
 };
 
@@ -341,9 +344,12 @@ const atualizarBadges=()=>{
 };
 
 const limpar=()=>{ 
-  if(confirm('Deseja realmente limpar tudo?')){
-    data={check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; 
-    salvarDados(); gerar(); 
+  if (confirm('Deseja realmente limpar tudo?')){
+    suprimirToasts = true; // ativa supressão
+    data = {check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; 
+    salvarDados(); 
+    gerar(); 
+    suprimirToasts = false; // desativa supressão
   }
 };
 
