@@ -395,11 +395,21 @@ function gerarPDFRelatorio() {
   const lineHeight = 7;
   let y = marginTop;
 
-  // Cabeçalho principal em azul
+  // ================== Imagem do logo ==================
+  // Substitua pelo seu base64
+  const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."; 
+  const logoWidth = 20;
+  const logoHeight = 20;
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // ================== Cabeçalho ==================
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 102, 204);
   doc.text("Relatório - Curso JavaScript", marginLeft, y);
+
+  // Adiciona logo no canto superior direito
+  doc.addImage(logoBase64, "PNG", pageWidth - marginLeft - logoWidth, y - 10, logoWidth, logoHeight);
 
   // Data de emissão em cinza
   const hoje = new Date();
@@ -416,7 +426,7 @@ function gerarPDFRelatorio() {
 
   y += 22;
 
-  // Pega todos os filhos do relatorio
+  // ================== Conteúdo ==================
   const container = document.getElementById("relatorio");
   const itens = container ? container.children : [];
 
@@ -430,6 +440,8 @@ function gerarPDFRelatorio() {
     if (y > 260) {
       doc.addPage();
       y = marginTop;
+      // adiciona logo em nova página
+      doc.addImage(logoBase64, "PNG", pageWidth - marginLeft - logoWidth, marginTop - 10, logoWidth, logoHeight);
     }
 
     // Título em azul
@@ -439,7 +451,7 @@ function gerarPDFRelatorio() {
     doc.text(titulo, marginLeft, y);
     y += lineHeight;
 
-    // Conteúdo
+    // Conteúdo dos itens
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
 
@@ -452,6 +464,8 @@ function gerarPDFRelatorio() {
       if (y > 270) {
         doc.addPage();
         y = marginTop;
+        // adiciona logo em nova página
+        doc.addImage(logoBase64, "PNG", pageWidth - marginLeft - logoWidth, marginTop - 10, logoWidth, logoHeight);
       }
 
       if (txt.includes("✅")) {
@@ -470,7 +484,7 @@ function gerarPDFRelatorio() {
     y += 3;
   }
 
-  // Rodapé com número da página
+  // ================== Rodapé ==================
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
