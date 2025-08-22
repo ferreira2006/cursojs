@@ -391,6 +391,7 @@ const gerarPDFRelatorio = () => {
   container.style.fontFamily = "'Inter', Arial, sans-serif";
   container.style.padding = '20px';
   container.style.color = data.dark ? '#f4f4f9' : '#000';
+  container.style.background = data.dark ? '#1e1e1e' : '#fff';
 
   // Cabeçalho
   const cabecalho = document.createElement('div');
@@ -403,10 +404,11 @@ const gerarPDFRelatorio = () => {
   `;
   container.appendChild(cabecalho);
 
-  // Copia cada semana do plano
+  // Adiciona cada semana
   Object.keys(plano).forEach((semana, i) => {
     const divSemana = document.createElement('div');
-    divSemana.style.marginBottom = '15px';
+    divSemana.style.marginBottom = '20px';
+    divSemana.style.pageBreakInside = 'avoid'; // evita quebrar no meio
 
     const titulo = document.createElement('h2');
     titulo.textContent = semana;
@@ -424,7 +426,7 @@ const gerarPDFRelatorio = () => {
 
     // Nota
     const nota = data.notes[`s${i}`] || '';
-    if(nota){
+    if (nota) {
       const pNota = document.createElement('p');
       pNota.innerHTML = `<strong>Anotações:</strong> ${nota}`;
       divSemana.appendChild(pNota);
@@ -438,7 +440,7 @@ const gerarPDFRelatorio = () => {
     margin:       10,
     filename:     'checklist-relatorio.pdf',
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
+    html2canvas:  { scale: 2, backgroundColor: data.dark ? '#1e1e1e' : '#fff' },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).from(container).save();
 };
