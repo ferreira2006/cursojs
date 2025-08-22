@@ -1,1 +1,397 @@
-<!DOCTYPE html> <html lang="pt-BR"> <head> <meta charset="UTF-8"> <title>Checklist de Estudo - JavaScript Avançado v5.0</title> <link rel="preconnect" href="https://fonts.googleapis.com"> <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"> <style> body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; transition: background 0.3s, color 0.3s; } .dark-mode { background:#1e1e1e; color:#f4f4f9; } h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; } .semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; } .semana.modo-revisao { background: #fff3cd !important; } .semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; } .botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s, transform 0.15s, box-shadow 0.15s; } .botao-semana:hover { background:#45a049; } .tarefas { display:flex; flex-direction:column; gap:5px; margin-top:5px; } .tarefas div { display:flex; align-items:center; gap:10px; } .tarefas input { width:18px; height:18px; } .nota { width: 100%; /* ocupa toda a largura do card */ max-width: 100%; /* nunca ultrapassa o container */ min-height: 60px; /* altura inicial */ padding: 8px; margin-top: 10px; border: 1px solid #ccc; border-radius: 5px; resize: vertical; /* só permite redimensionar verticalmente */ box-sizing: border-box; /* inclui padding na largura */ font-family: 'Inter', Arial, sans-serif; font-size: 0.9em; transition: background 0.3s, color 0.3s; } .dark-mode .nota { background: #2b2b2b; color: #f4f4f9; border-color: #555; } .top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; } .dark-mode .top-bar { background:#2b2b2b; } .top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; } .top-bar button { background-color: #4caf50; color:#333333; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.15s; } .top-bar button:hover { background-color: #45a049; transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); } .top-bar button:active { transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.2); } .dropdown { position:relative; display:inline-block; } .dropbtn { background:#4caf50; color:#333333; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; transition:0.2s; } .dropdown-content { display:none; position:absolute; background:#f9f9f9; min-width:150px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:5px; z-index:1; flex-direction:column; } .dropdown-content button { width:100%; text-align:left; padding:8px 12px; background:none; border:none; cursor:pointer; transition:0.2s; } .dropdown-content button:hover { background:#e0e0e0; } .dropdown:hover .dropdown-content { display:flex; flex-direction:column; } .busca-group input { width:200px; padding:5px; border-radius:5px; border:1px solid #ccc; } #toast-container { position:fixed; top:20px; right:20px; z-index:10000; } .toast { background:#333; color:white; padding:10px 15px; border-radius:5px; margin-bottom:10px; min-width:200px; box-shadow:0 2px 6px rgba(0,0,0,0.2); opacity:0; transform:translateX(100%); transition:opacity 0.3s, transform 0.3s; } .toast.show { opacity:1; transform:translateX(0); } .progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; } .progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:#333333; line-height:20px; transition: width 0.3s; } .semana-progress { font-size:0.9em; margin-top:5px; color:#666; } .dark-mode .semana-progress { color:#ccc; } .semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; } .semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; } .confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; } .badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; } .expand-icon { display: inline-block; margin-left: 5px; transition: transform 0.2s; } .expand-icon.collapsed { transform: rotate(-90deg); } .google-group { display:flex; align-items:center; gap:5px; flex-wrap:wrap; } .google-group .dropbtn { flex-shrink:0; } @media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} } </style> </head> <body> <div class="top-bar"> <div class="top-bar-group"> <button onclick="toggleTheme()">🌙/☀️ Tema</button> <button onclick="ativarModoRevisao()">📝 Modo Revisão</button> <button onclick="limpar()">🗑️ Limpar Tudo</button> </div> <div class="top-bar-group dropdown"> <button class="dropbtn">📤 Exportar</button> <div class="dropdown-content"> <button onclick="exportar()">JSON</button> <button onclick="exportarAvancado()">Avançado</button> <button onclick="gerarPDF()">PDF</button> <button onclick="exportarParaCalendario()">Calendário</button> </div> </div> <div class="top-bar-group"> <button onclick="importar()">📥 Importar JSON</button> </div> <div class="top-bar-group google-group"> <div class="dropdown"> <button class="dropbtn">🔑 Google</button> <div class="dropdown-content"> <button onclick="loginGoogle()">Login</button> <button onclick="logoutGoogle()">Logout</button> <button onclick="salvarNoDrive()">Salvar no Drive</button> </div> </div> <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;"> <img id="usuario-avatar" src="" alt="Avatar" style="width:24px; height:24px; border-radius:50%; display:none;"> <span id="usuario-email">Nenhuma conta conectada</span> </div> </div> <div class="top-bar-group busca-group"> <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()"> </div> </div> <div id="badges-container"></div> <div class="progress"><div class="progress-bar" id="progressBar">0%</div></div> <div id="conteudo"></div> <canvas id="confete-canvas" class="confete"></canvas> <div id="toast-container"></div> <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> <script> // ================= Dados ====================== const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0']; const plano={ "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."], "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."], "Semana 3 – Funções e Escopo":["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."], "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."], "Semana 5 – DOM":["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."], "Semana 6 – Projeto To-Do List":["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."], "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."], "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."] }; const BACKEND_URL='https://cursojs-8012.onrender.com'; let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] }; let modoRevisaoAtivo=false; // ================= Toast ====================== const showToast = (msg, duration=3000) => { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); toast.className = 'toast'; toast.innerHTML = msg; // <-- usar innerHTML para links container.appendChild(toast); setTimeout(()=>toast.classList.add('show'), 50); setTimeout(()=>{ toast.classList.remove('show'); setTimeout(()=>container.removeChild(toast), 300); }, duration); }; // ================= Confete ====================== const confeteCanvas=document.getElementById('confete-canvas'); const ctx=confeteCanvas.getContext('2d'); confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; // Novo confete mais “divertido” const confeteParticles = []; const confeteCores=['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF']; const startConfete = (count=200)=>{ for(let i=0;i<count;i++){ confeteParticles.push({ x:Math.random()*confeteCanvas.width, y:-10, dx:(Math.random()-0.5)*8, dy:Math.random()*7+3, size:Math.random()*10+5, color: confeteCores[Math.floor(Math.random()*confeteCores.length)], angle:Math.random()*360, spin:Math.random()*0.2-0.1, life:Math.random()*120+80 }); } animateConfete(); setTimeout(()=>{ confeteParticles.length=0; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },7000); }; const animateConfete = ()=>{ ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); confeteParticles.forEach(p=>{ p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2; const rad=p.angle*Math.PI/180; ctx.fillStyle=p.color; ctx.beginPath(); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(rad); ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*2); ctx.restore(); p.size*=0.98; }); confeteParticles.filter(p=>p.life>0); if(confeteParticles.length>0) requestAnimationFrame(animateConfete); }; window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; }); // ================= Funções ====================== const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); }; const criarTarefa=(semana,idx,t,i)=>{ const chk=document.createElement('input'); chk.type='checkbox'; chk.id=s${idx}d${i}; chk.checked=data.check[chk.id]||false; chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvarDados(); if([...document.querySelectorAll(#tarefas-${idx} input)].every(i=>i.checked)) startConfete(); if(modoRevisaoAtivo) ativarModoRevisao(); }; const label=document.createElement('span'); label.textContent=t; const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label); return div; }; const gerarSemana=(semana,tarefas,idx)=>{ const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length]; const header=document.createElement('div'); header.className='semana-header'; header.innerHTML= <h2 onclick="toggleCollapse(${idx})"> ${semana} <span class="expand-icon collapsed">▼</span> </h2> <div style="display:flex;gap:5px;flex-wrap:wrap;"> <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button> <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button> </div> ; div.appendChild(header); const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=semana-progress-${idx}; div.appendChild(progresso); const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; progressBar.innerHTML=<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>; div.appendChild(progressBar); const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=tarefas-${idx}; tarefasDiv.style.display='none'; tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i))); div.appendChild(tarefasDiv); // ======= NOVO: Textarea para notas da semana ======= const nota = document.createElement('textarea'); nota.className = 'nota'; nota.placeholder = 'Anotações...'; nota.value = data.notes[s${idx}] || ''; nota.style.width = '100%'; // largura total do card nota.style.maxWidth = '100%'; // nunca ultrapassa o container nota.style.boxSizing = 'border-box'; // inclui padding na largura nota.oninput = () => { data.notes[s${idx}] = nota.value; salvarDados(); }; div.appendChild(nota); return div; }; const gerar=()=>{ const container=document.getElementById('conteudo'); container.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao(); }; const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(#tarefas-${idx} input).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); }; const toggleCollapse=idx=>{ const el=document.getElementById(tarefas-${idx}); const icon=document.querySelectorAll('.expand-icon')[idx]; if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } else { el.style.display='none'; icon.classList.add('collapsed'); } }; const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); }; const ativarModoRevisao=()=>{ modoRevisaoAtivo=!modoRevisaoAtivo; document.querySelectorAll('.semana').forEach(div=>{ if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao'); else div.classList.remove('modo-revisao'); }); }; const atualizarProgresso=()=>{ const total=Object.keys(data.check).length; const marcados=Object.values(data.check).filter(v=>v).length; const perc=Math.round(total?marcados/total*100:0); document.getElementById('progressBar').style.width=perc+'%'; document.getElementById('progressBar').textContent=perc+'%'; Object.keys(plano).forEach((s,i)=>{ const inputs=document.querySelectorAll(#tarefas-${i} input); const totalS=inputs.length; const marcadosS=[...inputs].filter(i=>i.checked).length; const fill=document.getElementById(semana-progress-fill-${i}); if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%'; const texto=document.getElementById(semana-progress-${i}); if(texto) texto.textContent=${marcadosS}/${totalS} tarefas; }); }; const atualizarBadges=()=>{ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); }; const limpar=()=>{ if(confirm('Deseja realmente limpar tudo?')){ data={check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; salvarDados(); gerar(); }}; const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); }; // ================= Google ====================== let oAuthWindow; const loginGoogle = async () => { try { // Busca a URL real do backend const resp = await fetch(${BACKEND_URL}/auth-url); const data = await resp.json(); if (!data.url) { showToast('Erro ao obter URL de login'); console.error(data); return; } // Abre popup com URL real const popup = window.open(data.url, '_blank', 'width=500,height=600'); // Recebe token do popup window.addEventListener('message', e => { if (e.data.googleToken) { localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } }, { once: true }); } catch (err) { console.error(err); showToast('Erro ao iniciar login Google'); } }; const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); }; const atualizarUsuarioLogado=()=>{ const token=JSON.parse(localStorage.getItem('googleToken')); const avatar=document.getElementById('usuario-avatar'); const email=document.getElementById('usuario-email'); if(token){ fetch(${BACKEND_URL}/userinfo,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}).then(r=>r.json()).then(u=>{ avatar.src=u.picture; avatar.style.display='block'; email.textContent=u.email; }).catch(()=>{ avatar.style.display='none'; email.textContent='Erro ao carregar usuário'; }); } else{ avatar.style.display='none'; email.textContent='Nenhuma conta conectada'; } }; const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (!token) { showToast('Você precisa fazer login primeiro'); return; } const payload = { token, filename: 'checklist.json', content: data }; try { const resp = await fetch(${BACKEND_URL}/save, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const result = await resp.json(); if (result.success) { const link = https://drive.google.com/file/d/${result.fileId}/view; showToast(Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>); } else { showToast('Erro ao salvar no Drive'); console.error(result); } } catch (err) { console.error(err); showToast('Erro ao salvar no Drive'); } }; // ================= Export/Import ====================== const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); }; const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); }; const exportarAvancado=()=>{ showToast('Exportação avançada não implementada'); }; const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); }; const exportarParaCalendario=()=>{ showToast('Exportar para calendário não implementado'); }; // ================= Inicialização ====================== document.body.classList.toggle('dark-mode',data.dark); gerar(); atualizarBadges(); atualizarUsuarioLogado(); </script> </body> </html>
+mescle a ete: <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Checklist de Estudo - JavaScript Avançado v5.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', Arial, sans-serif; margin:0; padding-top:80px; transition: background 0.3s, color 0.3s; }
+.dark-mode { background:#1e1e1e; color:#f4f4f9; }
+h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
+.semana { border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; transition: background 0.3s, color 0.3s; display:flex; flex-direction:column; }
+.semana.modo-revisao { background: #fff3cd !important; }
+.semana-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px; }
+.botao-semana { padding:5px 10px; border:none; border-radius:5px; background:#4caf50; color:white; cursor:pointer; min-width:100px; flex-shrink:0; transition:0.2s, transform 0.15s, box-shadow 0.15s; }
+.botao-semana:hover { background:#45a049; }
+.tarefas { display:flex; flex-direction:column; gap:5px; margin-top:5px; }
+.tarefas div { display:flex; align-items:center; gap:10px; }
+.tarefas input { width:18px; height:18px; }
+.nota {
+  width: 100%;             /* ocupa toda a largura do card */
+  max-width: 100%;         /* nunca ultrapassa o container */
+  min-height: 60px;        /* altura inicial */
+  padding: 8px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  resize: vertical;        /* só permite redimensionar verticalmente */
+  box-sizing: border-box;  /* inclui padding na largura */
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 0.9em;
+  transition: background 0.3s, color 0.3s;
+}
+.dark-mode .nota {
+  background: #2b2b2b;
+  color: #f4f4f9;
+  border-color: #555;
+}
+.top-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; position:fixed; top:0; width:100%; background:#f4f4f9; padding:10px; z-index:999; box-shadow:0 2px 6px rgba(0,0,0,0.2); transition:background 0.3s; }
+.dark-mode .top-bar { background:#2b2b2b; }
+.top-bar-group { display:flex; gap:5px; flex-wrap:wrap; align-items:center; }
+.top-bar button { background-color: #4caf50; color:#333333; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.15s; }
+.top-bar button:hover { background-color: #45a049; transform: scale(1.05); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.top-bar button:active { transform: scale(0.98); box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+.dropdown { position:relative; display:inline-block; }
+.dropbtn { background:#4caf50; color:#333333; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; transition:0.2s; }
+.dropdown-content { display:none; position:absolute; background:#f9f9f9; min-width:150px; box-shadow:0 8px 16px rgba(0,0,0,0.2); border-radius:5px; z-index:1; flex-direction:column; }
+.dropdown-content button { width:100%; text-align:left; padding:8px 12px; background:none; border:none; cursor:pointer; transition:0.2s; }
+.dropdown-content button:hover { background:#e0e0e0; }
+.dropdown:hover .dropdown-content { display:flex; flex-direction:column; }
+.busca-group input { width:200px; padding:5px; border-radius:5px; border:1px solid #ccc; }
+#toast-container { position:fixed; top:20px; right:20px; z-index:10000; }
+.toast { background:#333; color:white; padding:10px 15px; border-radius:5px; margin-bottom:10px; min-width:200px; box-shadow:0 2px 6px rgba(0,0,0,0.2); opacity:0; transform:translateX(100%); transition:opacity 0.3s, transform 0.3s; }
+.toast.show { opacity:1; transform:translateX(0); }
+.progress { margin:20px 0; height:20px; background:#ddd; border-radius:10px; overflow:hidden; }
+.progress-bar { height:100%; width:0; background:#4caf50; text-align:center; color:#333333; line-height:20px; transition: width 0.3s; }
+.semana-progress { font-size:0.9em; margin-top:5px; color:#666; }
+.dark-mode .semana-progress { color:#ccc; }
+.semana-progress-bar { width:100%; height:10px; background:#ddd; border-radius:5px; overflow:hidden; margin-top:5px; }
+.semana-progress-fill { height:100%; width:0; background:#4caf50; transition: width 0.3s; }
+.confete { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+.badge { display:inline-block; padding:3px 6px; border-radius:5px; background:#FFD700; color:#000; margin:2px; font-size:0.8em; }
+.expand-icon { display: inline-block; margin-left: 5px; transition: transform 0.2s; }
+.expand-icon.collapsed { transform: rotate(-90deg); }
+.google-group { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.google-group .dropbtn { flex-shrink:0; }
+@media (max-width:600px){ .top-bar{flex-direction:column;} .busca-group input{width:100%;} .botao-semana{width:100%;} }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-group">
+    <button onclick="toggleTheme()">🌙/☀️ Tema</button>
+    <button onclick="ativarModoRevisao()">📝 Modo Revisão</button>
+    <button onclick="limpar()">🗑️ Limpar Tudo</button>
+  </div>
+
+  <div class="top-bar-group dropdown">
+    <button class="dropbtn">📤 Exportar</button>
+    <div class="dropdown-content">
+      <button onclick="exportar()">JSON</button>
+      <button onclick="exportarAvancado()">Avançado</button>
+      <button onclick="gerarPDF()">PDF</button>
+      <button onclick="exportarParaCalendario()">Calendário</button>
+    </div>
+  </div>
+
+  <div class="top-bar-group">
+    <button onclick="importar()">📥 Importar JSON</button>
+  </div>
+
+  <div class="top-bar-group google-group">
+    <div class="dropdown">
+      <button class="dropbtn">🔑 Google</button>
+      <div class="dropdown-content">
+        <button onclick="loginGoogle()">Login</button>
+        <button onclick="logoutGoogle()">Logout</button>
+        <button onclick="salvarNoDrive()">Salvar no Drive</button>
+      </div>
+    </div>
+    <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;">
+      <img id="usuario-avatar" src="" alt="Avatar" style="width:24px; height:24px; border-radius:50%; display:none;">
+      <span id="usuario-email">Nenhuma conta conectada</span>
+    </div>
+  </div>
+
+  <div class="top-bar-group busca-group">
+    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+  </div>
+</div>
+
+<div id="badges-container"></div>
+<div class="progress"><div class="progress-bar" id="progressBar">0%</div></div>
+<div id="conteudo"></div>
+<canvas id="confete-canvas" class="confete"></canvas>
+<div id="toast-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// ================= Dados ======================
+const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const plano={
+  "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
+  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
+  "Semana 3 – Funções e Escopo":["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
+  "Semana 5 – DOM":["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
+  "Semana 6 – Projeto To-Do List":["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
+  "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
+  "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
+};
+const BACKEND_URL='https://cursojs-8012.onrender.com';
+let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
+let modoRevisaoAtivo=false;
+
+// ================= Toast ======================
+const showToast = (msg, duration=3000) => {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div'); 
+  toast.className = 'toast'; 
+  toast.innerHTML = msg; // <-- usar innerHTML para links
+  container.appendChild(toast);
+  setTimeout(()=>toast.classList.add('show'), 50);
+  setTimeout(()=>{
+    toast.classList.remove('show');
+    setTimeout(()=>container.removeChild(toast), 300);
+  }, duration);
+};
+
+// ================= Confete ======================
+const confeteCanvas=document.getElementById('confete-canvas');
+const ctx=confeteCanvas.getContext('2d');
+confeteCanvas.width=window.innerWidth;
+confeteCanvas.height=window.innerHeight;
+
+// Novo confete mais “divertido”
+const confeteParticles = [];
+const confeteCores=['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
+const startConfete = (count=200)=>{
+  for(let i=0;i<count;i++){
+    confeteParticles.push({
+      x:Math.random()*confeteCanvas.width,
+      y:-10,
+      dx:(Math.random()-0.5)*8,
+      dy:Math.random()*7+3,
+      size:Math.random()*10+5,
+      color: confeteCores[Math.floor(Math.random()*confeteCores.length)],
+      angle:Math.random()*360,
+      spin:Math.random()*0.2-0.1,
+      life:Math.random()*120+80
+    });
+  }
+  animateConfete();
+  setTimeout(()=>{ confeteParticles.length=0; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },7000);
+};
+
+const animateConfete = ()=>{
+  ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
+  confeteParticles.forEach(p=>{
+    p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2;
+    const rad=p.angle*Math.PI/180;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(rad);
+    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*2);
+    ctx.restore();
+    p.size*=0.98;
+  });
+  confeteParticles.filter(p=>p.life>0);
+  if(confeteParticles.length>0) requestAnimationFrame(animateConfete);
+};
+
+window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
+
+// ================= Funções ======================
+const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
+
+const criarTarefa=(semana,idx,t,i)=>{
+  const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
+  chk.checked=data.check[chk.id]||false;
+  chk.onchange=()=>{ data.check[chk.id]=chk.checked; salvarDados(); if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfete(); if(modoRevisaoAtivo) ativarModoRevisao(); };
+  const label=document.createElement('span'); label.textContent=t;
+  const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label);
+  return div;
+};
+
+const gerarSemana=(semana,tarefas,idx)=>{
+  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+
+  const header=document.createElement('div'); header.className='semana-header';
+  header.innerHTML=`
+    <h2 onclick="toggleCollapse(${idx})">
+      ${semana} <span class="expand-icon collapsed">▼</span>
+    </h2>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
+      <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
+    </div>
+  `;
+  div.appendChild(header);
+
+  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+
+  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; 
+  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+
+  const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.style.display='none';
+  tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i)));
+  div.appendChild(tarefasDiv);
+
+  // ======= NOVO: Textarea para notas da semana =======
+  const nota = document.createElement('textarea');
+nota.className = 'nota';
+nota.placeholder = 'Anotações...';
+nota.value = data.notes[`s${idx}`] || '';
+nota.style.width = '100%';        // largura total do card
+nota.style.maxWidth = '100%';     // nunca ultrapassa o container
+nota.style.boxSizing = 'border-box'; // inclui padding na largura
+nota.oninput = () => { 
+    data.notes[`s${idx}`] = nota.value; 
+    salvarDados(); 
+};
+div.appendChild(nota);
+
+  return div;
+};
+
+const gerar=()=>{
+  const container=document.getElementById('conteudo'); container.innerHTML='';
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx)));
+  atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao();
+};
+
+const marcarSemana=(idx,marcar)=>{ document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); salvarDados(); };
+
+const toggleCollapse=idx=>{
+  const el=document.getElementById(`tarefas-${idx}`);
+  const icon=document.querySelectorAll('.expand-icon')[idx];
+  if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } 
+  else { el.style.display='none'; icon.classList.add('collapsed'); }
+};
+
+const filtrar=()=>{ const termo=document.getElementById('busca').value.toLowerCase(); document.querySelectorAll('.semana').forEach(div=>{ div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; }); };
+
+const ativarModoRevisao=()=>{
+  modoRevisaoAtivo=!modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(div=>{
+    if(modoRevisaoAtivo && [...div.querySelectorAll('input')].some(i=>!i.checked)) div.classList.add('modo-revisao');
+    else div.classList.remove('modo-revisao');
+  });
+};
+
+const atualizarProgresso=()=>{
+  const total=Object.keys(data.check).length;
+  const marcados=Object.values(data.check).filter(v=>v).length;
+  const perc=Math.round(total?marcados/total*100:0);
+  document.getElementById('progressBar').style.width=perc+'%';
+  document.getElementById('progressBar').textContent=perc+'%';
+  Object.keys(plano).forEach((s,i)=>{
+    const inputs=document.querySelectorAll(`#tarefas-${i} input`);
+    const totalS=inputs.length; const marcadosS=[...inputs].filter(i=>i.checked).length;
+    const fill=document.getElementById(`semana-progress-fill-${i}`); if(fill) fill.style.width=Math.round(totalS?marcadosS/totalS*100:0)+'%';
+    const texto=document.getElementById(`semana-progress-${i}`); if(texto) texto.textContent=`${marcadosS}/${totalS} tarefas`;
+  });
+};
+
+const atualizarBadges=()=>{
+  const container=document.getElementById('badges-container'); container.innerHTML='';
+  data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); });
+};
+
+const limpar=()=>{ if(confirm('Deseja realmente limpar tudo?')){ data={check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; salvarDados(); gerar(); }};
+
+const toggleTheme=()=>{
+  data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados();
+};
+
+// ================= Google ======================
+let oAuthWindow;
+const loginGoogle = async () => { 
+  try {
+    // Busca a URL real do backend
+    const resp = await fetch(`${BACKEND_URL}/auth-url`);
+    const data = await resp.json();
+    if (!data.url) {
+      showToast('Erro ao obter URL de login');
+      console.error(data);
+      return;
+    }
+
+    // Abre popup com URL real
+    const popup = window.open(data.url, '_blank', 'width=500,height=600');
+
+    // Recebe token do popup
+    window.addEventListener('message', e => {
+      if (e.data.googleToken) {
+        localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+        atualizarUsuarioLogado();
+        showToast('Login Google realizado!');
+      }
+    }, { once: true });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao iniciar login Google');
+  }
+};
+const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); };
+const atualizarUsuarioLogado=()=>{
+  const token=JSON.parse(localStorage.getItem('googleToken'));
+  const avatar=document.getElementById('usuario-avatar'); const email=document.getElementById('usuario-email');
+  if(token){ fetch(`${BACKEND_URL}/userinfo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}).then(r=>r.json()).then(u=>{ avatar.src=u.picture; avatar.style.display='block'; email.textContent=u.email; }).catch(()=>{ avatar.style.display='none'; email.textContent='Erro ao carregar usuário'; }); }
+  else{ avatar.style.display='none'; email.textContent='Nenhuma conta conectada'; }
+};
+
+const salvarNoDrive = async () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    showToast('Você precisa fazer login primeiro');
+    return;
+  }
+
+  const payload = { token, filename: 'checklist.json', content: data };
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await resp.json();
+
+    if (result.success) {
+      const link = `https://drive.google.com/file/d/${result.fileId}/view`;
+      showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`);
+    } else {
+      showToast('Erro ao salvar no Drive');
+      console.error(result);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar no Drive');
+  }
+};
+
+// ================= Export/Import ======================
+const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
+const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
+function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
+const gerarPDF=()=>{ html2pdf().from(document.getElementById('conteudo')).save('checklist.pdf'); };
+function exportarParaCalendario(){
+  let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
+  for(let i=1;i<=SEMANAS;i++){
+    if(data[i].nota){
+      ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${i}\nDESCRIPTION:${data[i].nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
+    }
+  }
+  ics+="END:VCALENDAR";
+  const blob=new Blob([ics],{type:"text/calendar"});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click();
+}
+
+
+// ================= Inicialização ======================
+document.body.classList.toggle('dark-mode',data.dark);
+gerar();
+atualizarBadges();
+atualizarUsuarioLogado();
+
+</script>
+</body>
+</html>
