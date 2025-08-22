@@ -80,7 +80,7 @@ app.post("/save", async (req, res) => {
   }
 });
 
-// 🔹 Obter informações do usuário (email e avatar)
+// 🔹 Obter informações do usuário (email e avatar) - ok
 app.post("/userinfo", async (req, res) => {
   try {
     const { token } = req.body;
