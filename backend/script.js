@@ -226,26 +226,20 @@ gerar();
 atualizarProgresso();
 atualizarUsuarioLogado();
 
-// ================= Adicionando Event Listeners ======================
-
-// Top bar
+// ======================= LISTENERS =======================
 document.getElementById('btn-toggle-theme').addEventListener('click', toggleTheme);
 document.getElementById('btn-modo-revisao').addEventListener('click', ativarModoRevisao);
 document.getElementById('btn-limpar').addEventListener('click', limpar);
 
-// Export
 document.getElementById('btn-exportar-json').addEventListener('click', exportar);
 document.getElementById('btn-exportar-avancado').addEventListener('click', exportarAvancado);
 document.getElementById('btn-gerar-pdf').addEventListener('click', gerarPDFRelatorio);
 document.getElementById('btn-exportar-calendario').addEventListener('click', exportarParaCalendario);
 
-// Import
 document.getElementById('btn-importar').addEventListener('click', importar);
 
-// Google
 document.getElementById('btn-login-google').addEventListener('click', loginGoogle);
 document.getElementById('btn-logout-google').addEventListener('click', logoutGoogle);
 document.getElementById('btn-salvar-drive').addEventListener('click', salvarNoDrive);
 
-// Busca
-document.getElementById('busca').addEventListener('keyup', filtrar);
+document.getElementById('busca').addEventListener('input', filtrar);
