@@ -65,7 +65,7 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
     <div class="dropdown-content">
       <button onclick="exportar()">JSON</button>
       <button onclick="exportarAvancado()">Avançado</button>
-      <button onclick="gerarPDFRelatorio()">PDF</button>
+      <button onclick="gerarRelatorio()"></button>
       <button onclick="exportarParaCalendario()">Calendário</button>
     </div>
   </div>
@@ -100,7 +100,7 @@ h2 { margin-top:0; cursor:pointer; display:flex; align-items:center; gap:5px; }
 <canvas id="confete-canvas" class="confete"></canvas>
 <div id="toast-container"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2.js/0.10.1/html2.bundle.min.js"></script>
 <script>
 const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
 const plano={
@@ -385,59 +385,32 @@ const salvarNoDrive = async () => {
 const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
 const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
 function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
-const gerarPDFRelatorio = async () => {
-  const { jsPDF } = window.jspdf;
+const gerarPDFRelatorio = () => {
+  const container = document.createElement('div');
+  container.style.fontFamily = "'Inter', Arial, sans-serif";
+  container.style.padding = '20px';
+  container.style.color = data.dark ? '#f4f4f9' : '#000';
+  container.style.background = data.dark ? '#1e1e1e' : '#fff';
 
-  // Cabeçalho e footer
-  const cabeçalhoTexto = 'Checklist de Estudo - JavaScript Avançado';
-  const dataAtual = new Date().toLocaleDateString();
+  const cabecalho = document.createElement('div');
+  cabecalho.style.textAlign = 'center';
+  cabecalho.style.marginBottom = '20px';
+  cabecalho.innerHTML = `
+    <h1>Checklist de Estudo - JavaScript Avançado</h1>
+    <p>${new Date().toLocaleDateString()}</p>
+    <hr>
+  `;
+  container.appendChild(cabecalho);
 
-  // Cria PDF
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = pdf.internal.pageSize.getHeight();
-  const margem = 10;
-  let posY = 20; // posição inicial do conteúdo (abaixo do cabeçalho)
-  let pagina = 1;
+  Object.keys(plano).forEach((semana, i) => {
+    const divSemana = document.createElement('div');
+    divSemana.style.marginBottom = '20px';
+    divSemana.style.pageBreakInside = 'avoid';
 
-  // Função para desenhar cabeçalho
-  const desenharCabecalho = () => {
-    pdf.setFontSize(16);
-    pdf.setTextColor(data.dark ? 255 : 0);
-    pdf.text(cabeçalhoTexto, pdfWidth / 2, 12, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.text(dataAtual, pdfWidth / 2, 18, { align: 'center' });
-    pdf.setLineWidth(0.5);
-    pdf.line(margem, 22, pdfWidth - margem, 22);
-  };
-
-  // Função para desenhar footer
-  const desenharRodape = () => {
-    pdf.setLineWidth(0.5);
-    pdf.line(margem, pdfHeight - 15, pdfWidth - margem, pdfHeight - 15);
-    pdf.setFontSize(10);
-    pdf.text(`Página ${pagina}`, pdfWidth / 2, pdfHeight - 8, { align: 'center' });
-  };
-
-  // Inicializa primeira página
-  desenharCabecalho();
-  desenharRodape();
-
-  // Percorre cada semana
-  for (let i = 0; i < Object.keys(plano).length; i++) {
-    const semana = Object.keys(plano)[i];
-    const divTemp = document.createElement('div');
-    divTemp.style.fontFamily = "'Inter', Arial, sans-serif";
-    divTemp.style.padding = '0px';
-    divTemp.style.color = data.dark ? '#f4f4f9' : '#000';
-    divTemp.style.background = data.dark ? '#1e1e1e' : '#fff';
-
-    // Título da semana
     const titulo = document.createElement('h2');
     titulo.textContent = semana;
-    divTemp.appendChild(titulo);
+    divSemana.appendChild(titulo);
 
-    // Tarefas
     const ul = document.createElement('ul');
     const inputs = document.querySelectorAll(`#tarefas-${i} input`);
     const textos = [...inputs].map((chk, idx) => {
@@ -445,37 +418,27 @@ const gerarPDFRelatorio = async () => {
       return `<li>${marcado} ${plano[semana][idx]}</li>`;
     }).join('');
     ul.innerHTML = textos;
-    divTemp.appendChild(ul);
+    divSemana.appendChild(ul);
 
-    // Nota
     const nota = data.notes[`s${i}`] || '';
     if (nota) {
       const pNota = document.createElement('p');
       pNota.innerHTML = `<strong>Anotações:</strong> ${nota}`;
-      divTemp.appendChild(pNota);
+      divSemana.appendChild(pNota);
     }
 
-    // Converte semana em canvas
-    const canvas = await html2canvas(divTemp, { scale: 2, backgroundColor: data.dark ? '#1e1e1e' : '#fff' });
-    const imgData = canvas.toDataURL('image/png');
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    container.appendChild(divSemana);
+  });
 
-    // Se a semana não couber na página, cria nova
-    if (posY + imgHeight > pdfHeight - 20) {
-      pdf.addPage();
-      pagina++;
-      desenharCabecalho();
-      desenharRodape();
-      posY = 25;
-    }
-
-    pdf.addImage(imgData, 'PNG', margem, posY, pdfWidth - 2 * margem, imgHeight);
-    posY += imgHeight + 5;
-  }
-
-  pdf.save('checklist-relatorio.pdf');
+  html2pdf().set({
+    margin: 10,
+    filename: 'checklist-relatorio.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, backgroundColor: data.dark ? '#1e1e1e' : '#fff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(container).save();
 };
+
 
 
 function exportarParaCalendario(){
