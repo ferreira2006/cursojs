@@ -183,7 +183,7 @@ const criarTarefa=(semana,idx,t,i)=>{
   chk.onchange=()=>{ 
     data.check[chk.id]=chk.checked; 
     salvarDados(); 
-    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfeteComSom(); 
+    // confete será disparado automaticamente pelos badges
     if(modoRevisaoAtivo) ativarModoRevisao(); 
   };
   const label=document.createElement('span'); label.textContent=t;
@@ -260,7 +260,49 @@ const importar=()=>{ const input=document.createElement('input'); input.type='fi
 // ================= Badges ======================
 const atualizarBadges=()=>{ const container=document.getElementById('badges-container'); container.innerHTML=''; data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); }); };
 
-// ================= Inicialização ======================
+// ================= Badges Automáticos ======================
+const atualizarBadgesAutomaticos = () => {
+  const novasBadges = [];
+
+  // Badge: Primeira Tarefa
+  if (Object.values(data.check).some(v => v) && !data.badges.includes('🏅 Primeira Tarefa')) {
+    novasBadges.push('🏅 Primeira Tarefa');
+  }
+
+  // Badge: Semana Completa
+  Object.entries(plano).forEach(([semana, tarefas], idx) => {
+    const todasMarcadas = tarefas.every((t, i) => data.check[`s${idx}d${i}`]);
+    const badgeNome = `✅ ${semana} Completa`;
+    if (todasMarcadas && !data.badges.includes(badgeNome)) {
+      novasBadges.push(badgeNome);
+    }
+  });
+
+  // Badge: Checklist Completo
+  const totalTarefas = Object.keys(data.check).length;
+  const totalMarcadas = Object.values(data.check).filter(v => v).length;
+  if (totalTarefas > 0 && totalTarefas === totalMarcadas && !data.badges.includes('🌟 Checklist Completo')) {
+    novasBadges.push('🌟 Checklist Completo');
+  }
+
+  // Adiciona novas badges e atualiza visual
+  if (novasBadges.length) {
+    data.badges.push(...novasBadges);
+    atualizarBadges();
+    showToast(`🎉 Você ganhou ${novasBadges.join(', ')}!`);
+    salvarDados();
+    startConfeteComSom(150);
+  }
+};
+
+// ================= Intercepta alterações de checkboxes ======================
+document.addEventListener('change', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'checkbox') {
+    atualizarBadgesAutomaticos();
+  }
+});
+
+  // ================= Inicialização ======================
 gerar();
 document.body.classList.toggle('dark-mode',data.dark);
 atualizarUsuarioLogado();
