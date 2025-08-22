@@ -159,11 +159,8 @@ const startConfeteComSom = (count=200) => {
 };
 
 // ================= Funções ======================
-const salvarDados=()=>{ localStorage.setItem('data',JSON.stringify(data)); atualizarProgresso(); atualizarBadges(); };
 const atualizarProgresso = () => { 
-  // Total de tarefas planejadas
-  let total = 0;
-  let marcados = 0;
+  let total = 0, marcados = 0;
   
   Object.entries(plano).forEach(([semana, tarefas], idx) => {
     total += tarefas.length;
@@ -172,21 +169,20 @@ const atualizarProgresso = () => {
     });
   });
 
-  const perc = Math.round((marcados/total)*100);
-  document.getElementById('progressBar').style.width = perc+'%';
-  document.getElementById('progressBar').textContent = perc+'%';
+  const perc = total ? Math.round((marcados/total)*100) : 0;
+  const progressBar = document.getElementById('progressBar');
+  progressBar.style.width = perc+'%';
+  progressBar.textContent = perc+'%';
 
   // Progresso semanal
-  Object.keys(plano).forEach((s,i)=>{
+  Object.keys(plano).forEach((s, i) => {
     const tarefasSemana = plano[s];
     const marcadosS = tarefasSemana.filter((t, j) => data.check[`s${i}d${j}`]).length;
     const totalS = tarefasSemana.length;
-    
     const fill = document.getElementById(`semana-progress-fill-${i}`);
-    if(fill) fill.style.width = Math.round(marcadosS/totalS*100)+'%';
-    
+    if (fill) fill.style.width = totalS ? Math.round((marcadosS/totalS)*100)+'%' : '0%';
     const texto = document.getElementById(`semana-progress-${i}`);
-    if(texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
+    if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
   });
 };
 
@@ -350,28 +346,25 @@ const atualizarBadges=()=>{ const container=document.getElementById('badges-cont
 const atualizarBadgesAutomaticos = () => {
   const novasBadges = [];
 
-  // Badge: Primeira Tarefa
+  // Primeira Tarefa
   if (Object.values(data.check).some(v => v) && !data.badges.includes('🏅 Primeira Tarefa')) {
     novasBadges.push('🏅 Primeira Tarefa');
   }
 
-  // Badge: Semana Completa
+  // Semana Completa
   Object.entries(plano).forEach(([semana, tarefas], idx) => {
     const todasMarcadas = tarefas.every((t, i) => data.check[`s${idx}d${i}`]);
     const badgeNome = `✅ ${semana} Completa`;
-    if (todasMarcadas && !data.badges.includes(badgeNome)) {
-      novasBadges.push(badgeNome);
-    }
+    if (todasMarcadas && !data.badges.includes(badgeNome)) novasBadges.push(badgeNome);
   });
 
-  // Badge: Checklist Completo
-  const totalTarefas = Object.keys(data.check).length;
+  // Checklist Completo
+  const totalTarefas = Object.values(data.check).length;
   const totalMarcadas = Object.values(data.check).filter(v => v).length;
-  if (totalTarefas > 0 && totalTarefas === totalMarcadas && !data.badges.includes('🌟 Checklist Completo')) {
+  if (totalTarefas && totalTarefas === totalMarcadas && !data.badges.includes('🌟 Checklist Completo')) {
     novasBadges.push('🌟 Checklist Completo');
   }
 
-  // Adiciona novas badges e atualiza visual
   if (novasBadges.length) {
     data.badges.push(...novasBadges);
     atualizarBadges();
