@@ -268,8 +268,24 @@ const gerarPDF=()=>{
     if(data.notes[`s${idx}`]){ const p=document.createElement('p'); p.textContent='Notas: '+data.notes[`s${idx}`]; p.style.fontStyle='italic'; conteudo.appendChild(p); }
   });
   html2pdf().from(conteudo).save('checklist_avancado.pdf');
+};const exportarParaCalendario=()=>{
+  let icsContent = 'BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n';
+  Object.entries(plano).forEach(([semana,tarefas],i)=>{
+    tarefas.forEach((t,j)=>{
+      if(data.check[`s${i}d${j}`]){
+        const start = new Date(); start.setDate(start.getDate()+i); start.setHours(9+j,0,0);
+        const end = new Date(start); end.setHours(start.getHours()+1);
+        const fmt = d=>d.toISOString().replace(/-|:|\.\d+/g,'');
+        icsContent += `BEGIN:VEVENT\nSUMMARY:${t}\nDTSTART:${fmt(start)}\nDTEND:${fmt(end)}\nEND:VEVENT\n`;
+      }
+    });
+  });
+  icsContent += 'END:VCALENDAR';
+  const blob = new Blob([icsContent], { type:'text/calendar' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'checklist.ics'; a.click();
+  showToast('Calendário exportado!');
 };
-const exportarParaCalendario=()=>{ showToast('Exportação para calendário não implementada ainda'); };
+
 const importar=()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=()=>{ try{ const obj=JSON.parse(reader.result); data.check=obj.check||{}; data.notes=obj.notes||{}; salvarDados(); gerar(); showToast('Importação concluída!'); } catch(err){ showToast('Erro ao importar JSON'); } }; reader.readAsText(file); }; input.click(); };
 
 // ================= Badges ======================
