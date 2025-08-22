@@ -239,9 +239,15 @@ const gerar=()=>{
   atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao();
 };
 
-const marcarSemana=(idx,marcar)=>{ 
-  document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{ chk.checked=marcar; data.check[chk.id]=marcar; }); 
-  salvarDados(); 
+// ================= Marcar Semana ======================
+const marcarSemana = (idx, marcar) => {
+  document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk => {
+    chk.checked = marcar;
+    data.check[chk.id] = marcar;
+  });
+  salvarDados();
+  atualizarProgresso(); // garante que progresso, badges e confete sejam atualizados
+  if (modoRevisaoAtivo) ativarModoRevisao();
 };
 
 const toggleCollapse=idx=>{
@@ -258,54 +264,71 @@ const filtrar=()=>{
   }); 
 };
 
-const ativarModoRevisao=()=>{
-  modoRevisaoAtivo=!modoRevisaoAtivo;
-  document.querySelectorAll('.semana').forEach(div=>{
-    const incompletas = [...div.querySelectorAll('input')].some(i=>!i.checked);
+// ================= Modo Revisão ======================
+const ativarModoRevisao = () => {
+  modoRevisaoAtivo = !modoRevisaoAtivo;
+  document.querySelectorAll('.semana').forEach(div => {
+    const incompletas = [...div.querySelectorAll('input')].some(i => !i.checked);
     div.classList.toggle('modo-revisao', modoRevisaoAtivo && incompletas);
   });
 };
 
-const atualizarProgresso=()=>{
- // Todos os checkboxes do DOM
-  const todosCheckboxes = document.querySelectorAll('.tarefas input');
-  const total = todosCheckboxes.length;
-  const marcados = [...todosCheckboxes].filter(chk => chk.checked).length;
-  const perc = Math.round(total ? marcados / total * 100 : 0);
+// ================= Atualizar Progresso ======================
+const atualizarProgresso = () => {
+  let progressoMudouSemana = [];
 
-  // Atualiza barra total
-  const progressBar = document.getElementById('progressBar');
-  progressBar.style.width = perc + '%';
-  progressBar.textContent = perc + '%';
-
-  // Atualiza progresso semanal
+  // Atualiza progresso semanal e verifica se alguma semana passou para 100%
   Object.keys(plano).forEach((s, i) => {
     const inputs = document.querySelectorAll(`#tarefas-${i} input`);
     const totalS = inputs.length;
     const marcadosS = [...inputs].filter(chk => chk.checked).length;
 
     const fill = document.getElementById(`semana-progress-fill-${i}`);
-    if (fill) fill.style.width = Math.round(totalS ? marcadosS / totalS * 100 : 0) + '%';
+    if (fill) fill.style.width = totalS ? (marcadosS / totalS * 100) + '%' : '0%';
 
     const texto = document.getElementById(`semana-progress-${i}`);
     if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
+
+    // Verifica se progresso passou para 100%
+    const estavaCompleta = fill.dataset.complete === 'true';
+    const agoraCompleta = (marcadosS === totalS && totalS > 0);
+    if (!estavaCompleta && agoraCompleta) progressoMudouSemana.push(i);
+    fill.dataset.complete = agoraCompleta ? 'true' : 'false';
   });
+
+  // Dispara confete se alguma semana foi concluída agora
+  if (progressoMudouSemana.length > 0) startConfete();
+
+  // Atualiza progresso total
+  const todosCheckboxes = document.querySelectorAll('.tarefas input');
+  const total = todosCheckboxes.length;
+  const marcados = [...todosCheckboxes].filter(chk => chk.checked).length;
+  const perc = Math.round(total ? marcados / total * 100 : 0);
+
+  const progressBar = document.getElementById('progressBar');
+  progressBar.style.width = perc + '%';
+  progressBar.textContent = perc + '%';
+
+  // Atualiza badges automaticamente
+  atualizarBadgesSemana();
 };
 
-  const atualizarBadgesSemana = () => {
+
+  // ================= Atualizar Badges Semana ======================
+const atualizarBadgesSemana = () => {
   Object.keys(plano).forEach((s, i) => {
     const inputs = document.querySelectorAll(`#tarefas-${i} input`);
     const todasMarcadas = [...inputs].every(chk => chk.checked);
-    const badgeName = `Semana ${i+1} Concluída`;
+    const badgeName = `Semana ${i + 1} Concluída`;
 
     // Adiciona badge se todas as tarefas estiverem marcadas e ainda não tiver
-    if(todasMarcadas && !data.badges.includes(badgeName)){
+    if (todasMarcadas && !data.badges.includes(badgeName)) {
       data.badges.push(badgeName);
       showToast(`🏅 ${badgeName} conquistada!`);
     }
 
     // Remove badge se alguma tarefa foi desmarcada
-    if(!todasMarcadas && data.badges.includes(badgeName)){
+    if (!todasMarcadas && data.badges.includes(badgeName)) {
       data.badges = data.badges.filter(b => b !== badgeName);
     }
   });
@@ -434,10 +457,11 @@ function exportarParaCalendario(){
 }
 
 // ================= Inicialização ======================
-document.body.classList.toggle('dark-mode',data.dark);
+document.body.classList.toggle('dark-mode', data.dark);
 gerar();
-atualizarBadges();
+atualizarProgresso(); // garante que progresso e badges sejam consistentes ao abrir
 atualizarUsuarioLogado();
+  
 </script>
 </body>
 </html>
