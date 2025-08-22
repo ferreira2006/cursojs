@@ -12,32 +12,32 @@
 
 <div class="top-bar">
   <div class="top-bar-group">
-    <button onclick="toggleTheme()">🌙/☀️ Tema</button>
-    <button onclick="ativarModoRevisao()">📝 Modo Revisão</button>
-    <button onclick="limpar()">🗑️ Limpar Tudo</button>
+    <button id="btn-toggle-theme">🌙/☀️ Tema</button>
+    <button id="btn-modo-revisao">📝 Modo Revisão</button>
+    <button id="btn-limpar">🗑️ Limpar Tudo</button>
   </div>
 
   <div class="top-bar-group dropdown">
     <button class="dropbtn">📤 Exportar</button>
     <div class="dropdown-content">
-      <button onclick="exportar()">JSON</button>
-      <button onclick="exportarAvancado()">Avançado</button>
-      <button onclick="gerarPDFRelatorio()">PDF</button>
-      <button onclick="exportarParaCalendario()">Calendário</button>
+      <button id="btn-exportar-json">JSON</button>
+      <button id="btn-exportar-avancado">Avançado</button>
+      <button id="btn-gerar-pdf">PDF</button>
+      <button id="btn-exportar-calendario">Calendário</button>
     </div>
   </div>
 
   <div class="top-bar-group">
-    <button onclick="importar()">📥 Importar JSON</button>
+    <button id="btn-importar">📥 Importar JSON</button>
   </div>
 
   <div class="top-bar-group google-group">
     <div class="dropdown">
       <button class="dropbtn">🔑 Google</button>
       <div class="dropdown-content">
-        <button onclick="loginGoogle()">Login</button>
-        <button onclick="logoutGoogle()">Logout</button>
-        <button onclick="salvarNoDrive()">Salvar no Drive</button>
+        <button id="btn-login-google">Login</button>
+        <button id="btn-logout-google">Logout</button>
+        <button id="btn-salvar-drive">Salvar no Drive</button>
       </div>
     </div>
     <div id="usuario-logado" style="display:flex; align-items:center; gap:5px; margin-left:10px;">
@@ -47,7 +47,7 @@
   </div>
 
   <div class="top-bar-group busca-group">
-    <input type="text" id="busca" placeholder="Buscar..." onkeyup="filtrar()">
+    <input type="text" id="busca" placeholder="Buscar...">
   </div>
 </div>
 
