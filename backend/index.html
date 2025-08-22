@@ -397,9 +397,6 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   const pageHeight = doc.internal.pageSize.getHeight();
   const contentWidth = pageWidth - 2 * marginLeft;
 
-  // Função para limpar/acertar caracteres especiais
-  const limparTexto = txt => txt.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-
   // =================== Cabeçalho ===================
   const yStart = 15;
   doc.setFontSize(16);
@@ -429,14 +426,14 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 102, 204);
       if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-      doc.text(limparTexto(titulo), marginLeft, y);
+      doc.text(titulo, marginLeft, y); // <-- mantém acentos
       y += lineHeight;
 
       const tarefas = semanaDiv.querySelectorAll('.tarefas div span');
       tarefas.forEach(tarefaSpan => {
         if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
 
-        let txt = limparTexto(tarefaSpan.innerText);
+        let txt = tarefaSpan.innerText;
         let cor = [0,0,0];
         if (txt.includes('✅')) cor = [0,150,0];
         else if (txt.includes('❌')) cor = [200,0,0];
@@ -466,6 +463,7 @@ function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOSt
   doc.save('relatorio.pdf');
   showToast('PDF gerado');
 };
+
 
 function exportarParaCalendario(){
   let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
