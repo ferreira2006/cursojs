@@ -209,6 +209,13 @@ const gerar = () => {
   if (modoRevisaoAtivo) ativarModoRevisao();
 };
 
+const filtrar = () => { 
+  const termo = dom.inputBusca.value.toLowerCase(); 
+  document.querySelectorAll('.semana').forEach(div => {
+    div.style.display = div.innerText.toLowerCase().includes(termo) ? 'flex' : 'none'; 
+  }); 
+};
+
 // ======================= EVENTOS GERAIS =======================
 dom.conteudo.addEventListener('click', e => {
   const target = e.target;
