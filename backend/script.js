@@ -1,427 +1,199 @@
-const coresSemana=['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
-const plano={
-  "Semana 1 – Fundamentos":["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
-  "Semana 2 – Controle de Fluxo":["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
-  "Semana 3 – Funções e Escopo":["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
-  "Semana 4 – Arrays e Objetos":["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
-  "Semana 5 – DOM":["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
-  "Semana 6 – Projeto To-Do List":["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
-  "Semana 7 – JS Moderno":["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
-  "Semana 8 – Projeto Final":["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
+// ======================= CONFIGURAÇÕES =======================
+const coresSemana = ['#FFCDD2','#C8E6C9','#BBDEFB','#FFF9C4','#D1C4E9','#FFE0B2','#B2DFDB','#F8BBD0'];
+const plano = {
+  "Semana 1 – Fundamentos": ["O que é JS, onde roda, configurar ambiente.","Variáveis e tipos de dados.","Operadores matemáticos e lógicos.","Exercícios práticos."],
+  "Semana 2 – Controle de Fluxo": ["if, else if, else.","Operador ternário e switch.","Estruturas de repetição: for, while, do...while.","Exercícios práticos."],
+  "Semana 3 – Funções e Escopo": ["Declaração de funções.","Arrow functions.","Escopo global, local e de bloco.","setTimeout e setInterval."],
+  "Semana 4 – Arrays e Objetos": ["Criar arrays e usar .push(), .pop().",".map(), .filter(), .reduce().","Objetos e iteração.","Exercícios práticos."],
+  "Semana 5 – DOM": ["Selecionar elementos e alterar conteúdo.","Alterar estilos e criar/remover elementos.","Eventos: onclick, addEventListener.","Exercícios práticos."],
+  "Semana 6 – Projeto To-Do List": ["Estrutura HTML e input para tarefas.","Adicionar itens à lista.","Marcar como concluído.","Excluir tarefas.","Salvar no localStorage."],
+  "Semana 7 – JS Moderno": ["Template literals, desestruturação.","Spread/rest, módulos.","fetch e Promises.","async/await."],
+  "Semana 8 – Projeto Final": ["Planejar projeto.","Estruturar HTML/CSS.","Criar funções principais.","Consumir API.","Finalizar e melhorias extras."]
 };
-const BACKEND_URL='https://cursojs-8012.onrender.com';
-let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark:false, historico:[], pontos:0, badges:[] };
-let modoRevisaoAtivo=false;
+const BACKEND_URL = 'https://cursojs-8012.onrender.com';
+let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
+let modoRevisaoAtivo = false;
+let suprimirToasts = false;
 
-  let suprimirToasts = false; // flag global
+// ======================= DOM ELEMENTS =======================
+const dom = {
+  btnTema: document.querySelector('.top-bar-group button:nth-child(1)'),
+  btnRevisao: document.querySelector('.top-bar-group button:nth-child(2)'),
+  btnLimpar: document.querySelector('.top-bar-group button:nth-child(3)'),
+  btnExportJSON: document.querySelector('.dropdown-content button:nth-child(1)'),
+  btnExportAvancado: document.querySelector('.dropdown-content button:nth-child(2)'),
+  btnExportPDF: document.querySelector('.dropdown-content button:nth-child(3)'),
+  btnExportCalendar: document.querySelector('.dropdown-content button:nth-child(4)'),
+  btnImport: document.querySelector('.top-bar-group:nth-child(3) button'),
+  btnLoginGoogle: document.querySelector('.google-group .dropdown-content button:nth-child(1)'),
+  btnLogoutGoogle: document.querySelector('.google-group .dropdown-content button:nth-child(2)'),
+  btnSaveDrive: document.querySelector('.google-group .dropdown-content button:nth-child(3)'),
+  inputBusca: document.getElementById('busca'),
+  confeteCanvas: document.getElementById('confete-canvas'),
+  toastContainer: document.getElementById('toast-container'),
+  badgesContainer: document.getElementById('badges-container'),
+  conteudo: document.getElementById('conteudo'),
+  progressBar: document.getElementById('progressBar'),
+  usuarioAvatar: document.getElementById('usuario-avatar'),
+  usuarioEmail: document.getElementById('usuario-email')
+};
 
-// ================= Toast ======================
-const showToast = (msg, duration=3000) => {
-  if(suprimirToasts) return; // não exibe toast se a flag estiver ativa
-  const container = document.getElementById('toast-container');
+// ======================= TOAST =======================
+const showToast = (msg, duration = 3000) => {
+  if (suprimirToasts) return;
   const toast = document.createElement('div'); 
   toast.className = 'toast'; 
   toast.innerHTML = msg; 
-  container.appendChild(toast);
+  dom.toastContainer.appendChild(toast);
   setTimeout(() => toast.classList.add('show'), 50);
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => container.removeChild(toast), 300);
+    setTimeout(() => dom.toastContainer.removeChild(toast), 300);
   }, duration);
 };
 
-// ================= Confete ======================
-const confeteCanvas=document.getElementById('confete-canvas');
-const ctx=confeteCanvas.getContext('2d');
-confeteCanvas.width=window.innerWidth;
-confeteCanvas.height=window.innerHeight;
+// ======================= CONFETE =======================
+const ctx = dom.confeteCanvas.getContext('2d');
+dom.confeteCanvas.width = window.innerWidth;
+dom.confeteCanvas.height = window.innerHeight;
 
 let confeteParticles = [];
-const confeteCores=['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
+const confeteCores = ['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
 
-const startConfete = (count=200)=>{
-  for(let i=0;i<count;i++){
+const startConfete = (count = 200) => {
+  for (let i = 0; i < count; i++) {
     confeteParticles.push({
-      x:Math.random()*confeteCanvas.width,
-      y:-10,
-      dx:(Math.random()-0.5)*8,
-      dy:Math.random()*7+3,
-      size:Math.random()*10+5,
-      color: confeteCores[Math.floor(Math.random()*confeteCores.length)],
-      angle:Math.random()*360,
-      spin:Math.random()*0.2-0.1,
-      life:Math.random()*120+80
+      x: Math.random() * dom.confeteCanvas.width,
+      y: -10,
+      dx: (Math.random() - 0.5) * 8,
+      dy: Math.random() * 7 + 3,
+      size: Math.random() * 10 + 5,
+      color: confeteCores[Math.floor(Math.random() * confeteCores.length)],
+      angle: Math.random() * 360,
+      spin: Math.random() * 0.2 - 0.1,
+      life: Math.random() * 120 + 80
     });
   }
   animateConfete();
-  setTimeout(()=>{ confeteParticles.length=0; ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height); },7000);
+  setTimeout(() => { confeteParticles.length = 0; ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height); }, 7000);
 };
 
-const animateConfete = ()=>{
-  ctx.clearRect(0,0,confeteCanvas.width,confeteCanvas.height);
-  confeteParticles.forEach(p=>{
-    p.x+=p.dx; p.y+=p.dy; p.angle+=p.spin; p.life-=2;
-    const rad=p.angle*Math.PI/180;
-    ctx.fillStyle=p.color;
+const animateConfete = () => {
+  ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height);
+  confeteParticles.forEach(p => {
+    p.x += p.dx; p.y += p.dy; p.angle += p.spin; p.life -= 2;
+    const rad = p.angle * Math.PI / 180;
+    ctx.fillStyle = p.color;
     ctx.beginPath();
     ctx.save();
-    ctx.translate(p.x,p.y);
+    ctx.translate(p.x, p.y);
     ctx.rotate(rad);
-    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*2);
+    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 2);
     ctx.restore();
-    p.size*=0.98;
+    p.size *= 0.98;
   });
-  confeteParticles = confeteParticles.filter(p=>p.life>0);
-  if(confeteParticles.length>0) requestAnimationFrame(animateConfete);
+  confeteParticles = confeteParticles.filter(p => p.life > 0);
+  if (confeteParticles.length > 0) requestAnimationFrame(animateConfete);
 };
 
-window.addEventListener('resize',()=>{ confeteCanvas.width=window.innerWidth; confeteCanvas.height=window.innerHeight; });
+window.addEventListener('resize', () => {
+  dom.confeteCanvas.width = window.innerWidth;
+  dom.confeteCanvas.height = window.innerHeight;
+});
 
-// ================= Funções principais ======================
-const salvarDados=()=>{ 
-  localStorage.setItem('data',JSON.stringify(data)); 
+// ======================= FUNÇÕES AUXILIARES =======================
+const salvarDados = () => { 
+  localStorage.setItem('data', JSON.stringify(data)); 
   atualizarProgresso(); 
-  atualizarBadgesSemana(); // agora as badges são automáticas
+  atualizarBadgesSemana();
 };
 
+const limparTexto = txt => txt.replace(/[\x00-\x1F\x7F]/g, '').trim();
 
-const criarTarefa=(semana,idx,t,i)=>{
-  const chk=document.createElement('input'); chk.type='checkbox'; chk.id=`s${idx}d${i}`;
-  chk.checked=data.check[chk.id]||false;
-  chk.onchange=()=>{
-    data.check[chk.id]=chk.checked; salvarDados(); 
-    if([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i=>i.checked)) startConfete(); 
-    if(modoRevisaoAtivo) ativarModoRevisao(); 
-  };
-  const label=document.createElement('span'); label.textContent=t;
-  const div=document.createElement('div'); div.appendChild(chk); div.appendChild(label);
+// ======================= FUNÇÕES DE GERAÇÃO DE CONTEÚDO =======================
+const criarTarefa = (semana, idx, tarefa, i) => {
+  const chk = document.createElement('input'); 
+  chk.type = 'checkbox'; 
+  chk.id = `s${idx}d${i}`;
+  chk.checked = data.check[chk.id] || false;
+  chk.addEventListener('change', () => {
+    data.check[chk.id] = chk.checked; 
+    salvarDados();
+    if ([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i => i.checked)) startConfete();
+    if (modoRevisaoAtivo) ativarModoRevisao();
+  });
+  const label = document.createElement('span'); 
+  label.textContent = tarefa;
+  const div = document.createElement('div'); 
+  div.append(chk, label);
   return div;
 };
 
-const gerarSemana=(semana,tarefas,idx)=>{
-  const div=document.createElement('div'); div.className='semana'; div.style.background=coresSemana[idx%coresSemana.length];
+const gerarSemana = (semana, tarefas, idx) => {
+  const div = document.createElement('div'); 
+  div.className = 'semana'; 
+  div.style.background = coresSemana[idx % coresSemana.length];
 
-  const header=document.createElement('div'); header.className='semana-header';
-  header.innerHTML=`
-    <h2 onclick="toggleCollapse(${idx})">
+  const header = document.createElement('div'); 
+  header.className = 'semana-header';
+  header.innerHTML = `
+    <h2>
       ${semana} <span class="expand-icon collapsed">▼</span>
     </h2>
     <div style="display:flex;gap:5px;flex-wrap:wrap;">
-      <button class="botao-semana" onclick="marcarSemana(${idx},true)">Marcar Todos</button>
-      <button class="botao-semana" onclick="marcarSemana(${idx},false)">Resetar</button>
+      <button class="botao-semana" data-action="marcarTodos" data-idx="${idx}">Marcar Todos</button>
+      <button class="botao-semana" data-action="resetar" data-idx="${idx}">Resetar</button>
     </div>
   `;
   div.appendChild(header);
 
-  const progresso=document.createElement('div'); progresso.className='semana-progress'; progresso.id=`semana-progress-${idx}`; div.appendChild(progresso);
+  const progresso = document.createElement('div'); 
+  progresso.className = 'semana-progress'; 
+  progresso.id = `semana-progress-${idx}`; 
+  div.appendChild(progresso);
 
-  const progressBar=document.createElement('div'); progressBar.className='semana-progress-bar'; 
-  progressBar.innerHTML=`<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; div.appendChild(progressBar);
+  const progressBar = document.createElement('div'); 
+  progressBar.className = 'semana-progress-bar'; 
+  progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; 
+  div.appendChild(progressBar);
 
-  const tarefasDiv=document.createElement('div'); tarefasDiv.className='tarefas'; tarefasDiv.id=`tarefas-${idx}`; tarefasDiv.style.display='none';
-  tarefas.forEach((t,i)=>tarefasDiv.appendChild(criarTarefa(semana,idx,t,i)));
+  const tarefasDiv = document.createElement('div'); 
+  tarefasDiv.className = 'tarefas'; 
+  tarefasDiv.id = `tarefas-${idx}`; 
+  tarefasDiv.style.display = 'none';
+  tarefas.forEach((t,i) => tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
   div.appendChild(tarefasDiv);
 
   const nota = document.createElement('textarea');
   nota.className = 'nota';
   nota.placeholder = 'Anotações...';
   nota.value = data.notes[`s${idx}`] || '';
-  nota.oninput = () => { data.notes[`s${idx}`] = nota.value; salvarDados(); };
+  nota.addEventListener('input', () => { data.notes[`s${idx}`] = nota.value; salvarDados(); });
   div.appendChild(nota);
 
   return div;
 };
 
-const gerar=()=>{
-  const container=document.getElementById('conteudo'); container.innerHTML='';
-  Object.entries(plano).forEach(([semana,tarefas],idx)=>container.appendChild(gerarSemana(semana,tarefas,idx)));
-  atualizarProgresso(); if(modoRevisaoAtivo) ativarModoRevisao();
-};
-
-// ================= Marcar Semana ======================
-const marcarSemana = (idx, marcar) => {
-  document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk => {
-    chk.checked = marcar;
-    data.check[chk.id] = marcar;
-  });
-  salvarDados();
-  atualizarProgresso(); // garante que progresso, badges e confete sejam atualizados
+const gerar = () => {
+  dom.conteudo.innerHTML = '';
+  Object.entries(plano).forEach(([semana, tarefas], idx) => dom.conteudo.appendChild(gerarSemana(semana, tarefas, idx)));
+  atualizarProgresso();
   if (modoRevisaoAtivo) ativarModoRevisao();
 };
 
-const toggleCollapse=idx=>{
-  const el=document.getElementById(`tarefas-${idx}`);
-  const icon=document.querySelectorAll('.expand-icon')[idx];
-  if(el.style.display==='none'){ el.style.display='flex'; icon.classList.remove('collapsed'); } 
-  else { el.style.display='none'; icon.classList.add('collapsed'); }
-};
+// ======================= EVENTOS GERAIS =======================
+dom.conteudo.addEventListener('click', e => {
+  const target = e.target;
+  if (target.dataset.action === 'marcarTodos') marcarSemana(target.dataset.idx, true);
+  if (target.dataset.action === 'resetar') marcarSemana(target.dataset.idx, false);
+  if (target.tagName === 'H2') toggleCollapse([...dom.conteudo.querySelectorAll('h2')].indexOf(target));
+});
 
-const filtrar=()=>{ 
-  const termo=document.getElementById('busca').value.toLowerCase(); 
-  document.querySelectorAll('.semana').forEach(div=>{
-    div.style.display=div.innerText.toLowerCase().includes(termo)?'flex':'none'; 
-  }); 
-};
+// Busca dinâmica
+dom.inputBusca.addEventListener('input', filtrar);
 
-// ================= Modo Revisão ======================
-const ativarModoRevisao = () => {
-  modoRevisaoAtivo = !modoRevisaoAtivo;
-  document.querySelectorAll('.semana').forEach(div => {
-    const incompletas = [...div.querySelectorAll('input')].some(i => !i.checked);
-    div.classList.toggle('modo-revisao', modoRevisaoAtivo && incompletas);
-  });
-};
-
-// ================= Atualizar Progresso ======================
-const atualizarProgresso = () => {
-  let progressoMudouSemana = [];
-
-  // Atualiza progresso semanal e verifica se alguma semana passou para 100%
-  Object.keys(plano).forEach((s, i) => {
-    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
-    const totalS = inputs.length;
-    const marcadosS = [...inputs].filter(chk => chk.checked).length;
-
-    const fill = document.getElementById(`semana-progress-fill-${i}`);
-    if (fill) fill.style.width = totalS ? (marcadosS / totalS * 100) + '%' : '0%';
-
-    const texto = document.getElementById(`semana-progress-${i}`);
-    if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
-
-    // Verifica se progresso passou para 100%
-    const estavaCompleta = fill.dataset.complete === 'true';
-    const agoraCompleta = (marcadosS === totalS && totalS > 0);
-    if (!estavaCompleta && agoraCompleta) progressoMudouSemana.push(i);
-    fill.dataset.complete = agoraCompleta ? 'true' : 'false';
-  });
-
-  // Dispara confete se alguma semana foi concluída agora
-  if (progressoMudouSemana.length > 0) startConfete();
-
-  // Atualiza progresso total
-  const todosCheckboxes = document.querySelectorAll('.tarefas input');
-  const total = todosCheckboxes.length;
-  const marcados = [...todosCheckboxes].filter(chk => chk.checked).length;
-  const perc = Math.round(total ? marcados / total * 100 : 0);
-
-  const progressBar = document.getElementById('progressBar');
-  progressBar.style.width = perc + '%';
-  progressBar.textContent = perc + '%';
-
-  // Atualiza badges automaticamente
-  atualizarBadgesSemana();
-};
-
-
-  // ================= Atualizar Badges Semana ======================
-const atualizarBadgesSemana = () => {
-  Object.keys(plano).forEach((s, i) => {
-    const inputs = document.querySelectorAll(`#tarefas-${i} input`);
-    const todasMarcadas = [...inputs].every(chk => chk.checked);
-    const badgeName = `Semana ${i + 1} Concluída`;
-
-    // Adiciona badge se todas as tarefas estiverem marcadas e ainda não tiver
-    if (todasMarcadas && !data.badges.includes(badgeName)) {
-      data.badges.push(badgeName);
-      if (!suprimirToasts) showToast(`🏅 ${badgeName} conquistada!`);
-    }
-
-    // Remove badge se alguma tarefa foi desmarcada
-    if (!todasMarcadas && data.badges.includes(badgeName)) {
-      data.badges = data.badges.filter(b => b !== badgeName);
-      // NÃO mostramos toast ao remover badge
-    }
-  });
-
-  atualizarBadges(); // Atualiza interface
-};
-  
-const atualizarBadges=()=>{
-  const container=document.getElementById('badges-container'); container.innerHTML='';
-  data.badges.forEach(b=>{ const span=document.createElement('span'); span.className='badge'; span.textContent=b; container.appendChild(span); });
-};
-
-const limpar=()=>{ 
-  if (confirm('Deseja realmente limpar tudo?')){
-    suprimirToasts = true; // ativa supressão
-    data = {check:{}, notes:{}, dark:data.dark, historico:[], pontos:0, badges:[]}; 
-    salvarDados(); 
-    gerar(); 
-    suprimirToasts = false; // desativa supressão
-  }
-};
-
-const toggleTheme=()=>{ data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(); };
-
-// ================= Google ======================
-let oAuthWindow;
-const loginGoogle = async () => { 
-  try {
-    const resp = await fetch(`${BACKEND_URL}/auth-url`);
-    const dataLogin = await resp.json();
-    if (!dataLogin.url) { showToast('Erro ao obter URL de login'); return; }
-    const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600');
-    window.addEventListener('message', e => {
-      if (e.data.googleToken) { localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); }
-    }, { once: true });
-  } catch (err) { console.error(err); showToast('Erro ao iniciar login Google'); }
-};
-const logoutGoogle=()=>{ localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); };
-const atualizarUsuarioLogado=()=>{
-  const token=JSON.parse(localStorage.getItem('googleToken'));
-  const avatar=document.getElementById('usuario-avatar'); const email=document.getElementById('usuario-email');
-  if(token){ fetch(`${BACKEND_URL}/userinfo`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})}).then(r=>r.json()).then(u=>{ avatar.src=u.picture; avatar.style.display='block'; email.textContent=u.email; }).catch(()=>{ avatar.style.display='none'; email.textContent='Erro ao carregar usuário'; }); }
-  else{ avatar.style.display='none'; email.textContent='Nenhuma conta conectada'; }
-};
-const salvarNoDrive = async () => {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) { showToast('Você precisa fazer login primeiro'); return; }
-  const payload = { token, filename: 'checklist.json', content: data };
-  try {
-    const resp = await fetch(`${BACKEND_URL}/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const result = await resp.json();
-    if (result.success) { const link = `https://drive.google.com/file/d/${result.fileId}/view`; showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`); }
-    else { showToast('Erro ao salvar no Drive'); console.error(result); }
-  } catch (err) { console.error(err); showToast('Erro ao salvar no Drive'); }
-};
-
-// ================= Export/Import ======================
-const exportar=()=>{ const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click(); };
-const importar=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json'; inp.onchange=e=>{ const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{ try{ data=JSON.parse(ev.target.result); salvarDados(); gerar(); showToast('Importado com sucesso'); }catch(err){ showToast('Erro ao importar'); console.error(err); } }; reader.readAsText(file); }; inp.click(); };
-function exportarAvancado(){ const avancado={data,exportadoEm:new Date().toISOString()}; const blob=new Blob([JSON.stringify(avancado)],{type:"application/json"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist-avancado.json"; a.click(); }
-
- const gerarPDFRelatorio = () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  const marginLeft = 15, marginTop = 25, lineHeight = 7;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const contentWidth = pageWidth - 2 * marginLeft;
-
-  // Função para limpar caracteres invisíveis
-  const limparTexto = txt => txt.replace(/[\x00-\x1F\x7F]/g, '').trim();
-
-  // Função para quebrar página automaticamente
-  const checkPageBreak = (y) => y > pageHeight - 20 ? (doc.addPage(), marginTop) : y;
-
-  // =================== Cabeçalho ===================
-  doc.setFont("helvetica");
-  doc.setFontSize(16);
-  doc.setTextColor(0, 102, 204);
-  doc.text("Relatório - Curso JavaScript", marginLeft, 15);
-
-  const hoje = new Date();
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(120);
-  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, 22);
-
-  doc.setDrawColor(0, 102, 204);
-  doc.setLineWidth(0.5);
-  doc.line(marginLeft, 27, pageWidth - marginLeft, 27);
-
-  let y = 35;
-
-  // =================== Corpo ===================
-  const container = document.getElementById('conteudo');
-  if (container) {
-    container.querySelectorAll('.semana').forEach(semanaDiv => {
-      const h2 = semanaDiv.querySelector('h2');
-      h2.querySelectorAll('span').forEach(el => el.remove()); // remove setas/ícones
-      let titulo = limparTexto(h2.innerText);
-
-      y = checkPageBreak(y);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 102, 204);
-      doc.text(titulo, marginLeft, y);
-      y += lineHeight;
-
-      // =================== Tarefas ===================
-      semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
-        y = checkPageBreak(y);
-
-        let txt = limparTexto(tarefaSpan.innerText);
-        let cor = [0, 0, 0];
-        if (txt.includes('✅')) cor = [0, 150, 0];
-        else if (txt.includes('❌')) cor = [200, 0, 0];
-        doc.setTextColor(...cor);
-
-        doc.splitTextToSize('• ' + txt, contentWidth)
-           .forEach(l => { y = checkPageBreak(y); doc.text(l, marginLeft + 5, y); y += lineHeight; });
-      });
-
-     // =================== Nota ===================
-const notaTextarea = semanaDiv.querySelector('.nota');
-if (notaTextarea && notaTextarea.value.trim()) {
-  y = checkPageBreak(y);
-
-  const offsetX = marginLeft + 5;
-  const prefixo = "Anotações: "; // já com espaço
-  const notaTexto = limparTexto(notaTextarea.value);
-
-  // Medida do prefixo
-  const prefixWidth = doc.getTextWidth(prefixo);
-
-  // Quebra de texto considerando o espaço restante da linha
-  const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - prefixWidth);
-
-  // Primeira linha: prefixo em negrito
-  doc.setFont("helvetica", "bold");
-  doc.text(prefixo, offsetX, y);
-
-  doc.setFont("helvetica", "normal");
-  if (linhasNota.length > 0) {
-    doc.text(linhasNota[0], offsetX + prefixWidth, y);
-  }
-  y += lineHeight;
-
-  // Linhas seguintes
-  for (let i = 1; i < linhasNota.length; i++) {
-    y = checkPageBreak(y);
-    doc.text(linhasNota[i], offsetX, y);
-    y += lineHeight;
-  }
-
-  y += 2; // espaçamento extra após a nota
-}
-
-      y += 5;
-    });
-  }
-
-  // =================== Rodapé ===================
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(100);
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-  }
-
-  doc.save('relatorio.pdf');
-  showToast('PDF gerado');
-};
-
-
-
-function exportarParaCalendario(){
-  let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
-  Object.keys(data.notes).forEach((key,i)=>{
-    const nota=data.notes[key];
-    if(nota){
-      ics+=`BEGIN:VEVENT\nSUMMARY:${key}\nDESCRIPTION:${nota}\nDTSTART:${new Date().toISOString().replace(/[-:]/g,"").split(".")[0]}Z\nEND:VEVENT\n`;
-    }
-  });
-  ics+="END:VCALENDAR";
-  const blob=new Blob([ics],{type:"text/calendar"});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download="checklist.ics"; a.click();
-}
-
-// ================= Inicialização ======================
+// ======================= INICIALIZAÇÃO =======================
 document.body.classList.toggle('dark-mode', data.dark);
 gerar();
-atualizarProgresso(); // garante que progresso e badges sejam consistentes ao abrir
+atualizarProgresso();
 atualizarUsuarioLogado();
