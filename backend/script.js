@@ -130,45 +130,73 @@ const criarTarefa = (semana, idx, tarefa, i) => {
 };
 
 const gerarSemana = (semana, tarefas, idx) => {
-  const div = document.createElement('div'); 
-  div.className = 'semana'; 
+  const div = document.createElement('div');
+  div.className = 'semana';
   div.style.background = coresSemana[idx % coresSemana.length];
 
-  const header = document.createElement('div'); 
+  const header = document.createElement('div');
   header.className = 'semana-header';
-  header.innerHTML = `
-    <h2>
-      ${semana} <span class="expand-icon collapsed">▼</span>
-    </h2>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;">
-      <button class="botao-semana" data-action="marcarTodos" data-idx="${idx}">Marcar Todos</button>
-      <button class="botao-semana" data-action="resetar" data-idx="${idx}">Resetar</button>
-    </div>
-  `;
+
+  // Cria título
+  const h2 = document.createElement('h2');
+  h2.textContent = semana;
+  const expandIcon = document.createElement('span');
+  expandIcon.className = 'expand-icon collapsed';
+  expandIcon.textContent = '▼';
+  h2.appendChild(expandIcon);
+  h2.addEventListener('click', () => toggleCollapse(idx));
+  header.appendChild(h2);
+
+  // Botões Marcar Todos / Resetar
+  const btnContainer = document.createElement('div');
+  btnContainer.style.display = 'flex';
+  btnContainer.style.gap = '5px';
+  btnContainer.style.flexWrap = 'wrap';
+
+  const btnMarcar = document.createElement('button');
+  btnMarcar.className = 'botao-semana';
+  btnMarcar.textContent = 'Marcar Todos';
+  btnMarcar.addEventListener('click', () => marcarSemana(idx, true));
+
+  const btnResetar = document.createElement('button');
+  btnResetar.className = 'botao-semana';
+  btnResetar.textContent = 'Resetar';
+  btnResetar.addEventListener('click', () => marcarSemana(idx, false));
+
+  btnContainer.appendChild(btnMarcar);
+  btnContainer.appendChild(btnResetar);
+  header.appendChild(btnContainer);
+
   div.appendChild(header);
 
-  const progresso = document.createElement('div'); 
-  progresso.className = 'semana-progress'; 
-  progresso.id = `semana-progress-${idx}`; 
+  // Progresso semanal
+  const progresso = document.createElement('div');
+  progresso.className = 'semana-progress';
+  progresso.id = `semana-progress-${idx}`;
   div.appendChild(progresso);
 
-  const progressBar = document.createElement('div'); 
-  progressBar.className = 'semana-progress-bar'; 
-  progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`; 
+  const progressBar = document.createElement('div');
+  progressBar.className = 'semana-progress-bar';
+  progressBar.innerHTML = `<div class='semana-progress-fill' id='semana-progress-fill-${idx}'></div>`;
   div.appendChild(progressBar);
 
-  const tarefasDiv = document.createElement('div'); 
-  tarefasDiv.className = 'tarefas'; 
-  tarefasDiv.id = `tarefas-${idx}`; 
+  // Tarefas
+  const tarefasDiv = document.createElement('div');
+  tarefasDiv.className = 'tarefas';
+  tarefasDiv.id = `tarefas-${idx}`;
   tarefasDiv.style.display = 'none';
-  tarefas.forEach((t,i) => tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
+  tarefas.forEach((t, i) => tarefasDiv.appendChild(criarTarefa(semana, idx, t, i)));
   div.appendChild(tarefasDiv);
 
+  // Nota
   const nota = document.createElement('textarea');
   nota.className = 'nota';
   nota.placeholder = 'Anotações...';
   nota.value = data.notes[`s${idx}`] || '';
-  nota.addEventListener('input', () => { data.notes[`s${idx}`] = nota.value; salvarDados(); });
+  nota.addEventListener('input', () => { 
+    data.notes[`s${idx}`] = nota.value; 
+    salvarDados(); 
+  });
   div.appendChild(nota);
 
   return div;
@@ -197,3 +225,27 @@ document.body.classList.toggle('dark-mode', data.dark);
 gerar();
 atualizarProgresso();
 atualizarUsuarioLogado();
+
+// ================= Adicionando Event Listeners ======================
+
+// Top bar
+document.getElementById('btn-toggle-theme').addEventListener('click', toggleTheme);
+document.getElementById('btn-modo-revisao').addEventListener('click', ativarModoRevisao);
+document.getElementById('btn-limpar').addEventListener('click', limpar);
+
+// Export
+document.getElementById('btn-exportar-json').addEventListener('click', exportar);
+document.getElementById('btn-exportar-avancado').addEventListener('click', exportarAvancado);
+document.getElementById('btn-gerar-pdf').addEventListener('click', gerarPDFRelatorio);
+document.getElementById('btn-exportar-calendario').addEventListener('click', exportarParaCalendario);
+
+// Import
+document.getElementById('btn-importar').addEventListener('click', importar);
+
+// Google
+document.getElementById('btn-login-google').addEventListener('click', loginGoogle);
+document.getElementById('btn-logout-google').addEventListener('click', logoutGoogle);
+document.getElementById('btn-salvar-drive').addEventListener('click', salvarNoDrive);
+
+// Busca
+document.getElementById('busca').addEventListener('keyup', filtrar);
