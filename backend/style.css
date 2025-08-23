@@ -6,17 +6,62 @@ body {
   transition: background 0.3s, color 0.3s; 
 }
 
-.dark-mode { 
-  background:#1e1e1e; 
-  color:#f4f4f9; 
+h2 { 
+  margin-top: 0; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 5px; 
 }
 
-h2 { 
-  margin-top:0; 
-  cursor:pointer; 
-  display:flex; 
-  align-items:center; 
-  gap:5px; 
+/* =================== Dark Mode Refinado =================== */
+.dark-mode {
+  background: #1e1e1e;
+  color: #f4f4f9;
+}
+
+.dark-mode .top-bar {
+  background: #2b2b2b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.dark-mode .top-bar button,
+.dark-mode .dropbtn,
+.dark-mode .botao-semana {
+  background: #388e3c;
+  color: #f4f4f9;
+}
+
+.dark-mode .top-bar button:hover,
+.dark-mode .dropbtn:hover,
+.dark-mode .botao-semana:hover {
+  background: #2e7d32;
+}
+
+.dark-mode .nota {
+  background: #2b2b2b;
+  color: #f4f4f9;
+  border-color: #555;
+}
+
+.dark-mode .semana.modo-revisao {
+  background: #856404 !important;
+  color: #fff9c4;
+}
+
+.dark-mode .progress-bar,
+.dark-mode .semana-progress-fill {
+  background: #388e3c;
+  color: #f4f4f9;
+}
+
+.dark-mode .semana-progress {
+  color: #cccccc;
+}
+
+.dark-mode .badge {
+  background: #ffd700;
+  color: #000;
 }
 
 /* =================== Semana =================== */
@@ -25,13 +70,14 @@ h2 {
   border-radius:8px; 
   padding:10px; 
   margin-bottom:15px; 
-  transition: background 0.3s, color 0.3s; 
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s; 
   display:flex; 
   flex-direction:column; 
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
 .semana.modo-revisao { 
-  background: #fff3cd !important; 
+  background: #fff3cd; 
 }
 
 .semana-header { 
@@ -91,12 +137,6 @@ h2 {
   transition: background 0.3s, color 0.3s; 
 }
 
-.dark-mode .nota { 
-  background: #2b2b2b; 
-  color: #f4f4f9; 
-  border-color: #555; 
-}
-
 /* =================== Top Bar =================== */
 .top-bar { 
   display:flex; 
@@ -111,10 +151,6 @@ h2 {
   z-index:999; 
   box-shadow:0 2px 6px rgba(0,0,0,0.2); 
   transition:background 0.3s; 
-}
-
-.dark-mode .top-bar { 
-  background:#2b2b2b; 
 }
 
 .top-bar-group { 
@@ -248,10 +284,6 @@ h2 {
   font-size:0.9em; 
   margin-top:5px; 
   color:#666; 
-}
-
-.dark-mode .semana-progress { 
-  color:#ccc; 
 }
 
 .semana-progress-bar { 
