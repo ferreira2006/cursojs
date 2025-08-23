@@ -324,53 +324,114 @@ const toggleTheme = () => {
 dom.inputBusca.addEventListener('input', filtrar);
 
 // ======================= GOOGLE =======================
+
+// ======================= LOGIN GOOGLE =======================
 const loginGoogle = async () => {
+  if (loginInProgress) {
+    showToast('Login já em andamento...');
+    return;
+  }
+
+  loginInProgress = true;
+  dom.btnLoginGoogle.disabled = true; // desativa botão durante login
+
   try {
     const resp = await fetch(`${BACKEND_URL}/auth-url`);
     const dataLogin = await resp.json();
-    if (!dataLogin.url) { showToast('Erro ao obter URL de login'); return; }
+
+    if (!dataLogin.url) {
+      showToast('Erro ao obter URL de login');
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+      return;
+    }
+
     const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600');
-    window.addEventListener('message', e => {
-      if (e.data.googleToken) {
-        localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken));
+    if (!popup) {
+      showToast('Erro: popup bloqueado');
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      showToast('Login cancelado ou expirado');
+      window.removeEventListener('message', messageHandler);
+      if (!popup.closed) popup.close();
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+    }, 2 * 60 * 1000);
+
+    const messageHandler = (event) => {
+      if (!event.origin.includes("accounts.google.com")) return;
+
+      if (event.data.googleToken) {
+        clearTimeout(timeout);
+        localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
         atualizarUsuarioLogado();
         showToast('Login Google realizado!');
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
+      } else if (event.data.error) {
+        clearTimeout(timeout);
+        showToast('Erro durante login Google');
+        console.error('Login Google erro:', event.data.error);
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
       }
-    }, { once: true });
+    };
+
+    window.addEventListener('message', messageHandler, { once: true });
+
   } catch (err) {
     console.error(err);
     showToast('Erro ao iniciar login Google');
+    loginInProgress = false;
+    dom.btnLoginGoogle.disabled = false;
   }
 };
 
+// ======================= LOGOUT GOOGLE =======================
 const logoutGoogle = () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    showToast('Nenhuma conta conectada');
+    return;
+  }
+
   localStorage.removeItem('googleToken');
   atualizarUsuarioLogado();
-  showToast('Logout realizado');
+  showToast('Logout realizado com sucesso');
 };
 
-const atualizarUsuarioLogado = () => {
+// ======================= ATUALIZA USUÁRIO =======================
+const atualizarUsuarioLogado = async () => {
   const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (token) {
-    fetch(`${BACKEND_URL}/userinfo`, {
+  if (!token) {
+    dom.usuarioAvatar.style.display = 'none';
+    dom.usuarioEmail.textContent = 'Nenhuma conta conectada';
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token })
-    }).then(r => r.json())
-      .then(u => {
-        dom.usuarioAvatar.src = u.picture;
-        dom.usuarioAvatar.style.display = 'block';
-        dom.usuarioEmail.textContent = u.email;
-      }).catch(() => {
-        dom.usuarioAvatar.style.display = 'none';
-        dom.usuarioEmail.textContent = 'Erro ao carregar usuário';
-      });
-  } else {
+    });
+    const u = await resp.json();
+    dom.usuarioAvatar.src = u.picture;
+    dom.usuarioAvatar.style.display = 'block';
+    dom.usuarioEmail.textContent = u.email;
+  } catch (err) {
+    console.error(err);
     dom.usuarioAvatar.style.display = 'none';
-    dom.usuarioEmail.textContent = 'Nenhuma conta conectada';
+    dom.usuarioEmail.textContent = 'Erro ao carregar usuário';
+    showToast('Erro ao carregar usuário Google');
   }
 };
-
 const salvarNoDrive = async () => {
   const token = JSON.parse(localStorage.getItem('googleToken'));
   if (!token) { showToast('Você precisa fazer login primeiro'); return; }
