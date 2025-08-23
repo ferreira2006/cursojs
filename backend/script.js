@@ -513,6 +513,97 @@ const importarJSON = e => {
   reader.readAsText(file);
 };
 
+const gerarPDFRelatorio = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const marginLeft = 15, marginTop = 25, lineHeight = 7;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - 2 * marginLeft;
+  let y = marginTop;
+  const hoje = new Date();
+
+  // Cabeçalho
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 102, 204);
+  doc.text("Relatório - Curso JavaScript", marginLeft, y);
+  y += lineHeight;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, y);
+  y += lineHeight;
+
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y, pageWidth - marginLeft, y);
+  y += 8;
+
+  // Conteúdo por semana
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv, idx) => {
+    const h2 = semanaDiv.querySelector('h2');
+    h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
+    let titulo = limparTexto(h2.innerText);
+
+    if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text(titulo, marginLeft, y);
+    y += lineHeight;
+
+    semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
+      const txt = limparTexto(tarefaSpan.innerText);
+      const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
+      linhas.forEach(linha => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0,0,0);
+        doc.text(linha, marginLeft + 5, y);
+        y += lineHeight;
+      });
+    });
+
+    // Notas da semana
+    const notaTextarea = semanaDiv.querySelector('.nota');
+    if (notaTextarea && notaTextarea.value.trim()) {
+      const prefixo = "Anotações: ";
+      const notaTexto = limparTexto(notaTextarea.value);
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+      doc.setFont("helvetica", "bold");
+      doc.text(prefixo, marginLeft + 5, y);
+
+      doc.setFont("helvetica", "normal");
+      linhasNota.forEach((linha, i) => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
+        doc.text(linha, offsetX, y);
+        y += lineHeight;
+      });
+      y += 2;
+    }
+
+    y += 5;
+  });
+
+  // Numeração de páginas
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
+
 // ======================= INICIALIZAÇÃO =======================
 gerar();
 document.body.classList.toggle('dark-mode', data.dark);
