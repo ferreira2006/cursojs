@@ -284,7 +284,6 @@ const importar = () => {
 };
 
 // ======================= GOOGLE LOGIN =======================
-let googleToken = JSON.parse(localStorage.getItem("googleToken")) || null;
 
 // Abre popup e aguarda token via postMessage
 async function loginGoogle() {
