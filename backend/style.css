@@ -44,11 +44,6 @@ h2 {
   border-color: #555;
 }
 
-.dark-mode .semana.modo-revisao {
-  background: #856404 !important;
-  color: #fff9c4;
-}
-
 .dark-mode .progress-bar,
 .dark-mode .semana-progress-fill {
   background: #388e3c;
@@ -66,8 +61,7 @@ h2 {
 
 /* =================== Dark Mode - Cards =================== */
 .dark-mode .semana {
-  /* Aplica cores mais escuras mantendo a distinção entre as semanas */
-  background: rgba(50, 50, 50, 0.85); /* cor base escura */
+  background: rgba(50, 50, 50, 0.85);
   color: green;
   border-color: #444;
   box-shadow: 0 2px 6px rgba(0,0,0,0.6);
@@ -91,10 +85,6 @@ h2 {
   display:flex; 
   flex-direction:column; 
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
-
-.semana.modo-revisao { 
-  background: #fff3cd; 
 }
 
 .semana-header { 
@@ -362,6 +352,21 @@ h2 {
 
 .google-group .dropbtn { 
   flex-shrink:0; 
+}
+
+/* =================== Modo Revisão =================== */
+/* Light mode (modo claro) */
+body:not(.dark-mode) .semana.modo-revisao {
+  background: #ffeeba !important;
+  color: #333 !important;
+  border: 2px dashed #ff9800;
+}
+
+/* Dark mode */
+body.dark-mode .semana.modo-revisao {
+  background: #856404 !important;
+  color: #fff9c4 !important;
+  border: 2px dashed #ffb74d;
 }
 
 /* =================== Media Queries =================== */
