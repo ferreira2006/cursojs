@@ -123,9 +123,11 @@ window.addEventListener('resize', () => {
 });
 
 // ======================= FUNÇÕES AUXILIARES =======================
-const salvarDados = () => {
+
+// ======================= SALVAR DADOS =======================
+const salvarDados = (dispararConfete = false) => {
   localStorage.setItem('data', JSON.stringify(data));
-  atualizarProgresso();
+  atualizarProgresso(dispararConfete);
   atualizarBadgesSemana();
 };
 
@@ -139,10 +141,10 @@ const criarTarefa = (semana, idx, tarefa, i) => {
   chk.checked = data.check[chk.id] || false;
   chk.addEventListener('change', () => {
     data.check[chk.id] = chk.checked;
-    salvarDados();
-    if ([...document.querySelectorAll(`#tarefas-${idx} input`)].every(i => i.checked)) startConfete();
+    salvarDados(true); // confete permitido ao marcar/desmarcar tarefa
     if (modoRevisaoAtivo) ativarModoRevisao();
   });
+
   const label = document.createElement('span');
   label.textContent = tarefa;
   const div = document.createElement('div');
@@ -241,9 +243,10 @@ const ativarModoRevisao = () => {
   });
 };
 
-// ======================= PROGRESSO =======================
-const atualizarProgresso = () => {
-  let progressoMudouSemana = [];
+// ======================= ATUALIZAR PROGRESSO =======================
+const atualizarProgresso = (dispararConfete = true) => {
+  let semanasConcluidas = [];
+
   Object.keys(plano).forEach((s, i) => {
     const inputs = document.querySelectorAll(`#tarefas-${i} input`);
     const totalS = inputs.length;
@@ -256,10 +259,14 @@ const atualizarProgresso = () => {
     const texto = document.getElementById(`semana-progress-${i}`);
     if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
 
-    if (fill.dataset.complete === 'true' && marcadosS === totalS) progressoMudouSemana.push(i);
+    // Guarda semanas que acabaram de ser completadas
+    if (fill.dataset.complete === 'true' && !data.badges.includes(`Semana ${i+1} Concluída`)) {
+      semanasConcluidas.push(i);
+    }
   });
 
-    if (progressoMudouSemana.length > 0) startConfete();
+  // Dispara confete somente se permitido
+  if (dispararConfete && semanasConcluidas.length > 0) startConfete();
 
   // Atualiza progresso total
   const todosCheckboxes = document.querySelectorAll('.tarefas input');
@@ -309,7 +316,7 @@ const marcarSemana = (idx, marcar) => {
     chk.checked = marcar;
     data.check[chk.id] = marcar;
   });
-  salvarDados();
+  salvarDados(true); // confete permitido se marcar todos
   if (modoRevisaoAtivo) ativarModoRevisao();
 };
 
@@ -325,12 +332,12 @@ const toggleCollapse = idx => {
   }
 };
 
-// ======================= LIMPAR / TEMA =======================
+// ======================= LIMPAR TUDO / TEMA =======================
 const limpar = () => {
   if (confirm('Deseja realmente limpar tudo?')) {
     suprimirToasts = true;
     data = { check: {}, notes: {}, dark: data.dark, historico: [], pontos: 0, badges: [] };
-    salvarDados();
+    salvarDados(false); // confete desativado
     gerar();
     suprimirToasts = false;
   }
@@ -339,7 +346,7 @@ const limpar = () => {
 const toggleTheme = () => {
   data.dark = !data.dark;
   document.body.classList.toggle('dark-mode', data.dark);
-  salvarDados();
+  salvarDados(false); // confete desativado
 };
 
 // ======================= BUSCA =======================
