@@ -232,14 +232,170 @@ const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().to
 const exportarParaCalendario=()=>{let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((s,idx)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach((chk,i)=>{if(chk.checked){const dt=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+"Z"; ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${idx+1} - Tarefa ${i+1}\nDTSTART:${dt}\nEND:VEVENT\n`;}});}); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();};
 const importar=()=>{const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{try{const conteudo=JSON.parse(ev.target.result); data=conteudo.data?conteudo.data:conteudo; salvarDados(false); gerar();}catch{alert("Arquivo inválido!");}}; reader.readAsText(file);}; input.click();};
 
-// ======================= GOOGLE =======================
-async function loginGoogle(){try{const resp=await fetch(`${BACKEND_URL}/auth-url`); const {url}=await resp.json(); window.open(url,'_blank','width=500,height=600');}catch(err){console.error("Erro ao autenticar:",err);}}
-function logoutGoogle(){googleToken=null; localStorage.removeItem("googleToken"); atualizarUsuarioLogado(); showToast("Logout realizado!");}
-async function salvarNoDrive(){if(!googleToken){alert("Você precisa estar logado no Google!"); return;} try{const resp=await fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${googleToken}`}, body:JSON.stringify({data})}); if(resp.ok){showToast("Backup salvo no Drive!");}else{alert("Erro ao salvar no Drive!");}}catch(err){console.error("Erro ao salvar no Drive:",err);}}
-async function atualizarUsuarioLogado(){const emailSpan=dom.usuarioEmail; const avatarImg=dom.usuarioAvatar; if(googleToken){try{const resp=await fetch(`${BACKEND_URL}/userinfo`,{headers:{Authorization:`Bearer ${googleToken}`}}); if(resp.ok){const user=await resp.json(); emailSpan.textContent=user.email; avatarImg.src=user.picture; avatarImg.style.display="block";}}catch{emailSpan.textContent="Erro ao carregar usuário"; avatarImg.style.display="none";} } else{emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none";} }
+// ======================= GOOGLE LOGIN =======================
+googleToken = localStorage.getItem("googleToken") || null;
+
+async function loginGoogle() {
+  try {
+    const resp = await fetch(`${BACKEND_URL}/auth-url`);
+    const { url } = await resp.json();
+    window.open(url, "_blank", "width=500,height=600");
+  } catch (err) {
+    console.error("Erro ao autenticar:", err);
+    showToast("Erro ao autenticar no Google!");
+  }
+}
+
+function logoutGoogle() {
+  googleToken = null;
+  localStorage.removeItem("googleToken");
+  atualizarUsuarioLogado();
+  showToast("Logout realizado com sucesso!");
+}
+
+async function salvarNoDrive() {
+  if (!googleToken) {
+    showToast("Você precisa estar logado no Google!");
+    return;
+  }
+  try {
+    const resp = await fetch(`${BACKEND_URL}/save`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${googleToken}`
+      },
+      body: JSON.stringify({ data })
+    });
+    if (resp.ok) {
+      showToast("Backup salvo no Google Drive!");
+    } else {
+      showToast("Erro ao salvar no Drive!");
+    }
+  } catch (err) {
+    console.error("Erro ao salvar no Drive:", err);
+    showToast("Erro ao salvar no Drive!");
+  }
+}
+
+async function atualizarUsuarioLogado() {
+  const emailSpan = document.getElementById("usuario-email");
+  const avatarImg = document.getElementById("usuario-avatar");
+
+  if (googleToken) {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+        headers: { Authorization: `Bearer ${googleToken}` }
+      });
+      if (resp.ok) {
+        const user = await resp.json();
+        emailSpan.textContent = user.email;
+        avatarImg.src = user.picture;
+        avatarImg.style.display = "block";
+      } else {
+        emailSpan.textContent = "Erro ao carregar usuário";
+        avatarImg.style.display = "none";
+      }
+    } catch {
+      emailSpan.textContent = "Erro ao carregar usuário";
+      avatarImg.style.display = "none";
+    }
+  } else {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+  }
+}
 
 // ======================= PDF =======================
-const gerarPDFRelatorio = () => { /* mantém a versão avançada com cabeçalho, notas, quebra de páginas, etc. */ };
+const gerarPDFRelatorio = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const marginLeft = 15;
+  const marginTop = 25;
+  const lineHeight = 7;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - 2 * marginLeft;
+  let y = marginTop;
+  const hoje = new Date();
+
+  // =================== Cabeçalho ===================
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 102, 204);
+  doc.text("Relatório - Curso JavaScript", marginLeft, y);
+  y += lineHeight;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, y);
+  y += lineHeight;
+
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y, pageWidth - marginLeft, y);
+  y += 8;
+
+  // =================== Conteúdo por semana ===================
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv, idx) => {
+    const h2 = semanaDiv.querySelector('h2');
+    h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
+    const titulo = limparTexto(h2.innerText);
+
+    if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text(titulo, marginLeft, y);
+    y += lineHeight;
+
+    // Tarefas
+    semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
+      const txt = limparTexto(tarefaSpan.innerText);
+      const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
+      linhas.forEach(linha => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        doc.text(linha, marginLeft + 5, y);
+        y += lineHeight;
+      });
+    });
+
+    // Notas da semana
+    const notaTextarea = semanaDiv.querySelector('.nota');
+    if (notaTextarea && notaTextarea.value.trim()) {
+      const notaTexto = limparTexto(notaTextarea.value);
+      const linhasNota = doc.splitTextToSize("Anotações: " + notaTexto, contentWidth);
+      linhasNota.forEach(linha => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        doc.text(linha, marginLeft + 5, y);
+        y += lineHeight;
+      });
+      y += 2;
+    }
+
+    y += 5;
+  });
+
+  // =================== Numeração de páginas ===================
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
 
 // ======================= BUSCA =======================
 const filtrar=()=>{const termo=dom.inputBusca.value.toLowerCase(); document.querySelectorAll('.semana').forEach(card=>{const txt=card.innerText.toLowerCase(); card.style.display=txt.includes(termo)?'flex':'none';});};
