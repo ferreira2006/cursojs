@@ -323,7 +323,10 @@ const toggleTheme = () => {
 // ======================= BUSCA =======================
 dom.inputBusca.addEventListener('input', filtrar);
 
+
 // ======================= GOOGLE =======================
+
+let loginInProgress = false;
 
 // ======================= LOGIN GOOGLE =======================
 const loginGoogle = async () => {
