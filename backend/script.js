@@ -403,8 +403,8 @@ const gerarPDFRelatorio = () => {
   doc.setFontSize(16);
   doc.setFont("helvetica","bold");
   doc.setTextColor(0,102,204);
-  doc.text("Relatório - Curso JavaScript",marginLeft,y);
-  y+=lineHeight;
+  doc.text("Relatório - Curso JavaScript", marginLeft, y);
+  y += lineHeight;
 
   // Cabeçalho secundário
   doc.setFontSize(11);
@@ -451,17 +451,18 @@ const gerarPDFRelatorio = () => {
     const notaTextarea = semanaDiv.querySelector('.nota');
     if (notaTextarea && notaTextarea.value.trim()) {
       const prefixo = "Anotações: ";
-const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
+      const notaTexto = limparTexto(notaTextarea.value); // ✅ variável definida corretamente
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
 
-doc.setFont("helvetica", "bold");
-doc.text(prefixo, marginLeft + 5, y);
+      doc.setFont("helvetica", "bold");
+      doc.text(prefixo, marginLeft + 5, y);
 
-doc.setFont("helvetica", "normal");
-linhasNota.forEach((linha, i) => {
-  const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) : marginLeft + 5;
-  doc.text(linha, offsetX, y);
-  y += lineHeight;
-});
+      doc.setFont("helvetica", "normal");
+      linhasNota.forEach((linha, i) => {
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 3 : marginLeft + 5;
+        doc.text(linha, offsetX, y);
+        y += lineHeight;
+      });
 
       y += 2;
     }
