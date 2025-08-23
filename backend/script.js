@@ -283,34 +283,56 @@ const importar = () => {
   input.click();
 };
 
-// ======================= GOOGLE LOGIN =======================
-googleToken = localStorage.getItem("googleToken") || null;
+// ======================= GOOGLE LOGIN REFINADO =======================
+let googleToken = localStorage.getItem("googleToken") || null;
 
-// Abre popup e aguarda token via postMessage
-async function loginGoogle() {
-  try {
-    const resp = await fetch(`${BACKEND_URL}/auth-url`);
-    const { url } = await resp.json();
-    const popup = window.open(url, "_blank", "width=500,height=600");
+// Abre popup e retorna uma Promise com o token
+function loginGoogle() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/auth-url`);
+      const { url } = await resp.json();
+      const popup = window.open(url, "_blank", "width=500,height=600");
 
-    // Escuta mensagem do popup com o token
-    window.addEventListener("message", function receberToken(event) {
-      // Só aceitar do backend confiável
-      if(event.origin !== new URL(BACKEND_URL).origin) return;
-
-      if(event.data.googleToken) {
-        googleToken = event.data.googleToken;
-        localStorage.setItem("googleToken", googleToken);
-        atualizarUsuarioLogado();
-        showToast("Login realizado com sucesso!");
-        window.removeEventListener("message", receberToken); // limpa listener
-        popup.close();
+      if (!popup) {
+        showToast("Popup bloqueado pelo navegador!");
+        reject("Popup bloqueado");
+        return;
       }
-    });
-  } catch (err) {
-    console.error("Erro ao autenticar:", err);
-    showToast("Erro ao autenticar no Google!");
-  }
+
+      const receberToken = (event) => {
+        // Apenas aceitar do backend confiável
+        if (event.origin !== new URL(BACKEND_URL).origin) return;
+
+        if (event.data.googleToken) {
+          googleToken = event.data.googleToken;
+          localStorage.setItem("googleToken", googleToken);
+          atualizarUsuarioLogado();
+          showToast("Login realizado com sucesso!");
+          window.removeEventListener("message", receberToken);
+          popup.close();
+          resolve(googleToken);
+        }
+      };
+
+      window.addEventListener("message", receberToken);
+
+      // Timeout para não deixar popup aberto indefinidamente
+      setTimeout(() => {
+        window.removeEventListener("message", receberToken);
+        if (!googleToken) {
+          showToast("Login expirou ou foi cancelado!");
+          popup.close();
+          reject("Timeout");
+        }
+      }, 5 * 60 * 1000); // 5 minutos
+
+    } catch (err) {
+      console.error("Erro ao autenticar:", err);
+      showToast("Erro ao autenticar no Google!");
+      reject(err);
+    }
+  });
 }
 
 // Logout do Google
@@ -376,6 +398,14 @@ async function atualizarUsuarioLogado() {
     avatarImg.style.display = "none";
   }
 }
+
+// Inicialização
+googleToken && atualizarUsuarioLogado();
+
+// Event listeners
+dom.btnLoginGoogle.addEventListener("click", loginGoogle);
+dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
+dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
