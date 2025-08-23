@@ -457,24 +457,64 @@ const salvarNoDrive = async () => {
   }
 };
 
-// ======================= EXPORT / IMPORT =======================
-const exportar = () => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'checklist.json';
-  a.click();
+
+// ======================= IMPORTAR =======================
+const importar = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = ev => {
+      try {
+        let imported = JSON.parse(ev.target.result);
+
+        // Verifica se é exportação avançada
+        if (imported.data) {
+          data = imported.data;
+        } else {
+          // JSON simples
+          data = imported;
+        }
+
+        salvarDados();
+        gerar();
+        showToast('Importado com sucesso');
+      } catch (err) {
+        showToast('Erro ao importar');
+        console.error(err);
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  inp.click();
 };
 
+// ======================= EXPORTAR AVANÇADO =======================
 const exportarAvancado = () => {
-  const avancado = { data, exportadoEm: new Date().toISOString() };
-  const blob = new Blob([JSON.stringify(avancado)], { type: 'application/json' });
+  // Estrutura com metadados mas mantendo a raiz 'data'
+  const avancado = {
+    data,                         // dados principais
+    metadata: {                    // informações adicionais
+      exportadoEm: new Date().toISOString(),
+      source: "Checklist JS Avançado",
+      version: "v5.1"
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(avancado, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'checklist-avancado.json';
   a.click();
 };
 
+// ======================= IMPORTAR =======================
 const importar = () => {
   const inp = document.createElement('input');
   inp.type = 'file';
