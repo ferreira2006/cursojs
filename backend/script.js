@@ -408,20 +408,6 @@ const gerarPDFRelatorio = () => {
 };
 
 
-  // =================== Numeração de páginas ===================
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(100);
-    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-  }
-
-  doc.save('relatorio.pdf');
-  showToast('PDF gerado');
-};
-
 // ======================= BUSCA =======================
 const filtrar=()=>{const termo=dom.inputBusca.value.toLowerCase(); document.querySelectorAll('.semana').forEach(card=>{const txt=card.innerText.toLowerCase(); card.style.display=txt.includes(termo)?'flex':'none';});};
 
