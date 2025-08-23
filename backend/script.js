@@ -299,8 +299,7 @@ async function loginGoogle() {
       if (event.data.googleToken) {
         googleToken = event.data.googleToken; // objeto já
         localStorage.setItem("googleToken", JSON.stringify(googleToken));
-        atualizarUsuarioLogado();
-        showToast("Login realizado com sucesso!");
+        atualizarUsuarioLogado(true); // toast controlado dentro da função
         window.removeEventListener("message", receberToken);
         popup.close();
       }
@@ -339,29 +338,42 @@ async function salvarNoDrive() {
       })
     });
 
-    if (resp.status === 200) {
-      showToast("Backup salvo no Google Drive!");
-    } else if (resp.status === 401) {
-      showToast("Token inválido ou expirado. Faça login novamente.");
-      logoutGoogle();
-    } else if (resp.status === 403) {
-      showToast("Sem permissão para salvar no Drive.");
-    } else if (resp.status === 500) {
-      showToast("Erro interno do servidor. Tente novamente mais tarde.");
-    } else {
-      const err = await resp.json().catch(() => ({ message: "Erro desconhecido" }));
-      console.error("Erro salvar Drive:", err);
-      showToast(`Erro ao salvar no Drive: ${err.message || resp.statusText}`);
+    switch (resp.status) {
+      case 200:
+        showToast("✅ Backup salvo no Google Drive!");
+        break;
+      case 400:
+        showToast("⚠️ Requisição inválida. Verifique os dados enviados.");
+        break;
+      case 401:
+        showToast("🔒 Token inválido ou expirado. Faça login novamente.");
+        logoutGoogle();
+        break;
+      case 403:
+        showToast("⛔ Sem permissão para salvar no Drive.");
+        break;
+      case 500:
+        showToast("💥 Erro interno do servidor. Tente novamente mais tarde.");
+        break;
+      default:
+        let errMsg = "Erro desconhecido";
+        try {
+          const errJson = await resp.json();
+          errMsg = errJson.message || JSON.stringify(errJson);
+        } catch {}
+        console.error("Erro salvar Drive:", resp.status, errMsg);
+        showToast(`⚠️ Erro ao salvar: ${errMsg}`);
+        break;
     }
 
   } catch (err) {
-    console.error("Erro ao salvar no Drive:", err);
-    showToast("Erro de conexão ao salvar no Drive!");
+    console.error("Erro de conexão ao salvar no Drive:", err);
+    showToast("⚠️ Erro de conexão ao salvar no Drive!");
   }
 }
 
 // Atualiza exibição do usuário logado (e-mail + avatar)
-async function atualizarUsuarioLogado() {
+async function atualizarUsuarioLogado(mostrarToast = false) {
   const emailSpan = dom.usuarioEmail;
   const avatarImg = dom.usuarioAvatar;
 
@@ -383,6 +395,7 @@ async function atualizarUsuarioLogado() {
       emailSpan.textContent = user.email;
       avatarImg.src = user.picture;
       avatarImg.style.display = "block";
+      if(mostrarToast) showToast("Login realizado com sucesso!");
     } else {
       emailSpan.textContent = "Erro ao carregar usuário";
       avatarImg.style.display = "none";
@@ -393,7 +406,6 @@ async function atualizarUsuarioLogado() {
     avatarImg.style.display = "none";
   }
 }
-
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
