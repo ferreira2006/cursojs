@@ -322,38 +322,106 @@ async function atualizarUsuarioLogado() {
 }
 
 // ======================= PDF =======================
-async function gerarPDFRelatorio() {
+const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const margin=15; let y=20;
-  doc.setFontSize(16); doc.setTextColor(0,0,200); doc.text("Checklist de Estudo - JavaScript Avançado",margin,y); y+=10;
-  doc.setFontSize(12); doc.setTextColor(0,0,0); doc.text(`Relatório emitido em ${new Date().toLocaleDateString()}`,margin,y); y+=10;
 
-  Object.keys(plano).forEach((s,idx)=>{
-    doc.setFontSize(14); doc.setTextColor(0,0,0); y+=5; doc.text(s,margin,y); y+=7;
-    const tarefas = plano[s];
-    tarefas.forEach((t,i)=>{
-      const chkId = `s${idx}d${i}`;
-      const status = data.check[chkId]?'✔️':'❌';
-      const linha = `${status} ${t}`;
-      const splitText = doc.splitTextToSize(linha, 180);
-      splitText.forEach(txt=>{
-        if(y>270){doc.addPage(); y=20;}
-        doc.text(txt,margin,y); y+=7;
+  const marginLeft = 15;
+  const marginTop = 25;
+  const lineHeight = 7;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentWidth = pageWidth - 2 * marginLeft;
+  let y = marginTop;
+  const hoje = new Date();
+
+  // =================== Cabeçalho ===================
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(0, 102, 204);
+  doc.text("Relatório - Curso JavaScript", marginLeft, y);
+  y += lineHeight;
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, y);
+  y += lineHeight;
+
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y, pageWidth - marginLeft, y);
+  y += 8;
+
+  // =================== Conteúdo por semana ===================
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv, idx) => {
+    const h2 = semanaDiv.querySelector('h2');
+    h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
+    const titulo = limparTexto(h2.innerText);
+
+    if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text(titulo, marginLeft, y);
+    y += lineHeight;
+
+    // Tarefas
+    semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
+      const txt = limparTexto(tarefaSpan.innerText);
+      const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
+      linhas.forEach(linha => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        doc.text(linha, marginLeft + 5, y);
+        y += lineHeight;
       });
     });
-    const nota = data.notes[`s${idx}`];
-    if(nota){
-      doc.setFontSize(11); doc.setTextColor(100,100,100); y+=3;
-      const splitNota = doc.splitTextToSize("Anotações: "+nota,180);
-      splitNota.forEach(txt=>{
-        if(y>270){doc.addPage(); y=20;}
-        doc.text(txt,margin,y); y+=7;
+
+    // =================== Notas da semana ===================
+    const notaTextarea = semanaDiv.querySelector('.nota');
+    if (notaTextarea && notaTextarea.value.trim()) {
+      const prefixo = "Anotações: ";
+      const notaTexto = limparTexto(notaTextarea.value);
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+      // Prefixo em negrito
+      doc.setFont("helvetica", "bold");
+      doc.text(prefixo, marginLeft + 5, y);
+
+      // Texto da nota em normal
+      doc.setFont("helvetica", "normal");
+      linhasNota.forEach((linha, i) => {
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.text(linha, offsetX, y);
+        y += lineHeight;
       });
+
+      y += 2; // espaço extra após nota
     }
+
+    y += 5; // espaço extra após cada semana
   });
-  doc.save('checklist-relatorio.pdf');
-}
+
+  // =================== Numeração de páginas ===================
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
+
 
 // ======================= BUSCA COM DEBOUNCE =======================
 let buscaTimeout;
