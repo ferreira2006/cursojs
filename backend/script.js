@@ -497,23 +497,20 @@ const importar = () => {
 
 // ======================= EXPORTAR AVANÇADO =======================
 const exportarAvancado = () => {
-  // Estrutura com metadados mas mantendo a raiz 'data'
   const avancado = {
-    data,                         // dados principais
-    metadata: {                    // informações adicionais
+    data, // inclui o estado completo do checklist
+    meta: {
       exportadoEm: new Date().toISOString(),
-      source: "Checklist JS Avançado",
-      version: "v5.1"
+      versão: "avançado-v1"
     }
   };
-  
+
   const blob = new Blob([JSON.stringify(avancado, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'checklist-avancado.json';
   a.click();
 };
-
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
