@@ -421,6 +421,14 @@ const gerarPDFRelatorio = () => {
 
   const hoje = new Date();
 
+  // Função para checar espaço na página
+  const checkNewPage = () => {
+    if (y + lineHeight > pageHeight - 20) {
+      doc.addPage();
+      y = marginTop;
+    }
+  };
+
   // Cabeçalho principal
   doc.setFontSize(16);
   doc.setFont("helvetica","bold");
@@ -447,8 +455,7 @@ const gerarPDFRelatorio = () => {
     h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
     const titulo = limparTexto(h2.innerText);
 
-    if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-
+    checkNewPage();
     // Título da semana
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -461,7 +468,7 @@ const gerarPDFRelatorio = () => {
       const txt = limparTexto(tarefaSpan.innerText);
       const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
       linhas.forEach(linha => {
-        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        checkNewPage();
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0, 0, 0);
         doc.text(linha, marginLeft + 5, y);
@@ -475,6 +482,7 @@ const gerarPDFRelatorio = () => {
       const prefixo = "Anotações: ";
       const linhasOriginais = notaTextarea.value.split('\n');
 
+      checkNewPage();
       doc.setFont("helvetica", "bold");
       doc.text(prefixo, marginLeft + 5, y);
       y += lineHeight;
@@ -483,7 +491,7 @@ const gerarPDFRelatorio = () => {
       linhasOriginais.forEach(linha => {
         const linhasQuebradas = doc.splitTextToSize(linha, contentWidth - 10);
         linhasQuebradas.forEach(l => {
-          if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+          checkNewPage();
           doc.text(l, marginLeft + 10, y);
           y += lineHeight;
         });
