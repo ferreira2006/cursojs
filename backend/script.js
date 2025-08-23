@@ -14,7 +14,8 @@ const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, pontos: 0, badges: [] };
 let modoRevisaoAtivo = false;
 let suprimirToasts = false;
-let googleToken = localStorage.getItem("googleToken") || null;
+// Inicializa token do Google (lê do localStorage, já como objeto)
+let googleToken = JSON.parse(localStorage.getItem("googleToken")) || null;
 
 // ======================= DOM ELEMENTS =======================
 const dom = {
@@ -284,7 +285,6 @@ const importar = () => {
 };
 
 // ======================= GOOGLE LOGIN =======================
-
 // Abre popup e aguarda token via postMessage
 async function loginGoogle() {
   try {
@@ -292,13 +292,12 @@ async function loginGoogle() {
     const { url } = await resp.json();
     const popup = window.open(url, "_blank", "width=500,height=600");
 
-    // Escuta mensagem do popup com o token
     function receberToken(event) {
-      // Aceitar apenas do backend confiável
+      // Só aceitar mensagens do backend confiável
       if (event.origin !== new URL(BACKEND_URL).origin) return;
 
       if (event.data.googleToken) {
-        googleToken = event.data.googleToken;
+        googleToken = event.data.googleToken; // objeto já
         localStorage.setItem("googleToken", JSON.stringify(googleToken));
         atualizarUsuarioLogado();
         showToast("Login realizado com sucesso!");
@@ -322,7 +321,7 @@ function logoutGoogle() {
   showToast("Logout realizado com sucesso!");
 }
 
-// Salvar no Google Drive
+// Salvar arquivo no Google Drive
 async function salvarNoDrive() {
   if (!googleToken) {
     showToast("Você precisa estar logado no Google!");
@@ -332,21 +331,29 @@ async function salvarNoDrive() {
     const resp = await fetch(`${BACKEND_URL}/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: googleToken, filename: "checklist.json", content: data })
+      body: JSON.stringify({ 
+        token: googleToken, 
+        filename: "checklist.json", 
+        content: data 
+      })
     });
 
     if (resp.ok) showToast("Backup salvo no Google Drive!");
-    else showToast("Erro ao salvar no Drive!");
+    else {
+      const err = await resp.json();
+      console.error("Erro salvar Drive:", err);
+      showToast("Erro ao salvar no Drive!");
+    }
   } catch (err) {
     console.error("Erro ao salvar no Drive:", err);
     showToast("Erro ao salvar no Drive!");
   }
 }
 
-// Atualiza exibição do usuário logado
+// Atualiza exibição do usuário logado (e-mail + avatar)
 async function atualizarUsuarioLogado() {
-  const emailSpan = document.getElementById("usuario-email");
-  const avatarImg = document.getElementById("usuario-avatar");
+  const emailSpan = dom.usuarioEmail;
+  const avatarImg = dom.usuarioAvatar;
 
   if (!googleToken) {
     emailSpan.textContent = "Nenhuma conta conectada";
@@ -377,13 +384,6 @@ async function atualizarUsuarioLogado() {
   }
 }
 
-// Inicialização
-atualizarUsuarioLogado();
-
-// Event listeners
-dom.btnLoginGoogle.addEventListener("click", loginGoogle);
-dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
-dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
@@ -499,6 +499,9 @@ dom.btnLoginGoogle.addEventListener('click', loginGoogle);
 dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
 dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
 dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
+dom.btnLoginGoogle.addEventListener("click", loginGoogle);
+dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
+dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
 
 // ======================= INICIALIZAÇÃO =======================
 gerar();
