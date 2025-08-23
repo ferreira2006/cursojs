@@ -17,7 +17,7 @@ h2 {
 /* =================== Dark Mode Refinado =================== */
 .dark-mode {
   background: #1e1e1e;
-  color: #f4f4f9;
+  color: greenyellow;
 }
 
 .dark-mode .top-bar {
@@ -68,7 +68,7 @@ h2 {
 .dark-mode .semana {
   /* Aplica cores mais escuras mantendo a distinção entre as semanas */
   background: rgba(50, 50, 50, 0.85); /* cor base escura */
-  color: #e8e8e8;
+  color: green;
   border-color: #444;
   box-shadow: 0 2px 6px rgba(0,0,0,0.6);
 }
