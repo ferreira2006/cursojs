@@ -14,7 +14,7 @@ const BACKEND_URL = 'https://cursojs-8012.onrender.com';
 let data = JSON.parse(localStorage.getItem('data')) || { check: {}, notes: {}, dark: false, historico: [], pontos: 0, badges: [] };
 let modoRevisaoAtivo = false;
 let suprimirToasts = false;
-let googleToken = null;
+let googleToken = localStorage.getItem("googleToken") || null;
 
 // ======================= DOM ELEMENTS =======================
 const dom = {
@@ -62,25 +62,25 @@ let confeteParticles = [];
 const confeteCores = ['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
 let animandoConfete = false;
 
-const criarParticulas = (count = 200) => {
+const criarParticulas = (count = 150) => {
   const novas = [];
   for (let i = 0; i < count; i++) {
     novas.push({
       x: Math.random() * dom.confeteCanvas.width,
       y: -10,
-      dx: (Math.random() - 0.5) * 8,
-      dy: Math.random() * 5 + 3,
-      size: Math.random() * 10 + 5,
+      dx: (Math.random() - 0.5) * 6,
+      dy: Math.random() * 4 + 2,
+      size: Math.random() * 8 + 4,
       color: confeteCores[Math.floor(Math.random() * confeteCores.length)],
       angle: Math.random() * 360,
       spin: Math.random() * 0.2 - 0.1,
-      life: Math.random() * 120 + 80
+      life: Math.random() * 120 + 60
     });
   }
   return novas;
 };
 
-const startConfete = (count = 200) => {
+const startConfete = (count = 150) => {
   confeteParticles.push(...criarParticulas(count));
   if (!animandoConfete) animateConfete();
 };
@@ -147,7 +147,8 @@ const gerarSemana = (semana, tarefas, idx) => {
   h2.addEventListener('click', () => toggleCollapse(idx));
   header.appendChild(h2);
 
-  const btnContainer = document.createElement('div'); btnContainer.style.display='flex'; btnContainer.style.gap='5px'; btnContainer.style.flexWrap='wrap';
+  const btnContainer = document.createElement('div'); 
+  btnContainer.style.display='flex'; btnContainer.style.gap='5px'; btnContainer.style.flexWrap='wrap';
   const btnMarcar = document.createElement('button'); btnMarcar.className='botao-semana'; btnMarcar.textContent='Marcar Todos'; btnMarcar.addEventListener('click',()=>marcarSemana(idx,true));
   const btnResetar = document.createElement('button'); btnResetar.className='botao-semana'; btnResetar.textContent='Resetar'; btnResetar.addEventListener('click',()=>marcarSemana(idx,false));
   btnContainer.append(btnMarcar,btnResetar); header.appendChild(btnContainer);
@@ -166,7 +167,12 @@ const gerarSemana = (semana, tarefas, idx) => {
   return div;
 };
 
-const gerar = () => { dom.conteudo.innerHTML=''; Object.entries(plano).forEach(([semana,tarefas],idx)=>dom.conteudo.appendChild(gerarSemana(semana,tarefas,idx))); atualizarProgresso(false); if(modoRevisaoAtivo) aplicarModoRevisao(true); };
+const gerar = () => { 
+  dom.conteudo.innerHTML=''; 
+  Object.entries(plano).forEach(([semana,tarefas],idx)=>dom.conteudo.appendChild(gerarSemana(semana,tarefas,idx))); 
+  atualizarProgresso(false); 
+  if(modoRevisaoAtivo) aplicarModoRevisao(true); 
+};
 
 // ======================= MODO REVISÃO =======================
 const aplicarModoRevisao = (ativar=!modoRevisaoAtivo) => {
@@ -216,19 +222,25 @@ const atualizarBadgesSemana=()=>{
   });
   atualizarBadges();
 };
-const atualizarBadges=()=>{ dom.badgesContainer.innerHTML=''; data.badges.forEach(b=>{const span=document.createElement('span'); span.className='badge'; span.textContent=b; dom.badgesContainer.appendChild(span);}); };
+const atualizarBadges=()=>{ 
+  dom.badgesContainer.innerHTML=''; 
+  data.badges.forEach(b=>{
+    const span=document.createElement('span'); span.className='badge'; span.textContent=b; 
+    dom.badgesContainer.appendChild(span);
+  }); 
+};
 
 // ======================= MARCAR / COLAPSAR =======================
 const marcarSemana=(idx,marcar)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk=>{chk.checked=marcar; data.check[chk.id]=marcar;}); salvarDados(true); if(modoRevisaoAtivo) aplicarModoRevisao(true);};
 const toggleCollapse=idx=>{const el=document.getElementById(`tarefas-${idx}`); const icon=document.querySelectorAll('.expand-icon')[idx]; const mostrar=el.style.display==='none'; el.style.display=mostrar?'flex':'none'; icon.classList.toggle('collapsed',!mostrar);};
 
 // ======================= LIMPAR / TEMA =======================
-const limpar=()=>{if(confirm('Deseja realmente limpar tudo?')){suprimirToasts=true; data={check:{},notes:{},dark:data.dark,historico:[],pontos:0,badges:[]}; salvarDados(false); gerar(); suprimirToasts=false;}};
+const limpar=()=>{if(confirm('Deseja realmente limpar tudo?')){suprimirToasts=true; data={check:{},notes:{},dark:data.dark,historico:[],pontos:0,badges:[]}; salvarDados(false); gerar(); suprimirToasts=false;}};  
 const toggleTheme=()=>{data.dark=!data.dark; document.body.classList.toggle('dark-mode',data.dark); salvarDados(false);};
 
 // ======================= EXPORTAR / IMPORTAR =======================
 const exportar=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click();};
-const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().toISOString(),versão:"avançado-v1"}}; const blob=new Blob([JSON.stringify(avancado,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click();};
+const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().toISOString(),versao:"avancado-v1"}}; const blob=new Blob([JSON.stringify(avancado,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click();};
 const exportarParaCalendario=()=>{let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((s,idx)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach((chk,i)=>{if(chk.checked){const dt=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+"Z"; ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${idx+1} - Tarefa ${i+1}\nDTSTART:${dt}\nEND:VEVENT\n`;}});}); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();};
 const importar=()=>{const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{try{const conteudo=JSON.parse(ev.target.result); data=conteudo.data?conteudo.data:conteudo; salvarDados(false); gerar();}catch{alert("Arquivo inválido!");}}; reader.readAsText(file);}; input.click();};
 
@@ -239,7 +251,62 @@ async function salvarNoDrive(){if(!googleToken){alert("Você precisa estar logad
 async function atualizarUsuarioLogado(){const emailSpan=dom.usuarioEmail; const avatarImg=dom.usuarioAvatar; if(googleToken){try{const resp=await fetch(`${BACKEND_URL}/userinfo`,{headers:{Authorization:`Bearer ${googleToken}`}}); if(resp.ok){const user=await resp.json(); emailSpan.textContent=user.email; avatarImg.src=user.picture; avatarImg.style.display="block";}}catch{emailSpan.textContent="Erro ao carregar usuário"; avatarImg.style.display="none";} } else{emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none";} }
 
 // ======================= PDF =======================
-const gerarPDFRelatorio = () => { /* mantém a versão avançada com cabeçalho, notas, quebra de páginas, etc. */ };
+const gerarPDFRelatorio = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p','mm','a4');
+  const margin = 15;
+  const lineHeight = 7;
+  let y = margin;
+
+  const hoje = new Date();
+  const dataTexto = `Relatório emitido em ${hoje.getDate().toString().padStart(2,'0')}/${(hoje.getMonth()+1).toString().padStart(2,'0')}/${hoje.getFullYear()}`;
+  doc.setFontSize(12);
+  doc.text(dataTexto, margin, y);
+  y += 10;
+
+  Object.keys(plano).forEach((semana, idx) => {
+    const tarefas = plano[semana];
+    doc.setFontSize(14);
+    doc.setTextColor(0,0,0);
+    doc.setFillColor(...hexToRgb(coresSemana[idx % coresSemana.length]));
+    doc.rect(margin-2, y-5, 190, lineHeight, 'F');
+    doc.text(semana, margin, y);
+    y += lineHeight + 2;
+
+    tarefas.forEach((t,i)=>{
+      const chkId = `s${idx}d${i}`;
+      const marcado = data.check[chkId] ? "✅" : "⬜";
+      doc.setFontSize(12);
+      const texto = `${marcado} ${t}`;
+      const linhas = doc.splitTextToSize(texto, 190 - 2*margin);
+      if(y + linhas.length*lineHeight > 297 - margin){ doc.addPage(); y = margin; }
+      doc.text(linhas, margin, y);
+      y += linhas.length*lineHeight;
+    });
+
+    const nota = data.notes[`s${idx}`];
+    if(nota){
+      const linhasNota = doc.splitTextToSize("📝 " + nota, 190 - 2*margin);
+      if(y + linhasNota.length*lineHeight > 297 - margin){ doc.addPage(); y = margin; }
+      doc.setTextColor(80,80,80);
+      doc.text(linhasNota, margin, y);
+      y += linhasNota.length*lineHeight + 3;
+    }
+    y += 3;
+  });
+
+  doc.save('relatorio-checklist.pdf');
+};
+
+function hexToRgb(hex){
+  hex = hex.replace('#','');
+  if(hex.length===3) hex = hex.split('').map(h=>h+h).join('');
+  const bigint = parseInt(hex,16);
+  const r = (bigint>>16)&255;
+  const g = (bigint>>8)&255;
+  const b = bigint&255;
+  return [r,g,b];
+}
 
 // ======================= BUSCA =======================
 const filtrar=()=>{const termo=dom.inputBusca.value.toLowerCase(); document.querySelectorAll('.semana').forEach(card=>{const txt=card.innerText.toLowerCase(); card.style.display=txt.includes(termo)?'flex':'none';});};
