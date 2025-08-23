@@ -53,7 +53,7 @@ const showToast = (msg, duration = 3000) => {
 };
 
 // ======================= CONFETE =======================
-const ctx = dom.confeteCanvas.getContext('2d');
+const ctx = dom.confeteCanvas.getContext('2d', { willReadFrequently: true });
 dom.confeteCanvas.width = window.innerWidth;
 dom.confeteCanvas.height = window.innerHeight;
 
@@ -68,7 +68,7 @@ const criarParticulas = (count = 200) => {
       x: Math.random() * dom.confeteCanvas.width,
       y: -10,
       dx: (Math.random() - 0.5) * 8,
-      dy: Math.random() * 5 + 3, // queda mais natural
+      dy: Math.random() * 5 + 3,
       size: Math.random() * 10 + 5,
       color: confeteCores[Math.floor(Math.random() * confeteCores.length)],
       angle: Math.random() * 360,
@@ -80,7 +80,6 @@ const criarParticulas = (count = 200) => {
 };
 
 const startConfete = (count = 200) => {
-  // Adiciona partículas novas sem interromper animação atual
   confeteParticles.push(...criarParticulas(count));
   if (!animandoConfete) animateConfete();
 };
@@ -103,18 +102,13 @@ const animateConfete = () => {
     ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 2);
     ctx.restore();
 
-    p.size *= 0.995; // reduz mais suavemente
+    p.size *= 0.995;
   });
 
-  // Remove partículas mortas
   confeteParticles = confeteParticles.filter(p => p.life > 0 && p.y < dom.confeteCanvas.height + 20);
 
-  if (confeteParticles.length > 0) {
-    requestAnimationFrame(animateConfete);
-  } else {
-    ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height);
-    animandoConfete = false;
-  }
+  if (confeteParticles.length > 0) requestAnimationFrame(animateConfete);
+  else { ctx.clearRect(0,0,dom.confeteCanvas.width, dom.confeteCanvas.height); animandoConfete = false; }
 };
 
 window.addEventListener('resize', () => {
@@ -122,9 +116,7 @@ window.addEventListener('resize', () => {
   dom.confeteCanvas.height = window.innerHeight;
 });
 
-// ======================= FUNÇÕES AUXILIARES =======================
-
-// ======================= SALVAR DADOS =======================
+// ======================= AUXILIARES =======================
 const salvarDados = (dispararConfete = false) => {
   localStorage.setItem('data', JSON.stringify(data));
   atualizarProgresso(dispararConfete);
@@ -133,7 +125,7 @@ const salvarDados = (dispararConfete = false) => {
 
 const limparTexto = txt => txt.replace(/[\x00-\x1F\x7F]/g, '').trim();
 
-// ======================= FUNÇÕES DE GERAÇÃO DE CONTEÚDO =======================
+// ======================= TAREFAS =======================
 const criarTarefa = (semana, idx, tarefa, i) => {
   const chk = document.createElement('input');
   chk.type = 'checkbox';
@@ -141,8 +133,8 @@ const criarTarefa = (semana, idx, tarefa, i) => {
   chk.checked = data.check[chk.id] || false;
   chk.addEventListener('change', () => {
     data.check[chk.id] = chk.checked;
-    salvarDados(true); // confete permitido ao marcar/desmarcar tarefa
-    if (modoRevisaoAtivo) ativarModoRevisao();
+    salvarDados(true);
+    if (modoRevisaoAtivo) aplicarModoRevisao(true);
   });
 
   const label = document.createElement('span');
@@ -186,7 +178,6 @@ const gerarSemana = (semana, tarefas, idx) => {
 
   btnContainer.append(btnMarcar, btnResetar);
   header.appendChild(btnContainer);
-
   div.appendChild(header);
 
   const progresso = document.createElement('div');
@@ -212,7 +203,7 @@ const gerarSemana = (semana, tarefas, idx) => {
   nota.value = data.notes[`s${idx}`] || '';
   nota.addEventListener('input', () => {
     data.notes[`s${idx}`] = nota.value;
-    salvarDados();
+    salvarDados(false);
   });
   div.appendChild(nota);
 
@@ -222,28 +213,20 @@ const gerarSemana = (semana, tarefas, idx) => {
 const gerar = () => {
   dom.conteudo.innerHTML = '';
   Object.entries(plano).forEach(([semana, tarefas], idx) => dom.conteudo.appendChild(gerarSemana(semana, tarefas, idx)));
-  atualizarProgresso();
-  if (modoRevisaoAtivo) ativarModoRevisao();
-};
-
-// ======================= BUSCA =======================
-const filtrar = () => {
-  const termo = dom.inputBusca.value.toLowerCase();
-  document.querySelectorAll('.semana').forEach(div => {
-    div.style.display = div.innerText.toLowerCase().includes(termo) ? 'flex' : 'none';
-  });
+  atualizarProgresso(false);
+  if (modoRevisaoAtivo) aplicarModoRevisao(true);
 };
 
 // ======================= MODO REVISÃO =======================
-const ativarModoRevisao = () => {
-  modoRevisaoAtivo = !modoRevisaoAtivo;
+const aplicarModoRevisao = (ativar = !modoRevisaoAtivo) => {
+  modoRevisaoAtivo = ativar;
   document.querySelectorAll('.semana').forEach(div => {
     const incompletas = [...div.querySelectorAll('input')].some(i => !i.checked);
     div.classList.toggle('modo-revisao', modoRevisaoAtivo && incompletas);
   });
 };
 
-// ======================= ATUALIZAR PROGRESSO =======================
+// ======================= PROGRESSO =======================
 const atualizarProgresso = (dispararConfete = true) => {
   let semanasConcluidas = [];
 
@@ -259,21 +242,15 @@ const atualizarProgresso = (dispararConfete = true) => {
     const texto = document.getElementById(`semana-progress-${i}`);
     if (texto) texto.textContent = `${marcadosS}/${totalS} tarefas`;
 
-    // Guarda semanas que acabaram de ser completadas
-    if (fill.dataset.complete === 'true' && !data.badges.includes(`Semana ${i+1} Concluída`)) {
-      semanasConcluidas.push(i);
-    }
+    if (fill.dataset.complete === 'true' && !data.badges.includes(`Semana ${i+1} Concluída`)) semanasConcluidas.push(i);
   });
 
-  // Dispara confete somente se permitido
   if (dispararConfete && semanasConcluidas.length > 0) startConfete();
 
-  // Atualiza progresso total
   const todosCheckboxes = document.querySelectorAll('.tarefas input');
   const total = todosCheckboxes.length;
   const marcados = [...todosCheckboxes].filter(chk => chk.checked).length;
   const perc = Math.round(total ? marcados / total * 100 : 0);
-
   dom.progressBar.style.width = perc + '%';
   dom.progressBar.textContent = perc + '%';
 
@@ -292,9 +269,7 @@ const atualizarBadgesSemana = () => {
       if (!suprimirToasts) showToast(`🏅 ${badgeName} conquistada!`);
     }
 
-    if (!todasMarcadas && data.badges.includes(badgeName)) {
-      data.badges = data.badges.filter(b => b !== badgeName);
-    }
+    if (!todasMarcadas && data.badges.includes(badgeName)) data.badges = data.badges.filter(b => b !== badgeName);
   });
 
   atualizarBadges();
@@ -310,34 +285,30 @@ const atualizarBadges = () => {
   });
 };
 
-// ======================= MARCAR SEMANA / COLAPSO =======================
+// ======================= MARCAR / COLAPSAR =======================
 const marcarSemana = (idx, marcar) => {
   document.querySelectorAll(`#tarefas-${idx} input`).forEach(chk => {
     chk.checked = marcar;
     data.check[chk.id] = marcar;
   });
-  salvarDados(true); // confete permitido se marcar todos
-  if (modoRevisaoAtivo) ativarModoRevisao();
+  salvarDados(true);
+  if (modoRevisaoAtivo) aplicarModoRevisao(true);
 };
 
 const toggleCollapse = idx => {
   const el = document.getElementById(`tarefas-${idx}`);
   const icon = document.querySelectorAll('.expand-icon')[idx];
-  if (el.style.display === 'none') {
-    el.style.display = 'flex';
-    icon.classList.remove('collapsed');
-  } else {
-    el.style.display = 'none';
-    icon.classList.add('collapsed');
-  }
+  const mostrar = el.style.display === 'none';
+  el.style.display = mostrar ? 'flex' : 'none';
+  icon.classList.toggle('collapsed', !mostrar);
 };
 
-// ======================= LIMPAR TUDO / TEMA =======================
+// ======================= LIMPAR / TEMA =======================
 const limpar = () => {
   if (confirm('Deseja realmente limpar tudo?')) {
     suprimirToasts = true;
     data = { check: {}, notes: {}, dark: data.dark, historico: [], pontos: 0, badges: [] };
-    salvarDados(false); // confete desativado
+    salvarDados(false);
     gerar();
     suprimirToasts = false;
   }
@@ -346,211 +317,9 @@ const limpar = () => {
 const toggleTheme = () => {
   data.dark = !data.dark;
   document.body.classList.toggle('dark-mode', data.dark);
-  salvarDados(false); // confete desativado
+  salvarDados(false);
 };
 
-// ======================= BUSCA =======================
-dom.inputBusca.addEventListener('input', filtrar);
-
-
-// ======================= GOOGLE =======================
-
-// ======================= LOGIN GOOGLE =======================
-let loginInProgress = false;
-
-const loginGoogle = async () => {
-  if (loginInProgress) {
-    showToast('Login já em andamento...');
-    return;
-  }
-
-  loginInProgress = true;
-  dom.btnLoginGoogle.disabled = true;
-
-  try {
-    const resp = await fetch(`${BACKEND_URL}/auth-url`);
-    const dataLogin = await resp.json();
-
-    if (!dataLogin.url) {
-      showToast('Erro ao obter URL de login');
-      loginInProgress = false;
-      dom.btnLoginGoogle.disabled = false;
-      return;
-    }
-
-    const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600');
-    if (!popup) {
-      showToast('Erro: popup bloqueado');
-      loginInProgress = false;
-      dom.btnLoginGoogle.disabled = false;
-      return;
-    }
-
-    // Timeout para evitar popup aberto indefinidamente
-    const timeout = setTimeout(() => {
-      showToast('Login cancelado ou expirado');
-      window.removeEventListener('message', messageHandler);
-      if (!popup.closed) popup.close();
-      loginInProgress = false;
-      dom.btnLoginGoogle.disabled = false;
-    }, 2 * 60 * 1000); // 2 minutos
-
-    const messageHandler = (event) => {
-      // Aceita apenas mensagens do backend
-      if (!event.origin.includes(new URL(BACKEND_URL).origin)) return;
-
-      if (event.data.googleToken) {
-        clearTimeout(timeout);
-        localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
-        atualizarUsuarioLogado();
-        showToast('Login Google realizado!');
-        if (!popup.closed) popup.close();
-        loginInProgress = false;
-        dom.btnLoginGoogle.disabled = false;
-      } else if (event.data.error) {
-        clearTimeout(timeout);
-        showToast('Erro durante login Google');
-        console.error('Login Google erro:', event.data.error);
-        if (!popup.closed) popup.close();
-        loginInProgress = false;
-        dom.btnLoginGoogle.disabled = false;
-      }
-    };
-
-    window.addEventListener('message', messageHandler, { once: true });
-
-  } catch (err) {
-    console.error(err);
-    showToast('Erro ao iniciar login Google');
-    loginInProgress = false;
-    dom.btnLoginGoogle.disabled = false;
-  }
-};
-
-
-// ======================= LOGOUT GOOGLE =======================
-const logoutGoogle = () => {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) {
-    showToast('Nenhuma conta conectada');
-    return;
-  }
-
-  localStorage.removeItem('googleToken');
-  atualizarUsuarioLogado();
-  showToast('Logout realizado com sucesso');
-};
-
-// ======================= ATUALIZA USUÁRIO =======================
-const atualizarUsuarioLogado = async () => {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) {
-    dom.usuarioAvatar.style.display = 'none';
-    dom.usuarioEmail.textContent = 'Nenhuma conta conectada';
-    return;
-  }
-
-  try {
-    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
-    });
-    const u = await resp.json();
-    dom.usuarioAvatar.src = u.picture;
-    dom.usuarioAvatar.style.display = 'block';
-    dom.usuarioEmail.textContent = u.email;
-  } catch (err) {
-    console.error(err);
-    dom.usuarioAvatar.style.display = 'none';
-    dom.usuarioEmail.textContent = 'Erro ao carregar usuário';
-    showToast('Erro ao carregar usuário Google');
-  }
-};
-const salvarNoDrive = async () => {
-  const token = JSON.parse(localStorage.getItem('googleToken'));
-  if (!token) { showToast('Você precisa fazer login primeiro'); return; }
-  const payload = { token, filename: 'checklist.json', content: data };
-  try {
-    const resp = await fetch(`${BACKEND_URL}/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const result = await resp.json();
-    if (result.success) {
-      const link = `https://drive.google.com/file/d/${result.fileId}/view`;
-      showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`);
-    } else {
-      showToast('Erro ao salvar no Drive'); console.error(result);
-    }
-  } catch (err) {
-    console.error(err);
-    showToast('Erro ao salvar no Drive');
-  }
-};
-
-
-// ======================= IMPORTAR =======================
-const importar = () => {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'application/json';
-  
-  inp.onchange = e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        let imported = JSON.parse(ev.target.result);
-
-        // Detecta se é JSON avançado
-        if (imported.data) {
-          data = imported.data; // exportação avançada
-        } else {
-          data = imported; // JSON simples
-        }
-
-        salvarDados();
-        gerar();
-        showToast('Importado com sucesso');
-      } catch (err) {
-        console.error(err);
-        showToast('Erro ao importar: arquivo inválido');
-      }
-    };
-    
-    reader.readAsText(file);
-  };
-  
-  inp.click();
-};
-
-// ======================= EXPORTAR SIMPLES =======================
-const exportar = () => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'checklist.json';
-  a.click();
-};
-
-// ======================= EXPORTAR AVANÇADO =======================
-const exportarAvancado = () => {
-  const avancado = {
-    data, // inclui o estado completo do checklist
-    meta: {
-      exportadoEm: new Date().toISOString(),
-      versão: "avançado-v1"
-    }
-  };
-
-  const blob = new Blob([JSON.stringify(avancado, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'checklist-avancado.json';
-  a.click();
-};
-
-// ======================= PDF =======================
 const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -558,26 +327,31 @@ const gerarPDFRelatorio = () => {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const contentWidth = pageWidth - 2 * marginLeft;
-
   let y = marginTop;
   const hoje = new Date();
+
+  // Cabeçalho
   doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
   doc.setTextColor(0, 102, 204);
   doc.text("Relatório - Curso JavaScript", marginLeft, y);
-  y += 7;
+  y += lineHeight;
+
   doc.setFontSize(11);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(120);
   doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, y);
-  y += 7;
+  y += lineHeight;
+
   doc.setDrawColor(0, 102, 204);
   doc.setLineWidth(0.5);
   doc.line(marginLeft, y, pageWidth - marginLeft, y);
   y += 8;
 
-  dom.conteudo.querySelectorAll('.semana').forEach(semanaDiv => {
+  // Conteúdo por semana
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv, idx) => {
     const h2 = semanaDiv.querySelector('h2');
-    h2.querySelectorAll('span').forEach(el => el.remove());
+    h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
     let titulo = limparTexto(h2.innerText);
 
     if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
@@ -588,30 +362,42 @@ const gerarPDFRelatorio = () => {
     y += lineHeight;
 
     semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
-      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-      let txt = limparTexto(tarefaSpan.innerText);
-      doc.setTextColor(0, 0, 0);
-      doc.splitTextToSize('• ' + txt, contentWidth).forEach(l => { 
+      const txt = limparTexto(tarefaSpan.innerText);
+      const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
+      linhas.forEach(linha => {
         if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-        doc.text(l, marginLeft + 5, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0,0,0);
+        doc.text(linha, marginLeft + 5, y);
         y += lineHeight;
       });
     });
 
+    // Notas da semana
     const notaTextarea = semanaDiv.querySelector('.nota');
     if (notaTextarea && notaTextarea.value.trim()) {
-      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
       const prefixo = "Anotações: ";
       const notaTexto = limparTexto(notaTextarea.value);
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
       doc.setFont("helvetica", "bold");
       doc.text(prefixo, marginLeft + 5, y);
+
       doc.setFont("helvetica", "normal");
-      doc.text(notaTexto, marginLeft + 5 + doc.getTextWidth(prefixo), y);
-      y += lineHeight + 2;
+      linhasNota.forEach((linha, i) => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
+        doc.text(linha, offsetX, y);
+        y += lineHeight;
+      });
+      y += 2;
     }
+
     y += 5;
   });
 
+  // Numeração de páginas
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -625,27 +411,10 @@ const gerarPDFRelatorio = () => {
   showToast('PDF gerado');
 };
 
-// ======================= CALENDÁRIO =======================
-const exportarParaCalendario = () => {
-  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n";
-  Object.keys(data.notes).forEach(key => {
-    const nota = data.notes[key];
-    if (nota) {
-      const dt = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-      ics += `BEGIN:VEVENT\nSUMMARY:${key}\nDESCRIPTION:${nota}\nDTSTART:${dt}\nEND:VEVENT\n`;
-    }
-  });
-  ics += "END:VCALENDAR";
-  const blob = new Blob([ics], { type: "text/calendar" });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = "checklist.ics";
-  a.click();
-};
 
 // ======================= EVENTOS =======================
 dom.btnTema.addEventListener('click', toggleTheme);
-dom.btnRevisao.addEventListener('click', ativarModoRevisao);
+dom.btnRevisao.addEventListener('click', () => aplicarModoRevisao(!modoRevisaoAtivo));
 dom.btnLimpar.addEventListener('click', limpar);
 dom.btnExportJSON.addEventListener('click', exportar);
 dom.btnExportAvancado.addEventListener('click', exportarAvancado);
@@ -655,9 +424,10 @@ dom.btnImport.addEventListener('click', importar);
 dom.btnLoginGoogle.addEventListener('click', loginGoogle);
 dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
 dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
+dom.inputBusca.addEventListener('input', filtrar);
 
 // ======================= INICIALIZAÇÃO =======================
 document.body.classList.toggle('dark-mode', data.dark);
 gerar();
-atualizarProgresso();
+atualizarProgresso(false);
 atualizarUsuarioLogado();
