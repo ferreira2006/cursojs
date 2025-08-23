@@ -355,7 +355,41 @@ const atualizarUsuarioLogado = async () => {
     showToast('Erro ao carregar usuário Google');
   }
 };
-const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (!token) { showToast('Você precisa fazer login primeiro'); return; } const payload = { token, filename: 'checklist.json', content: data }; try { const resp = await fetch(${BACKEND_URL}/save, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const result = await resp.json(); if (result.success) { const link = https://drive.google.com/file/d/${result.fileId}/view; showToast(Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>); } else { showToast('Erro ao salvar no Drive'); console.error(result); } } catch (err) { console.error(err); showToast('Erro ao salvar no Drive'); } };
+
+const salvarNoDrive = async () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    showToast('Você precisa fazer login primeiro');
+    return;
+  }
+
+  const payload = {
+    token,
+    filename: 'checklist.json',
+    content: data // Certifique-se que 'data' está definido
+  };
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await resp.json();
+
+    if (result.success) {
+      const link = `https://drive.google.com/file/d/${result.fileId}/view`;
+      showToast(`Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>`);
+    } else {
+      showToast('Erro ao salvar no Drive');
+      console.error(result);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao salvar no Drive');
+  }
+};
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const marginLeft = 15, marginTop = 25, lineHeight = 7; const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight(); const contentWidth = pageWidth - 2 * marginLeft; let y = marginTop; const hoje = new Date(); doc.setFontSize(16); doc.setTextColor(0, 102, 204); doc.text("Relatório - Curso JavaScript", marginLeft, y); y += 7; doc.setFontSize(11); doc.setFont("helvetica", "italic"); doc.setTextColor(120); doc.text(Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}, marginLeft, y); y += 7; doc.setDrawColor(0, 102, 204); doc.setLineWidth(0.5); doc.line(marginLeft, y, pageWidth - marginLeft, y); y += 8; dom.conteudo.querySelectorAll('.semana').forEach(semanaDiv => { const h2 = semanaDiv.querySelector('h2'); h2.querySelectorAll('span').forEach(el => el.remove()); let titulo = limparTexto(h2.innerText); if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 102, 204); doc.text(titulo, marginLeft, y); y += lineHeight; semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } let txt = limparTexto(tarefaSpan.innerText); doc.setTextColor(0, 0, 0); doc.splitTextToSize('• ' + txt, contentWidth).forEach(l => { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } doc.text(l, marginLeft + 5, y); y += lineHeight; }); }); const notaTextarea = semanaDiv.querySelector('.nota'); if (notaTextarea && notaTextarea.value.trim()) { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } const prefixo = "Anotações: "; const notaTexto = limparTexto(notaTextarea.value); doc.setFont("helvetica", "bold"); doc.text(prefixo, marginLeft + 5, y); doc.setFont("helvetica", "normal"); doc.text(notaTexto, marginLeft + 5 + doc.getTextWidth(prefixo), y); y += lineHeight + 2; } y += 5; }); const pageCount = doc.internal.getNumberOfPages(); for (let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(100); doc.text(Página ${i} de ${pageCount}, pageWidth / 2, pageHeight - 10, { align: "center" }); } doc.save('relatorio.pdf'); showToast('PDF gerado'); };
