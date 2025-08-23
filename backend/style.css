@@ -64,6 +64,23 @@ h2 {
   color: #000;
 }
 
+/* =================== Dark Mode - Cards =================== */
+.dark-mode .semana {
+  /* Aplica cores mais escuras mantendo a distinção entre as semanas */
+  background: rgba(50, 50, 50, 0.85); /* cor base escura */
+  color: #f4f4f9;
+  border-color: #444;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+}
+
+.dark-mode .semana:nth-child(odd) {
+  background: rgba(70, 70, 70, 0.85);
+}
+
+.dark-mode .semana:nth-child(even) {
+  background: rgba(90, 90, 90, 0.85);
+}
+
 /* =================== Semana =================== */
 .semana { 
   border:1px solid #ccc; 
