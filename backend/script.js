@@ -283,55 +283,36 @@ const importar = () => {
   input.click();
 };
 
-// ======================= GOOGLE LOGIN REFINADO =======================
+// ======================= GOOGLE LOGIN =======================
+let googleToken = JSON.parse(localStorage.getItem("googleToken")) || null;
 
-// Abre popup e retorna uma Promise com o token
-function loginGoogle() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const resp = await fetch(`${BACKEND_URL}/auth-url`);
-      const { url } = await resp.json();
-      const popup = window.open(url, "_blank", "width=500,height=600");
+// Abre popup e aguarda token via postMessage
+async function loginGoogle() {
+  try {
+    const resp = await fetch(`${BACKEND_URL}/auth-url`);
+    const { url } = await resp.json();
+    const popup = window.open(url, "_blank", "width=500,height=600");
 
-      if (!popup) {
-        showToast("Popup bloqueado pelo navegador!");
-        reject("Popup bloqueado");
-        return;
-      }
+    // Escuta mensagem do popup com o token
+    function receberToken(event) {
+      // Aceitar apenas do backend confiável
+      if (event.origin !== new URL(BACKEND_URL).origin) return;
 
-      const receberToken = (event) => {
-        // Apenas aceitar do backend confiável
-        if (event.origin !== new URL(BACKEND_URL).origin) return;
-
-        if (event.data.googleToken) {
-          googleToken = event.data.googleToken;
-          localStorage.setItem("googleToken", googleToken);
-          atualizarUsuarioLogado();
-          showToast("Login realizado com sucesso!");
-          window.removeEventListener("message", receberToken);
-          popup.close();
-          resolve(googleToken);
-        }
-      };
-
-      window.addEventListener("message", receberToken);
-
-      // Timeout para não deixar popup aberto indefinidamente
-      setTimeout(() => {
+      if (event.data.googleToken) {
+        googleToken = event.data.googleToken;
+        localStorage.setItem("googleToken", JSON.stringify(googleToken));
+        atualizarUsuarioLogado();
+        showToast("Login realizado com sucesso!");
         window.removeEventListener("message", receberToken);
-        if (!googleToken) {
-          showToast("Login expirou ou foi cancelado!");
-          popup.close();
-          reject("Timeout");
-        }
-      }, 5 * 60 * 1000); // 5 minutos
-
-    } catch (err) {
-      console.error("Erro ao autenticar:", err);
-      showToast("Erro ao autenticar no Google!");
-      reject(err);
+        popup.close();
+      }
     }
-  });
+
+    window.addEventListener("message", receberToken);
+  } catch (err) {
+    console.error("Erro ao autenticar:", err);
+    showToast("Erro ao autenticar no Google!");
+  }
 }
 
 // Logout do Google
@@ -351,18 +332,12 @@ async function salvarNoDrive() {
   try {
     const resp = await fetch(`${BACKEND_URL}/save`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${googleToken}`
-      },
-      body: JSON.stringify({ data })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: googleToken, filename: "checklist.json", content: data })
     });
 
-    if (resp.ok) {
-      showToast("Backup salvo no Google Drive!");
-    } else {
-      showToast("Erro ao salvar no Drive!");
-    }
+    if (resp.ok) showToast("Backup salvo no Google Drive!");
+    else showToast("Erro ao salvar no Drive!");
   } catch (err) {
     console.error("Erro ao salvar no Drive:", err);
     showToast("Erro ao salvar no Drive!");
@@ -374,38 +349,42 @@ async function atualizarUsuarioLogado() {
   const emailSpan = document.getElementById("usuario-email");
   const avatarImg = document.getElementById("usuario-avatar");
 
-  if (googleToken) {
-    try {
-      const resp = await fetch(`${BACKEND_URL}/userinfo`, {
-        headers: { Authorization: `Bearer ${googleToken}` }
-      });
-      if (resp.ok) {
-        const user = await resp.json();
-        emailSpan.textContent = user.email;
-        avatarImg.src = user.picture;
-        avatarImg.style.display = "block";
-      } else {
-        emailSpan.textContent = "Erro ao carregar usuário";
-        avatarImg.style.display = "none";
-      }
-    } catch {
+  if (!googleToken) {
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: googleToken })
+    });
+
+    if (resp.ok) {
+      const user = await resp.json();
+      emailSpan.textContent = user.email;
+      avatarImg.src = user.picture;
+      avatarImg.style.display = "block";
+    } else {
       emailSpan.textContent = "Erro ao carregar usuário";
       avatarImg.style.display = "none";
     }
-  } else {
-    emailSpan.textContent = "Nenhuma conta conectada";
+  } catch (err) {
+    console.error("Erro ao obter usuário:", err);
+    emailSpan.textContent = "Erro ao carregar usuário";
     avatarImg.style.display = "none";
   }
 }
 
 // Inicialização
-googleToken && atualizarUsuarioLogado();
+atualizarUsuarioLogado();
 
 // Event listeners
 dom.btnLoginGoogle.addEventListener("click", loginGoogle);
 dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
 dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
-
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
