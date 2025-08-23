@@ -461,7 +461,7 @@ const gerarPDFRelatorio = () => {
 
       doc.setFont("helvetica", "normal");
       linhasNota.forEach((linha, i) => {
-        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
+        const offsetX = i === 0 ? marginLeft + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
         if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
         doc.text(linha, offsetX, y);
         y += lineHeight;
