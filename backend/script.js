@@ -284,7 +284,6 @@ const importar = () => {
 };
 
 // ======================= GOOGLE LOGIN REFINADO =======================
-let googleToken = localStorage.getItem("googleToken") || null;
 
 // Abre popup e retorna uma Promise com o token
 function loginGoogle() {
@@ -406,6 +405,8 @@ googleToken && atualizarUsuarioLogado();
 dom.btnLoginGoogle.addEventListener("click", loginGoogle);
 dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
 dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
+
+
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
