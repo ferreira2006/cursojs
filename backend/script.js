@@ -484,8 +484,6 @@ const gerarPDFRelatorio = () => {
   showToast('PDF gerado');
 };
 
-dom.progressBar.style.textAlign = "center"; // centraliza o texto
-
 // ======================= EVENTOS =======================
 dom.btnTema.addEventListener('click', toggleTheme);
 dom.btnRevisao.addEventListener('click',()=>aplicarModoRevisao());
