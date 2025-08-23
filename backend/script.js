@@ -59,14 +59,16 @@ dom.confeteCanvas.height = window.innerHeight;
 
 let confeteParticles = [];
 const confeteCores = ['#FF595E','#FFCA3A','#8AC926','#1982C4','#6A4C93','#FF924C','#6FFFE9','#FF6FFF'];
+let animandoConfete = false;
 
-const startConfete = (count = 200) => {
+const criarParticulas = (count = 200) => {
+  const novas = [];
   for (let i = 0; i < count; i++) {
-    confeteParticles.push({
+    novas.push({
       x: Math.random() * dom.confeteCanvas.width,
       y: -10,
       dx: (Math.random() - 0.5) * 8,
-      dy: Math.random() * 7 + 3,
+      dy: Math.random() * 5 + 3, // queda mais natural
       size: Math.random() * 10 + 5,
       color: confeteCores[Math.floor(Math.random() * confeteCores.length)],
       angle: Math.random() * 360,
@@ -74,14 +76,25 @@ const startConfete = (count = 200) => {
       life: Math.random() * 120 + 80
     });
   }
-  animateConfete();
-  setTimeout(() => { confeteParticles.length = 0; ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height); }, 7000);
+  return novas;
+};
+
+const startConfete = (count = 200) => {
+  // Adiciona partículas novas sem interromper animação atual
+  confeteParticles.push(...criarParticulas(count));
+  if (!animandoConfete) animateConfete();
 };
 
 const animateConfete = () => {
+  animandoConfete = true;
   ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height);
+
   confeteParticles.forEach(p => {
-    p.x += p.dx; p.y += p.dy; p.angle += p.spin; p.life -= 2;
+    p.x += p.dx;
+    p.y += p.dy;
+    p.angle += p.spin;
+    p.life -= 2;
+
     const rad = p.angle * Math.PI / 180;
     ctx.fillStyle = p.color;
     ctx.save();
@@ -89,10 +102,19 @@ const animateConfete = () => {
     ctx.rotate(rad);
     ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 2);
     ctx.restore();
-    p.size *= 0.98;
+
+    p.size *= 0.995; // reduz mais suavemente
   });
-  confeteParticles = confeteParticles.filter(p => p.life > 0);
-  if (confeteParticles.length > 0) requestAnimationFrame(animateConfete);
+
+  // Remove partículas mortas
+  confeteParticles = confeteParticles.filter(p => p.life > 0 && p.y < dom.confeteCanvas.height + 20);
+
+  if (confeteParticles.length > 0) {
+    requestAnimationFrame(animateConfete);
+  } else {
+    ctx.clearRect(0, 0, dom.confeteCanvas.width, dom.confeteCanvas.height);
+    animandoConfete = false;
+  }
 };
 
 window.addEventListener('resize', () => {
