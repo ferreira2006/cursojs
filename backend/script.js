@@ -466,26 +466,26 @@ const importar = () => {
   
   inp.onchange = e => {
     const file = e.target.files[0];
+    if (!file) return;
+
     const reader = new FileReader();
-    
     reader.onload = ev => {
       try {
         let imported = JSON.parse(ev.target.result);
 
-        // Verifica se é exportação avançada
+        // Detecta se é JSON avançado
         if (imported.data) {
-          data = imported.data;
+          data = imported.data; // exportação avançada
         } else {
-          // JSON simples
-          data = imported;
+          data = imported; // JSON simples
         }
 
         salvarDados();
         gerar();
         showToast('Importado com sucesso');
       } catch (err) {
-        showToast('Erro ao importar');
         console.error(err);
+        showToast('Erro ao importar: arquivo inválido');
       }
     };
     
@@ -514,29 +514,6 @@ const exportarAvancado = () => {
   a.click();
 };
 
-// ======================= IMPORTAR =======================
-const importar = () => {
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = 'application/json';
-  inp.onchange = e => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = ev => {
-      try {
-        data = JSON.parse(ev.target.result);
-        salvarDados();
-        gerar();
-        showToast('Importado com sucesso');
-      } catch (err) {
-        showToast('Erro ao importar');
-        console.error(err);
-      }
-    };
-    reader.readAsText(file);
-  };
-  inp.click();
-};
 
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
