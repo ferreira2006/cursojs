@@ -320,6 +320,31 @@ const toggleTheme = () => {
   salvarDados(false);
 };
 
+// ======================= EXPORTAR SIMPLES =======================
+const exportar = () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checklist.json';
+  a.click();
+};
+
+// ======================= EXPORTAR AVANÇADO =======================
+const exportarAvancado = () => {
+  const avancado = {
+    data, // inclui o estado completo do checklist
+    meta: {
+      exportadoEm: new Date().toISOString(),
+      versão: "avançado-v1"
+    }
+  };
+  const blob = new Blob([JSON.stringify(avancado, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checklist-avancado.json';
+  a.click();
+};
+
 const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -410,6 +435,7 @@ const gerarPDFRelatorio = () => {
   doc.save('relatorio.pdf');
   showToast('PDF gerado');
 };
+
 
 
 // ======================= EVENTOS =======================
