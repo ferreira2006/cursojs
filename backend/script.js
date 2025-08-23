@@ -244,10 +244,117 @@ const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().to
 const exportarParaCalendario=()=>{let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((s,idx)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach((chk,i)=>{if(chk.checked){const dt=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+"Z"; ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${idx+1} - Tarefa ${i+1}\nDTSTART:${dt}\nEND:VEVENT\n`;}});}); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();};
 const importar=()=>{const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{try{const conteudo=JSON.parse(ev.target.result); data=conteudo.data?conteudo.data:conteudo; salvarDados(false); gerar();}catch{alert("Arquivo inválido!");}}; reader.readAsText(file);}; input.click();};
 
-  ======================= GOOGLE ======================= 
-const loginGoogle = async () => { try { const resp = await fetch(${BACKEND_URL}/auth-url); const dataLogin = await resp.json(); if (!dataLogin.url) { showToast('Erro ao obter URL de login'); return; } const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600'); window.addEventListener('message', e => { if (e.data.googleToken) { localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } }, { once: true }); } catch (err) { console.error(err); showToast('Erro ao iniciar login Google'); } }; 
-const logoutGoogle = () => { localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); }; 
-const atualizarUsuarioLogado = () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (token) { fetch(${BACKEND_URL}/userinfo, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }).then(r => r.json()) .then(u => { dom.usuarioAvatar.src = u.picture; dom.usuarioAvatar.style.display = 'block'; dom.usuarioEmail.textContent = u.email; }).catch(() => { dom.usuarioAvatar.style.display = 'none'; dom.usuarioEmail.textContent = 'Erro ao carregar usuário'; }); } else { dom.usuarioAvatar.style.display = 'none'; dom.usuarioEmail.textContent = 'Nenhuma conta conectada'; } };
+// ======================= LOGIN GOOGLE =======================
+let loginInProgress = false;
+
+const loginGoogle = async () => {
+  if (loginInProgress) {
+    showToast('Login já em andamento...');
+    return;
+  }
+
+  loginInProgress = true;
+  dom.btnLoginGoogle.disabled = true;
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/auth-url`);
+    const dataLogin = await resp.json();
+
+    if (!dataLogin.url) {
+      showToast('Erro ao obter URL de login');
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+      return;
+    }
+
+    const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600');
+    if (!popup) {
+      showToast('Erro: popup bloqueado');
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+      return;
+    }
+
+    // Timeout para evitar popup aberto indefinidamente
+    const timeout = setTimeout(() => {
+      showToast('Login cancelado ou expirado');
+      window.removeEventListener('message', messageHandler);
+      if (!popup.closed) popup.close();
+      loginInProgress = false;
+      dom.btnLoginGoogle.disabled = false;
+    }, 2 * 60 * 1000); // 2 minutos
+
+    const messageHandler = (event) => {
+      // Aceita apenas mensagens do backend
+      if (!event.origin.includes(new URL(BACKEND_URL).origin)) return;
+
+      if (event.data.googleToken) {
+        clearTimeout(timeout);
+        localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
+        atualizarUsuarioLogado();
+        showToast('Login Google realizado!');
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
+      } else if (event.data.error) {
+        clearTimeout(timeout);
+        showToast('Erro durante login Google');
+        console.error('Login Google erro:', event.data.error);
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
+      }
+    };
+
+    window.addEventListener('message', messageHandler, { once: true });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Erro ao iniciar login Google');
+    loginInProgress = false;
+    dom.btnLoginGoogle.disabled = false;
+  }
+};
+
+// ======================= LOGOUT GOOGLE =======================
+const logoutGoogle = () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    showToast('Nenhuma conta conectada');
+    return;
+  }
+
+  localStorage.removeItem('googleToken');
+  atualizarUsuarioLogado();
+  showToast('Logout realizado com sucesso');
+};
+
+// ======================= ATUALIZA USUÁRIO =======================
+const atualizarUsuarioLogado = async () => {
+  const token = JSON.parse(localStorage.getItem('googleToken'));
+  if (!token) {
+    dom.usuarioAvatar.style.display = 'none';
+    dom.usuarioEmail.textContent = 'Nenhuma conta conectada';
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+    const u = await resp.json();
+    dom.usuarioAvatar.src = u.picture;
+    dom.usuarioAvatar.style.display = 'block';
+    dom.usuarioEmail.textContent = u.email;
+  } catch (err) {
+    console.error(err);
+    dom.usuarioAvatar.style.display = 'none';
+    dom.usuarioEmail.textContent = 'Erro ao carregar usuário';
+    showToast('Erro ao carregar usuário Google');
+  }
+};
 const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (!token) { showToast('Você precisa fazer login primeiro'); return; } const payload = { token, filename: 'checklist.json', content: data }; try { const resp = await fetch(${BACKEND_URL}/save, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const result = await resp.json(); if (result.success) { const link = https://drive.google.com/file/d/${result.fileId}/view; showToast(Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>); } else { showToast('Erro ao salvar no Drive'); console.error(result); } } catch (err) { console.error(err); showToast('Erro ao salvar no Drive'); } };
 
 // ======================= PDF =======================
