@@ -484,6 +484,8 @@ const gerarPDFRelatorio = () => {
   showToast('PDF gerado');
 };
 
+dom.progressBar.style.textAlign = "center"; // centraliza o texto
+
 // ======================= EVENTOS =======================
 dom.btnTema.addEventListener('click', toggleTheme);
 dom.btnRevisao.addEventListener('click',()=>aplicarModoRevisao());
@@ -496,9 +498,6 @@ dom.btnLoginGoogle.addEventListener('click', loginGoogle);
 dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
 dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
 dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
-dom.btnLoginGoogle.addEventListener("click", loginGoogle);
-dom.btnLogoutGoogle.addEventListener("click", logoutGoogle);
-dom.btnSaveDrive.addEventListener("click", salvarNoDrive);
 
 // ======================= INICIALIZAÇÃO =======================
 gerar();
