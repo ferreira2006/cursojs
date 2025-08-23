@@ -327,6 +327,7 @@ async function salvarNoDrive() {
     showToast("Você precisa estar logado no Google!");
     return;
   }
+
   try {
     const resp = await fetch(`${BACKEND_URL}/save`, {
       method: "POST",
@@ -338,15 +339,24 @@ async function salvarNoDrive() {
       })
     });
 
-    if (resp.ok) showToast("Backup salvo no Google Drive!");
-    else {
-      const err = await resp.json();
+    if (resp.status === 200) {
+      showToast("Backup salvo no Google Drive!");
+    } else if (resp.status === 401) {
+      showToast("Token inválido ou expirado. Faça login novamente.");
+      logoutGoogle();
+    } else if (resp.status === 403) {
+      showToast("Sem permissão para salvar no Drive.");
+    } else if (resp.status === 500) {
+      showToast("Erro interno do servidor. Tente novamente mais tarde.");
+    } else {
+      const err = await resp.json().catch(() => ({ message: "Erro desconhecido" }));
       console.error("Erro salvar Drive:", err);
-      showToast("Erro ao salvar no Drive!");
+      showToast(`Erro ao salvar no Drive: ${err.message || resp.statusText}`);
     }
+
   } catch (err) {
     console.error("Erro ao salvar no Drive:", err);
-    showToast("Erro ao salvar no Drive!");
+    showToast("Erro de conexão ao salvar no Drive!");
   }
 }
 
