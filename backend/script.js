@@ -372,3 +372,17 @@ dom.inputBusca.addEventListener('input', e=>{
 gerar();
 document.body.classList.toggle('dark-mode',data.dark);
 atualizarUsuarioLogado();
+
+// ======================= EVENT LISTENERS =======================
+dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
+dom.btnLoginGoogle.addEventListener('click', loginGoogle);
+dom.btnTema.addEventListener('click', toggleTheme);
+dom.btnRevisao.addEventListener('click', () => aplicarModoRevisao());
+dom.btnLimpar.addEventListener('click', limpar);
+dom.btnExportJSON.addEventListener('click', exportar);
+dom.btnExportAvancado.addEventListener('click', exportarAvancado);
+dom.btnExportCalendar.addEventListener('click', exportarParaCalendario);
+dom.btnImport.addEventListener('click', importar);
+dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
+dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
+
