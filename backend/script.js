@@ -326,9 +326,9 @@ dom.inputBusca.addEventListener('input', filtrar);
 
 // ======================= GOOGLE =======================
 
+// ======================= LOGIN GOOGLE =======================
 let loginInProgress = false;
 
-// ======================= LOGIN GOOGLE =======================
 const loginGoogle = async () => {
   if (loginInProgress) {
     showToast('Login já em andamento...');
@@ -336,7 +336,7 @@ const loginGoogle = async () => {
   }
 
   loginInProgress = true;
-  dom.btnLoginGoogle.disabled = true; // desativa botão durante login
+  dom.btnLoginGoogle.disabled = true;
 
   try {
     const resp = await fetch(`${BACKEND_URL}/auth-url`);
@@ -357,34 +357,35 @@ const loginGoogle = async () => {
       return;
     }
 
+    // Timeout para evitar popup aberto indefinidamente
     const timeout = setTimeout(() => {
       showToast('Login cancelado ou expirado');
       window.removeEventListener('message', messageHandler);
       if (!popup.closed) popup.close();
       loginInProgress = false;
       dom.btnLoginGoogle.disabled = false;
-    }, 2 * 60 * 1000);
+    }, 2 * 60 * 1000); // 2 minutos
 
     const messageHandler = (event) => {
-     // Só aceitamos mensagens do seu backend
-  if (!event.origin.includes(new URL(BACKEND_URL).origin)) return;
+      // Aceita apenas mensagens do backend
+      if (!event.origin.includes(new URL(BACKEND_URL).origin)) return;
 
-  if (event.data.googleToken) {
-    clearTimeout(timeout);
-    localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
-    atualizarUsuarioLogado();
-    showToast('Login Google realizado!');
-    if (!popup.closed) popup.close();
-    loginInProgress = false;
-    dom.btnLoginGoogle.disabled = false;
-  } else if (event.data.error) {
-    clearTimeout(timeout);
-    showToast('Erro durante login Google');
-    console.error('Login Google erro:', event.data.error);
-    if (!popup.closed) popup.close();
-    loginInProgress = false;
-    dom.btnLoginGoogle.disabled = false;
-  }
+      if (event.data.googleToken) {
+        clearTimeout(timeout);
+        localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
+        atualizarUsuarioLogado();
+        showToast('Login Google realizado!');
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
+      } else if (event.data.error) {
+        clearTimeout(timeout);
+        showToast('Erro durante login Google');
+        console.error('Login Google erro:', event.data.error);
+        if (!popup.closed) popup.close();
+        loginInProgress = false;
+        dom.btnLoginGoogle.disabled = false;
+      }
     };
 
     window.addEventListener('message', messageHandler, { once: true });
@@ -396,6 +397,7 @@ const loginGoogle = async () => {
     dom.btnLoginGoogle.disabled = false;
   }
 };
+
 
 // ======================= LOGOUT GOOGLE =======================
 const logoutGoogle = () => {
