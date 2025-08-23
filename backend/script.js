@@ -451,21 +451,17 @@ const gerarPDFRelatorio = () => {
     const notaTextarea = semanaDiv.querySelector('.nota');
     if (notaTextarea && notaTextarea.value.trim()) {
       const prefixo = "Anotações: ";
-      const notaTexto = limparTexto(notaTextarea.value);
-      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
 
-      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+doc.setFont("helvetica", "bold");
+doc.text(prefixo, marginLeft + 5, y);
 
-      doc.setFont("helvetica", "bold");
-      doc.text(prefixo, marginLeft + 5, y);
-
-      doc.setFont("helvetica", "normal");
-      linhasNota.forEach((linha, i) => {
-        const offsetX = i === 0 ? marginLeft + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
-        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-        doc.text(linha, offsetX, y);
-        y += lineHeight;
-      });
+doc.setFont("helvetica", "normal");
+linhasNota.forEach((linha, i) => {
+  const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) : marginLeft + 5;
+  doc.text(linha, offsetX, y);
+  y += lineHeight;
+});
 
       y += 2;
     }
