@@ -201,7 +201,10 @@ const atualizarProgresso = (dispararConfete=true) => {
   const marcados = [...todosCheckboxes].filter(chk=>chk.checked).length;
   const perc = Math.round(total ? marcados/total*100 : 0);
   dom.progressBar.style.width = perc+'%';
-  dom.progressBar.textContent = perc+'%';
+  dom.progressBar.textContent = perc+"%";
+  dom.progressBar.style.display = "flex";
+  dom.progressBar.style.justifyContent = "center";
+  dom.progressBar.style.alignItems = "center";
 
   atualizarBadgesSemana();
 };
