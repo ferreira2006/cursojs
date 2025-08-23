@@ -286,17 +286,34 @@ const importar = () => {
 // ======================= GOOGLE LOGIN =======================
 googleToken = localStorage.getItem("googleToken") || null;
 
+// Abre popup e aguarda token via postMessage
 async function loginGoogle() {
   try {
     const resp = await fetch(`${BACKEND_URL}/auth-url`);
     const { url } = await resp.json();
-    window.open(url, "_blank", "width=500,height=600");
+    const popup = window.open(url, "_blank", "width=500,height=600");
+
+    // Escuta mensagem do popup com o token
+    window.addEventListener("message", function receberToken(event) {
+      // Só aceitar do backend confiável
+      if(event.origin !== new URL(BACKEND_URL).origin) return;
+
+      if(event.data.googleToken) {
+        googleToken = event.data.googleToken;
+        localStorage.setItem("googleToken", googleToken);
+        atualizarUsuarioLogado();
+        showToast("Login realizado com sucesso!");
+        window.removeEventListener("message", receberToken); // limpa listener
+        popup.close();
+      }
+    });
   } catch (err) {
     console.error("Erro ao autenticar:", err);
     showToast("Erro ao autenticar no Google!");
   }
 }
 
+// Logout do Google
 function logoutGoogle() {
   googleToken = null;
   localStorage.removeItem("googleToken");
@@ -304,6 +321,7 @@ function logoutGoogle() {
   showToast("Logout realizado com sucesso!");
 }
 
+// Salvar no Google Drive
 async function salvarNoDrive() {
   if (!googleToken) {
     showToast("Você precisa estar logado no Google!");
@@ -318,6 +336,7 @@ async function salvarNoDrive() {
       },
       body: JSON.stringify({ data })
     });
+
     if (resp.ok) {
       showToast("Backup salvo no Google Drive!");
     } else {
@@ -329,9 +348,10 @@ async function salvarNoDrive() {
   }
 }
 
+// Atualiza exibição do usuário logado
 async function atualizarUsuarioLogado() {
-  const emailSpan = dom.usuarioEmail;
-  const avatarImg = dom.usuarioAvatar;
+  const emailSpan = document.getElementById("usuario-email");
+  const avatarImg = document.getElementById("usuario-avatar");
 
   if (googleToken) {
     try {
@@ -342,18 +362,20 @@ async function atualizarUsuarioLogado() {
         const user = await resp.json();
         emailSpan.textContent = user.email;
         avatarImg.src = user.picture;
-        dom.btnLoginGoogle.style.display = "none";
-        dom.btnLogoutGoogle.style.display = "inline-block";
+        avatarImg.style.display = "block";
+      } else {
+        emailSpan.textContent = "Erro ao carregar usuário";
+        avatarImg.style.display = "none";
       }
-    } catch (err) { console.error(err); }
+    } catch {
+      emailSpan.textContent = "Erro ao carregar usuário";
+      avatarImg.style.display = "none";
+    }
   } else {
-    emailSpan.textContent = "";
-    avatarImg.src = "";
-    dom.btnLoginGoogle.style.display = "inline-block";
-    dom.btnLogoutGoogle.style.display = "none";
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
   }
 }
-
 // ======================= PDF =======================
 const gerarPDFRelatorio = () => {
   const { jsPDF } = window.jspdf;
