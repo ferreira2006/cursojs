@@ -366,24 +366,25 @@ const loginGoogle = async () => {
     }, 2 * 60 * 1000);
 
     const messageHandler = (event) => {
-      if (!event.origin.includes("accounts.google.com")) return;
+     // Só aceitamos mensagens do seu backend
+  if (!event.origin.includes(new URL(BACKEND_URL).origin)) return;
 
-      if (event.data.googleToken) {
-        clearTimeout(timeout);
-        localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
-        atualizarUsuarioLogado();
-        showToast('Login Google realizado!');
-        if (!popup.closed) popup.close();
-        loginInProgress = false;
-        dom.btnLoginGoogle.disabled = false;
-      } else if (event.data.error) {
-        clearTimeout(timeout);
-        showToast('Erro durante login Google');
-        console.error('Login Google erro:', event.data.error);
-        if (!popup.closed) popup.close();
-        loginInProgress = false;
-        dom.btnLoginGoogle.disabled = false;
-      }
+  if (event.data.googleToken) {
+    clearTimeout(timeout);
+    localStorage.setItem('googleToken', JSON.stringify(event.data.googleToken));
+    atualizarUsuarioLogado();
+    showToast('Login Google realizado!');
+    if (!popup.closed) popup.close();
+    loginInProgress = false;
+    dom.btnLoginGoogle.disabled = false;
+  } else if (event.data.error) {
+    clearTimeout(timeout);
+    showToast('Erro durante login Google');
+    console.error('Login Google erro:', event.data.error);
+    if (!popup.closed) popup.close();
+    loginInProgress = false;
+    dom.btnLoginGoogle.disabled = false;
+  }
     };
 
     window.addEventListener('message', messageHandler, { once: true });
