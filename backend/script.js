@@ -284,26 +284,13 @@ const importar = () => {
 };
 
 // ======================= GOOGLE LOGIN =======================
+googleToken = localStorage.getItem("googleToken") || null;
+
 async function loginGoogle() {
   try {
     const resp = await fetch(`${BACKEND_URL}/auth-url`);
     const { url } = await resp.json();
-
-    const popup = window.open(url, "_blank", "width=500,height=600");
-
-    window.addEventListener("message", function receberToken(event) {
-      if (event.origin !== window.location.origin) return;
-
-      const { token } = event.data;
-      if (token) {
-        googleToken = token;
-        localStorage.setItem("googleToken", token);
-        atualizarUsuarioLogado();
-        showToast("Login realizado com sucesso!");
-        window.removeEventListener("message", receberToken);
-        popup.close();
-      }
-    });
+    window.open(url, "_blank", "width=500,height=600");
   } catch (err) {
     console.error("Erro ao autenticar:", err);
     showToast("Erro ao autenticar no Google!");
@@ -345,44 +332,133 @@ async function salvarNoDrive() {
 async function atualizarUsuarioLogado() {
   const emailSpan = dom.usuarioEmail;
   const avatarImg = dom.usuarioAvatar;
-  const btnLogin = dom.btnLoginGoogle;
-  const btnLogout = dom.btnLogoutGoogle;
-  const btnSave = dom.btnSaveDrive;
 
   if (googleToken) {
     try {
-      const resp = await fetch(`${BACKEND_URL}/userinfo`, { headers: { Authorization: `Bearer ${googleToken}` } });
+      const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+        headers: { Authorization: `Bearer ${googleToken}` }
+      });
       if (resp.ok) {
         const user = await resp.json();
         emailSpan.textContent = user.email;
         avatarImg.src = user.picture;
-        avatarImg.style.display = "block";
-      } else {
-        emailSpan.textContent = "Erro ao carregar usuário";
-        avatarImg.style.display = "none";
+        dom.btnLoginGoogle.style.display = "none";
+        dom.btnLogoutGoogle.style.display = "inline-block";
       }
-      btnLogin.style.display = "none";
-      btnLogout.style.display = "inline-block";
-      btnSave.style.display = "inline-block";
-    } catch {
-      emailSpan.textContent = "Erro ao carregar usuário";
-      avatarImg.style.display = "none";
-      btnLogin.style.display = "inline-block";
-      btnLogout.style.display = "none";
-      btnSave.style.display = "none";
-    }
+    } catch (err) { console.error(err); }
   } else {
-    emailSpan.textContent = "Nenhuma conta conectada";
-    avatarImg.style.display = "none";
-    btnLogin.style.display = "inline-block";
-    btnLogout.style.display = "none";
-    btnSave.style.display = "none";
+    emailSpan.textContent = "";
+    avatarImg.src = "";
+    dom.btnLoginGoogle.style.display = "inline-block";
+    dom.btnLogoutGoogle.style.display = "none";
   }
 }
 
-// ======================= EVENT LISTENERS =======================
+// ======================= PDF =======================
+const gerarPDFRelatorio = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const marginLeft = 15;
+  const marginTop = 20;
+  const lineHeight = 7;
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  const contentWidth = pageWidth - 2 * marginLeft;
+  let y = marginTop;
+
+  const hoje = new Date();
+
+  // Cabeçalho principal
+  doc.setFontSize(16);
+  doc.setFont("helvetica","bold");
+  doc.setTextColor(0,102,204);
+  doc.text("Relatório - Curso JavaScript",marginLeft,y);
+  y+=lineHeight;
+
+  // Cabeçalho secundário
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(120);
+  doc.text(`Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}`, marginLeft, y);
+  y += lineHeight;
+
+  // Linha separadora
+  doc.setDrawColor(0, 102, 204);
+  doc.setLineWidth(0.5);
+  doc.line(marginLeft, y, pageWidth - marginLeft, y);
+  y += 8;
+
+  // Conteúdo das semanas
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv, idx) => {
+    const h2 = semanaDiv.querySelector('h2');
+    h2.querySelectorAll('span').forEach(el => el.remove()); // remove ícones
+    const titulo = limparTexto(h2.innerText);
+
+    if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+    // Título da semana
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 102, 204);
+    doc.text(titulo, marginLeft, y);
+    y += lineHeight;
+
+    // Tarefas
+    semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => {
+      const txt = limparTexto(tarefaSpan.innerText);
+      const linhas = doc.splitTextToSize('• ' + txt, contentWidth);
+      linhas.forEach(linha => {
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        doc.text(linha, marginLeft + 5, y);
+        y += lineHeight;
+      });
+    });
+
+    // Notas da semana
+    const notaTextarea = semanaDiv.querySelector('.nota');
+    if (notaTextarea && notaTextarea.value.trim()) {
+      const prefixo = "Anotações: ";
+      const notaTexto = limparTexto(notaTextarea.value);
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+      doc.setFont("helvetica", "bold");
+      doc.text(prefixo, marginLeft + 5, y);
+
+      doc.setFont("helvetica", "normal");
+      linhasNota.forEach((linha, i) => {
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
+        if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+        doc.text(linha, offsetX, y);
+        y += lineHeight;
+      });
+
+      y += 2;
+    }
+
+    y += 5;
+  });
+
+  // Numeração de páginas
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
+
+// ======================= EVENTOS =======================
 dom.btnTema.addEventListener('click', toggleTheme);
-dom.btnRevisao.addEventListener('click', () => aplicarModoRevisao(!modoRevisaoAtivo));
+dom.btnRevisao.addEventListener('click',()=>aplicarModoRevisao());
 dom.btnLimpar.addEventListener('click', limpar);
 dom.btnExportJSON.addEventListener('click', exportar);
 dom.btnExportAvancado.addEventListener('click', exportarAvancado);
@@ -391,8 +467,9 @@ dom.btnImport.addEventListener('click', importar);
 dom.btnLoginGoogle.addEventListener('click', loginGoogle);
 dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
 dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
+dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
 
 // ======================= INICIALIZAÇÃO =======================
 gerar();
-document.body.classList.toggle('dark-mode', data.dark);
+document.body.classList.toggle('dark-mode',data.dark);
 atualizarUsuarioLogado();
