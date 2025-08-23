@@ -469,24 +469,27 @@ const gerarPDFRelatorio = () => {
       });
     });
 
-    // Notas da semana
+    // Notas da semana (preservando quebras de linha)
     const notaTextarea = semanaDiv.querySelector('.nota');
     if (notaTextarea && notaTextarea.value.trim()) {
       const prefixo = "Anotações: ";
-      const notaTexto = limparTexto(notaTextarea.value); // ✅ variável definida corretamente
-      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo));
+      const linhasOriginais = notaTextarea.value.split('\n');
 
       doc.setFont("helvetica", "bold");
       doc.text(prefixo, marginLeft + 5, y);
+      y += lineHeight;
 
       doc.setFont("helvetica", "normal");
-      linhasNota.forEach((linha, i) => {
-        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 3 : marginLeft + 5;
-        doc.text(linha, offsetX, y);
-        y += lineHeight;
+      linhasOriginais.forEach(linha => {
+        const linhasQuebradas = doc.splitTextToSize(linha, contentWidth - 10);
+        linhasQuebradas.forEach(l => {
+          if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+          doc.text(l, marginLeft + 10, y);
+          y += lineHeight;
+        });
       });
 
-      y += 2;
+      y += 5;
     }
 
     y += 5;
