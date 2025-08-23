@@ -210,7 +210,7 @@ const atualizarBadgesSemana=()=>{
     const todasMarcadas=[...inputs].every(chk=>chk.checked);
     const badgeName=`Semana ${i+1} Concluída`;
     if(todasMarcadas && !data.badges.includes(badgeName)){
-      data.badges.push(badgeName); showToast(`🏅 ${badgeName} conquistada!`);
+      data.badges.push(badgeName); showToast(`🏅 ${badgeName}. Parabéns!`);
     }
     if(!todasMarcadas && data.badges.includes(badgeName)) data.badges=data.badges.filter(b=>b!==badgeName);
   });
