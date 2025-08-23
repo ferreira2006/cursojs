@@ -365,23 +365,48 @@ const gerarPDFRelatorio = () => {
       });
     });
 
-    // Notas da semana
+    // =================== Notas da semana ===================
     const notaTextarea = semanaDiv.querySelector('.nota');
     if (notaTextarea && notaTextarea.value.trim()) {
+      const prefixo = "Anotações: ";
       const notaTexto = limparTexto(notaTextarea.value);
-      const linhasNota = doc.splitTextToSize("Anotações: " + notaTexto, contentWidth);
-      linhasNota.forEach(linha => {
+      const linhasNota = doc.splitTextToSize(notaTexto, contentWidth - doc.getTextWidth(prefixo) - 5);
+
+      if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
+
+      // Prefixo em negrito
+      doc.setFont("helvetica", "bold");
+      doc.text(prefixo, marginLeft + 5, y);
+
+      // Texto da nota em normal
+      doc.setFont("helvetica", "normal");
+      linhasNota.forEach((linha, i) => {
+        const offsetX = i === 0 ? marginLeft + 5 + doc.getTextWidth(prefixo) + 5 : marginLeft + 5;
         if (y > pageHeight - 20) { doc.addPage(); y = marginTop; }
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-        doc.text(linha, marginLeft + 5, y);
+        doc.text(linha, offsetX, y);
         y += lineHeight;
       });
-      y += 2;
+
+      y += 2; // espaço extra após nota
     }
 
-    y += 5;
+    y += 5; // espaço extra após cada semana
   });
+
+  // =================== Numeração de páginas ===================
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100);
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  }
+
+  doc.save('relatorio.pdf');
+  showToast('PDF gerado');
+};
+
 
   // =================== Numeração de páginas ===================
   const pageCount = doc.internal.getNumberOfPages();
