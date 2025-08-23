@@ -244,69 +244,14 @@ const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().to
 const exportarParaCalendario=()=>{let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((s,idx)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach((chk,i)=>{if(chk.checked){const dt=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+"Z"; ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${idx+1} - Tarefa ${i+1}\nDTSTART:${dt}\nEND:VEVENT\n`;}});}); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();};
 const importar=()=>{const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{try{const conteudo=JSON.parse(ev.target.result); data=conteudo.data?conteudo.data:conteudo; salvarDados(false); gerar();}catch{alert("Arquivo inválido!");}}; reader.readAsText(file);}; input.click();};
 
-// ======================= GOOGLE =======================
-async function loginGoogle(){try{const resp=await fetch(`${BACKEND_URL}/auth-url`); const {url}=await resp.json(); window.open(url,'_blank','width=500,height=600');}catch(err){console.error("Erro ao autenticar:",err);}}
-function logoutGoogle(){googleToken=null; localStorage.removeItem("googleToken"); atualizarUsuarioLogado(); showToast("Logout realizado!");}
-async function salvarNoDrive(){if(!googleToken){alert("Você precisa estar logado no Google!"); return;} try{const resp=await fetch(`${BACKEND_URL}/save`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${googleToken}`}, body:JSON.stringify({data})}); if(resp.ok){showToast("Backup salvo no Drive!");}else{alert("Erro ao salvar no Drive!");}}catch(err){console.error("Erro ao salvar no Drive:",err);}}
-async function atualizarUsuarioLogado(){const emailSpan=dom.usuarioEmail; const avatarImg=dom.usuarioAvatar; if(googleToken){try{const resp=await fetch(`${BACKEND_URL}/userinfo`,{headers:{Authorization:`Bearer ${googleToken}`}}); if(resp.ok){const user=await resp.json(); emailSpan.textContent=user.email; avatarImg.src=user.picture; avatarImg.style.display="block";}}catch{emailSpan.textContent="Erro ao carregar usuário"; avatarImg.style.display="none";} } else{emailSpan.textContent="Nenhuma conta conectada"; avatarImg.style.display="none";} }
+  ======================= GOOGLE ======================= 
+const loginGoogle = async () => { try { const resp = await fetch(${BACKEND_URL}/auth-url); const dataLogin = await resp.json(); if (!dataLogin.url) { showToast('Erro ao obter URL de login'); return; } const popup = window.open(dataLogin.url, '_blank', 'width=500,height=600'); window.addEventListener('message', e => { if (e.data.googleToken) { localStorage.setItem('googleToken', JSON.stringify(e.data.googleToken)); atualizarUsuarioLogado(); showToast('Login Google realizado!'); } }, { once: true }); } catch (err) { console.error(err); showToast('Erro ao iniciar login Google'); } }; 
+const logoutGoogle = () => { localStorage.removeItem('googleToken'); atualizarUsuarioLogado(); showToast('Logout realizado'); }; 
+const atualizarUsuarioLogado = () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (token) { fetch(${BACKEND_URL}/userinfo, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) }).then(r => r.json()) .then(u => { dom.usuarioAvatar.src = u.picture; dom.usuarioAvatar.style.display = 'block'; dom.usuarioEmail.textContent = u.email; }).catch(() => { dom.usuarioAvatar.style.display = 'none'; dom.usuarioEmail.textContent = 'Erro ao carregar usuário'; }); } else { dom.usuarioAvatar.style.display = 'none'; dom.usuarioEmail.textContent = 'Nenhuma conta conectada'; } };
+const salvarNoDrive = async () => { const token = JSON.parse(localStorage.getItem('googleToken')); if (!token) { showToast('Você precisa fazer login primeiro'); return; } const payload = { token, filename: 'checklist.json', content: data }; try { const resp = await fetch(${BACKEND_URL}/save, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); const result = await resp.json(); if (result.success) { const link = https://drive.google.com/file/d/${result.fileId}/view; showToast(Arquivo salvo no Google Drive! <a href="${link}" target="_blank" style="color:#FFD700;text-decoration:underline;">Abrir</a>); } else { showToast('Erro ao salvar no Drive'); console.error(result); } } catch (err) { console.error(err); showToast('Erro ao salvar no Drive'); } };
 
 // ======================= PDF =======================
-const gerarPDFRelatorio = () => {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p','mm','a4');
-  const margin = 15;
-  const lineHeight = 7;
-  let y = margin;
-
-  const hoje = new Date();
-  const dataTexto = `Relatório emitido em ${hoje.getDate().toString().padStart(2,'0')}/${(hoje.getMonth()+1).toString().padStart(2,'0')}/${hoje.getFullYear()}`;
-  doc.setFontSize(12);
-  doc.text(dataTexto, margin, y);
-  y += 10;
-
-  Object.keys(plano).forEach((semana, idx) => {
-    const tarefas = plano[semana];
-    doc.setFontSize(14);
-    doc.setTextColor(0,0,0);
-    doc.setFillColor(...hexToRgb(coresSemana[idx % coresSemana.length]));
-    doc.rect(margin-2, y-5, 190, lineHeight, 'F');
-    doc.text(semana, margin, y);
-    y += lineHeight + 2;
-
-    tarefas.forEach((t,i)=>{
-      const chkId = `s${idx}d${i}`;
-      const marcado = data.check[chkId] ? "✅" : "⬜";
-      doc.setFontSize(12);
-      const texto = `${marcado} ${t}`;
-      const linhas = doc.splitTextToSize(texto, 190 - 2*margin);
-      if(y + linhas.length*lineHeight > 297 - margin){ doc.addPage(); y = margin; }
-      doc.text(linhas, margin, y);
-      y += linhas.length*lineHeight;
-    });
-
-    const nota = data.notes[`s${idx}`];
-    if(nota){
-      const linhasNota = doc.splitTextToSize("📝 " + nota, 190 - 2*margin);
-      if(y + linhasNota.length*lineHeight > 297 - margin){ doc.addPage(); y = margin; }
-      doc.setTextColor(80,80,80);
-      doc.text(linhasNota, margin, y);
-      y += linhasNota.length*lineHeight + 3;
-    }
-    y += 3;
-  });
-
-  doc.save('relatorio-checklist.pdf');
-};
-
-function hexToRgb(hex){
-  hex = hex.replace('#','');
-  if(hex.length===3) hex = hex.split('').map(h=>h+h).join('');
-  const bigint = parseInt(hex,16);
-  const r = (bigint>>16)&255;
-  const g = (bigint>>8)&255;
-  const b = bigint&255;
-  return [r,g,b];
-}
+const gerarPDFRelatorio = () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); const marginLeft = 15, marginTop = 25, lineHeight = 7; const pageWidth = doc.internal.pageSize.getWidth(); const pageHeight = doc.internal.pageSize.getHeight(); const contentWidth = pageWidth - 2 * marginLeft; let y = marginTop; const hoje = new Date(); doc.setFontSize(16); doc.setTextColor(0, 102, 204); doc.text("Relatório - Curso JavaScript", marginLeft, y); y += 7; doc.setFontSize(11); doc.setFont("helvetica", "italic"); doc.setTextColor(120); doc.text(Relatório emitido em ${hoje.toLocaleDateString('pt-BR')}, marginLeft, y); y += 7; doc.setDrawColor(0, 102, 204); doc.setLineWidth(0.5); doc.line(marginLeft, y, pageWidth - marginLeft, y); y += 8; dom.conteudo.querySelectorAll('.semana').forEach(semanaDiv => { const h2 = semanaDiv.querySelector('h2'); h2.querySelectorAll('span').forEach(el => el.remove()); let titulo = limparTexto(h2.innerText); if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 102, 204); doc.text(titulo, marginLeft, y); y += lineHeight; semanaDiv.querySelectorAll('.tarefas div span').forEach(tarefaSpan => { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } let txt = limparTexto(tarefaSpan.innerText); doc.setTextColor(0, 0, 0); doc.splitTextToSize('• ' + txt, contentWidth).forEach(l => { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } doc.text(l, marginLeft + 5, y); y += lineHeight; }); }); const notaTextarea = semanaDiv.querySelector('.nota'); if (notaTextarea && notaTextarea.value.trim()) { if (y > pageHeight - 20) { doc.addPage(); y = marginTop; } const prefixo = "Anotações: "; const notaTexto = limparTexto(notaTextarea.value); doc.setFont("helvetica", "bold"); doc.text(prefixo, marginLeft + 5, y); doc.setFont("helvetica", "normal"); doc.text(notaTexto, marginLeft + 5 + doc.getTextWidth(prefixo), y); y += lineHeight + 2; } y += 5; }); const pageCount = doc.internal.getNumberOfPages(); for (let i = 1; i <= pageCount; i++) { doc.setPage(i); doc.setFontSize(8); doc.setFont("helvetica", "italic"); doc.setTextColor(100); doc.text(Página ${i} de ${pageCount}, pageWidth / 2, pageHeight - 10, { align: "center" }); } doc.save('relatorio.pdf'); showToast('PDF gerado'); };
 
 // ======================= BUSCA =======================
 const filtrar=()=>{const termo=dom.inputBusca.value.toLowerCase(); document.querySelectorAll('.semana').forEach(card=>{const txt=card.innerText.toLowerCase(); card.style.display=txt.includes(termo)?'flex':'none';});};
