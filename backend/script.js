@@ -240,9 +240,63 @@ const toggleTheme=()=>{data.dark=!data.dark; document.body.classList.toggle('dar
 
 // ======================= EXPORTAR / IMPORTAR =======================
 const exportar=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.json'; a.click();};
-const exportarAvancado=()=>{const avancado={data,meta:{exportadoEm:new Date().toISOString(),versao:"avancado-v1"}}; const blob=new Blob([JSON.stringify(avancado,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist-avancado.json'; a.click();};
+
+// ======================= EXPORTAR AVANÇADO =======================
+const exportarAvancado = () => {
+  // Estrutura com metadados mas mantendo a raiz 'data'
+  const avancado = {
+    data,                         // dados principais
+    metadata: {                    // informações adicionais
+      exportadoEm: new Date().toISOString(),
+      source: "Checklist JS Avançado",
+      version: "v5.1"
+    }
+  };
+  
+  const blob = new Blob([JSON.stringify(avancado, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checklist-avancado.json';
+  a.click();
+};
+
+// ======================= IMPORTAR =======================
+const importar = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  
+  inp.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = ev => {
+      try {
+        let imported = JSON.parse(ev.target.result);
+
+        // Verifica se é exportação avançada
+        if (imported.data) {
+          data = imported.data;
+        } else {
+          // JSON simples
+          data = imported;
+        }
+
+        salvarDados();
+        gerar();
+        showToast('Importado com sucesso');
+      } catch (err) {
+        showToast('Erro ao importar');
+        console.error(err);
+      }
+    };
+    
+    reader.readAsText(file);
+  };
+  
+  inp.click();
+};
 const exportarParaCalendario=()=>{let ics="BEGIN:VCALENDAR\nVERSION:2.0\nCALSCALE:GREGORIAN\n"; Object.keys(plano).forEach((s,idx)=>{document.querySelectorAll(`#tarefas-${idx} input`).forEach((chk,i)=>{if(chk.checked){const dt=new Date().toISOString().replace(/[-:]/g,'').split('.')[0]+"Z"; ics+=`BEGIN:VEVENT\nSUMMARY:Semana ${idx+1} - Tarefa ${i+1}\nDTSTART:${dt}\nEND:VEVENT\n`;}});}); ics+="END:VCALENDAR"; const blob=new Blob([ics],{type:'text/calendar'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='checklist.ics'; a.click();};
-const importar=()=>{const input=document.createElement('input'); input.type='file'; input.accept='.json'; input.onchange=e=>{const file=e.target.files[0]; const reader=new FileReader(); reader.onload=ev=>{try{const conteudo=JSON.parse(ev.target.result); data=conteudo.data?conteudo.data:conteudo; salvarDados(false); gerar();}catch{alert("Arquivo inválido!");}}; reader.readAsText(file);}; input.click();};
 
 // ======================= LOGIN GOOGLE =======================
 let loginInProgress = false;
