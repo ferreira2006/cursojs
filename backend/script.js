@@ -284,12 +284,17 @@ const importar = () => {
 };
 
 // ======================= GOOGLE LOGIN =======================
+googleToken = localStorage.getItem("googleToken") || null;
+
 async function loginGoogle() {
   try {
     const resp = await fetch(`${BACKEND_URL}/auth-url`);
     const { url } = await resp.json();
     window.open(url, "_blank", "width=500,height=600");
-  } catch { showToast("Erro ao autenticar no Google!"); }
+  } catch (err) {
+    console.error("Erro ao autenticar:", err);
+    showToast("Erro ao autenticar no Google!");
+  }
 }
 
 function logoutGoogle() {
@@ -300,24 +305,55 @@ function logoutGoogle() {
 }
 
 async function salvarNoDrive() {
-  if(!googleToken){ showToast("Você precisa estar logado no Google!"); return; }
+  if (!googleToken) {
+    showToast("Você precisa estar logado no Google!");
+    return;
+  }
   try {
     const resp = await fetch(`${BACKEND_URL}/save`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${googleToken}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${googleToken}`
+      },
       body: JSON.stringify({ data })
     });
-    resp.ok ? showToast("Backup salvo no Google Drive!") : showToast("Erro ao salvar no Drive!");
-  } catch { showToast("Erro ao salvar no Drive!"); }
+    if (resp.ok) {
+      showToast("Backup salvo no Google Drive!");
+    } else {
+      showToast("Erro ao salvar no Drive!");
+    }
+  } catch (err) {
+    console.error("Erro ao salvar no Drive:", err);
+    showToast("Erro ao salvar no Drive!");
+  }
 }
 
 async function atualizarUsuarioLogado() {
-  if(googleToken){
-    dom.usuarioAvatar.src=`https://www.gravatar.com/avatar/${googleToken}?s=32`; dom.usuarioEmail.textContent=googleToken;
-    dom.btnLoginGoogle.style.display='none'; dom.btnLogoutGoogle.style.display='inline-block'; dom.btnSaveDrive.style.display='inline-block';
+  const emailSpan = document.getElementById("usuario-email");
+  const avatarImg = document.getElementById("usuario-avatar");
+
+  if (googleToken) {
+    try {
+      const resp = await fetch(`${BACKEND_URL}/userinfo`, {
+        headers: { Authorization: `Bearer ${googleToken}` }
+      });
+      if (resp.ok) {
+        const user = await resp.json();
+        emailSpan.textContent = user.email;
+        avatarImg.src = user.picture;
+        avatarImg.style.display = "block";
+      } else {
+        emailSpan.textContent = "Erro ao carregar usuário";
+        avatarImg.style.display = "none";
+      }
+    } catch {
+      emailSpan.textContent = "Erro ao carregar usuário";
+      avatarImg.style.display = "none";
+    }
   } else {
-    dom.usuarioAvatar.src=''; dom.usuarioEmail.textContent='';
-    dom.btnLoginGoogle.style.display='inline-block'; dom.btnLogoutGoogle.style.display='none'; dom.btnSaveDrive.style.display='none';
+    emailSpan.textContent = "Nenhuma conta conectada";
+    avatarImg.style.display = "none";
   }
 }
 
