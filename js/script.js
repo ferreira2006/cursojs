@@ -710,6 +710,28 @@ dom.btnLogoutGoogle.addEventListener('click', logoutGoogle);
 dom.btnSaveDrive.addEventListener('click', salvarNoDrive);
 dom.btnExportPDF.addEventListener('click', gerarPDFRelatorio);
 
+// ======================= BUSCA =======================
+dom.inputBusca.addEventListener('input', () => {
+  const termo = dom.inputBusca.value.toLowerCase();
+
+  dom.conteudo.querySelectorAll('.semana').forEach((semanaDiv) => {
+    let algumVisivel = false;
+
+    semanaDiv.querySelectorAll('.tarefas div').forEach((tarefaDiv) => {
+      const texto = tarefaDiv.querySelector('span').innerText.toLowerCase();
+      if (texto.includes(termo)) {
+        tarefaDiv.style.display = 'flex';
+        algumVisivel = true;
+      } else {
+        tarefaDiv.style.display = 'none';
+      }
+    });
+
+    // Mostra a semana apenas se alguma tarefa bater com a busca
+    semanaDiv.style.display = algumVisivel ? 'block' : 'none';
+  });
+});
+
 // ======================= INICIALIZAÇÃO =======================
 gerar();
 document.body.classList.toggle('dark-mode', data.dark);
