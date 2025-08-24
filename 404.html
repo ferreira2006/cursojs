@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="assets/icons/favicon.ico" type="image/x-icon" />
+    <title>Checklist de Estudo - JavaScript Avançado v5.1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <!-- 404.html usado no GitHub Pages para evitar erro de rota -->
+    <!-- 404.html usado no GitHub Pages para evitar erro de rota -->
+    <!-- 404.html usado no GitHub Pages para evitar erro de rota -->
+    <!-- 404.html usado no GitHub Pages para evitar erro de rota -->
+
+    <noscript>
+      <div
+        class="error-message"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        tabindex="0"
+      >
+        ⚠️ O JavaScript está desativado no seu navegador. Algumas
+        funcionalidades do Clima Atual não funcionarão.
+      </div>
+    </noscript>
+    <div class="top-bar">
+      <div class="top-bar-group">
+        <button id="btn-toggle-theme" aria-label="Alternar tema laro ou escuro">
+          🌙/☀️ Tema
+        </button>
+        <button id="btn-modo-revisao" aria-label="Modo revisão">
+          📝 Modo Revisão
+        </button>
+        <button id="btn-limpar" aria-label="Limpar todos os dados">
+          🗑️ Limpar Tudo
+        </button>
+      </div>
+
+      <div class="top-bar-group dropdown">
+        <button class="dropbtn">📤 Exportar</button>
+        <div class="dropdown-content">
+          <button
+            id="btn-exportar-json"
+            aria-label="Exportar marcações em arquivo json"
+          >
+            JSON
+          </button>
+          <button
+            id="btn-exportar-avancado"
+            aria-label="Exportar marcações e notas em arquivo json"
+          >
+            Avançado
+          </button>
+          <button id="btn-gerar-pdf" aria-label="Gerar relatório em PDF">
+            PDF
+          </button>
+          <button
+            id="btn-exportar-calendario"
+            aria-label="Exportar dados para calendário"
+          >
+            Calendário
+          </button>
+        </div>
+      </div>
+
+      <div class="top-bar-group">
+        <button
+          id="btn-importar"
+          aria-label="Exportar dados de um arquivo json"
+        >
+          📥 Importar JSON
+        </button>
+      </div>
+
+      <div class="top-bar-group google-group">
+        <div class="dropdown">
+          <button class="dropbtn">🔑 Google</button>
+          <div class="dropdown-content">
+            <button
+              id="btn-login-google"
+              aria-label="Autenticar-se com conta do google"
+            >
+              Login
+            </button>
+            <button
+              id="btn-logout-google"
+              aria-label="Desconectar a conta do google"
+            >
+              Logout
+            </button>
+            <button
+              id="btn-salvar-drive"
+              aria-label="Fazer backup total no google drive"
+            >
+              Salvar no Drive
+            </button>
+          </div>
+        </div>
+        <div
+          id="usuario-logado"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 10px;
+          "
+        >
+          <img
+            id="usuario-avatar"
+            src=""
+            alt="Avatar"
+            style="width: 24px; height: 24px; border-radius: 50%; display: none"
+          />
+          <span id="usuario-email">Nenhuma conta conectada</span>
+        </div>
+      </div>
+
+      <div class="top-bar-group busca-group">
+        <input
+          type="text"
+          id="busca"
+          aria-label="Buscar por palavra"
+          placeholder="Buscar..."
+        />
+      </div>
+    </div>
+
+    <div id="badges-container"></div>
+    <div class="progress">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+    <div id="conteudo"></div>
+    <canvas id="confete-canvas" class="confete"></canvas>
+    <div id="toast-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/script.js"></script>
+  </body>
+</html>
